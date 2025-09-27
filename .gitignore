@@ -1,0 +1,53 @@
+# Python / Build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+.dist/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# Logs / Results
+results/*.json
+results/*.jsonl
+results/*.parquet
+results/report.md
+
+# Synthetic / Generated data (keep real data separately)
+data/synthetic_ecg.csv
+data/detections_*.csv
+
+# Cache / tooling
+.mypy_cache/
+.pytype/
+.pytest_cache/
+ruff_cache/
+.cache/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Coverage / testing
+.coverage
+htmlcov/
+
+# Packaging
+build/
+dist/
+
+# Misc
+*.log
