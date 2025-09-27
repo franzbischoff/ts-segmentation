@@ -25,8 +25,7 @@ results/*.parquet
 results/report.md
 
 # Synthetic / Generated data (keep real data separately)
-data/synthetic_ecg.csv
-data/detections_*.csv
+data/
 
 # Cache / tooling
 .mypy_cache/

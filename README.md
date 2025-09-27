@@ -235,6 +235,144 @@ python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-w
 
 Este baseline fornece uma fundação reproduzível para comparação com seu algoritmo de detecção de mudanças de regime em ECG streaming. A estrutura facilita extensão, logging mais robusto e integração de dados reais. Recomenda-se agora adicionar logging estruturado e visualização para fortalecer a seção experimental da tese.
 
+---
+
+## 10. Integração com Dataset no Zenodo (Record 6879233)
+
+Para usar um dataset hospedado no Zenodo (ex: record `6879233`):
+
+### Download automático
+Foi adicionado script `src/zenodo_download.py` que baixa todos os ficheiros do record.
+
+Exemplo:
+```bash
+source .venv/bin/activate
+python -m src.zenodo_download --record-id 6879233 --out-dir data/zenodo_6879233
+```
+
+O script:
+1. Consulta `https://zenodo.org/api/records/<record-id>`.
+2. Lista ficheiros disponíveis.
+3. Faz download streaming (com verificação de tamanho) para `out-dir`.
+
+### Preparação do sinal
+Use `src/prepare_dataset.py` para converter um arquivo de sinal para o formato esperado (`sample_index, ecg, regime_change`). Exemplo genérico:
+```bash
+python -m src.prepare_dataset \
+	--input data/zenodo_6879233/SEU_ARQUIVO.csv \
+	--output data/ecg_signal.csv \
+	--ecg-col signal \
+	--timestamp-col timestamp \
+	--change-file data/zenodo_6879233/changes.csv \
+	--change-col change_flag \
+	--sample-rate 250
+```
+
+Se não possuir uma coluna de mudança (`regime_change`), pode fornecer um ficheiro de eventos com índices/tempos.
+
+### Mapeamento de colunas
+O script tentará:
+- Criar `sample_index` sequencial quando só houver timestamp.
+- Normalizar o sinal (opção `--zscore`).
+- Gerar `regime_change` a partir de uma lista de tempos OU índices (opções `--events-csv`, `--events-col-index`, `--events-col-time`).
+
+### Executar detecção sobre dataset real
+```bash
+python -m src.streaming_detector --data data/ecg_signal.csv --detector adwin \
+	--ma-window 25 --min-gap-samples 100 --param delta=0.01 --tolerance 200
+```
+
+### Boas práticas
+- Verifique a licença e citação do dataset (no Zenodo a API devolve campos `metadata`).
+- Mantenha ficheiros originais intocados (usar subpasta dedicada).
+- Se o dataset estiver em múltiplos ficheiros, unifique antes ou rode múltiplas vezes.
+
+---
+
+## 11. Preprocessamento de datasets WFDB com regimes (afib_regimes)
+
+Foi adicionado o script `src/ecg_preprocess.py` que traduz a lógica principal dos scripts R (`find_all_files.R`, `read_ecg.R`, `pre_process.R`) para Python. Ele:
+
+- Descobre ficheiros `.hea` + (`.csv.bz2` sinal) + (`.atr.csv.bz2` anotações) para classes de fibrilação (`persistent_afib`, `paroxysmal_afib`, `non_afib`).
+- Lê frequência de amostragem, canais e anotações.
+- (Opcional) Faz resample do original (ex.: 200 Hz) para 250 Hz via interpolação linear.
+- Extrai índices de mudança de regime a partir dos códigos de anotação (label_store ∈ {28, 32, 33}).
+- Limpa eventos duplicados próximos (< 15 samples) e remove eventos muito perto das extremidades (<= 10 samples do início/fim) — conforme `clean_truth` do R.
+- Constrói um CSV “tidy” com colunas: `id, sample_index, ecg, regime_change` (1 marca início de novo regime).
+
+### CLI
+```
+python -m src.ecg_preprocess --root <DIR_RAIZ> \
+	--classes paroxysmal_afib \
+	--limit-per-class 10 \
+	--lead II \
+	--resample-to 250 \
+	--output data/afib_paroxysmal_tidy.csv
+```
+
+Parâmetros principais:
+- `--root`: diretório onde estão os `.hea` (ex.: `data/zenodo_6879233/extracted/afib_regimes`).
+- `--classes`: lista de classes (ou `all`). Ex.: `paroxysmal_afib`.
+- `--limit-per-class`: mini‑teste rápido limitando Nº de ficheiros por classe.
+- `--lead`: canal/derivação a extrair (fallback para a primeira coluna se ausente).
+- `--resample-to`: frequência alvo (mantém se igual à original).
+- `--output`: caminho do CSV final.
+
+### Exemplo (mini‑teste com 10 ficheiros paroxysmal_afib)
+```
+python -m src.ecg_preprocess \
+	--root data/zenodo_6879233/extracted/afib_regimes \
+	--classes paroxysmal_afib \
+	--limit-per-class 10 \
+	--lead II \
+	--resample-to 250 \
+	--output data/afib_paroxysmal_tidy.csv
+```
+
+Depois executar o detector:
+```
+python -m src.streaming_detector \
+	--data data/afib_paroxysmal_tidy.csv \
+	--detector adwin \
+	--ma-window 25 \
+	--min-gap-samples 3000 \
+	--param delta=0.01 \
+	--tolerance 500 \
+	--sample-rate 250
+```
+
+### Interpretação inicial
+Em um subset de 10 ficheiros foram observados (exemplo) ~46 eventos de verdade e alta taxa de falsos positivos (ADWIN padrão). Isso é esperado porque:
+1. Registos diferentes são concatenados — mudanças de baseline entre pacientes podem induzir falsos alarmes.
+2. Parâmetro `delta` não foi otimizado para o ruído deste domínio.
+3. Falta (por enquanto) pré-processamento mais robusto (derivadas + filtros adaptativos) antes de alimentar o detector.
+
+### Recomendações imediatas
+- Rodar por `id` e agregar métricas em vez de concatenar tudo (próxima melhoria planejada).
+- Fazer pequena grid de `delta` (ex.: 0.005, 0.01, 0.02, 0.05).
+- Ajustar `--min-gap-samples` conforme duração média de segmentos (talvez > 5000 se muitos FP sequenciais).
+- Testar `--derivative` + média móvel maior para reduzir drift gradual.
+
+### Estrutura do CSV gerado
+```
+id,sample_index,ecg,regime_change
+data_101_1.par,0,0.012,0
+...
+```
+
+Onde:
+- `id`: identificador do registo (derivado do nome do ficheiro `.hea`).
+- `sample_index`: índice da amostra (0-based) após eventual resampling.
+- `ecg`: valor flotante da derivação escolhida.
+- `regime_change`: 1 quando há início de novo regime; 0 caso contrário.
+
+### Limitações atuais
+- Apenas um canal por vez (multi‑lead futuro: armazenar em formato wide ou long com coluna `lead`).
+- Códigos de anotação fixos {28,32,33} (tornar parametrizável em versão futura).
+- Sem coluna de tempo em segundos (pode ser derivada: `time_s = sample_index / 250`).
+
+---
+
 ## Métricas básicas
 - Atraso (delay) médio: diferença entre primeira detecção após uma mudança real e o índice verdadeiro.
 - Taxa de falsos positivos.
