@@ -22,6 +22,7 @@ ENV/
 results/*.json
 results/*.jsonl
 results/*.parquet
+results/*.csv
 results/report.md
 
 # Synthetic / Generated data (keep real data separately)
