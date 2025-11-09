@@ -48,6 +48,46 @@ Correções aplicadas:
 - **Métricas**: Precision, Recall, F1 calculado corretamente por ficheiro.
 
 ### Correções Aplicadas
+
+## 5. **DISCUSSÃO: Seleção de Métricas para Streaming** (Novembro 2025)
+
+### Problema Identificado
+O utilizador questionou qual métrica usar para avaliação de detecção de regimes em dados biológicos streaming, identificando limitações das métricas existentes:
+
+1. **Impossibilidade de comparar séries diferentes** (tamanhos variados)
+2. **Detecções "antes" da alteração são irreais** em streaming
+3. **Score otimizado apenas para mesmo número de detecções e alterações**
+4. **Impossível ponderar pelo tamanho do sinal**
+
+### Requisitos do Domínio
+- **Sinais biológicos** que requerem atenção rápida (≤4s ideal, ≤10s aceitável)
+- **Múltiplas detecções consolidáveis** dentro da janela temporal
+- **Detecção após 10s = falso positivo**
+- **Streaming real-time** (sem conhecimento prévio do tamanho)
+
+### Métrica Recomendada: F1-Score Temporal Unificado
+Decidimos implementar uma métrica única que combina:
+- **F1-Score** para comparabilidade com literatura
+- **Temporal Quality Score** (inspirado NAB) para avaliação de rapidez
+- **Matching temporal** com janela `[true_cp, true_cp + max_delay]`
+- **Score decrescente** com atraso (sigmoide entre 4s-10s)
+
+```python
+def calculate_streaming_metrics(true_changes, detected_changes,
+                                optimal_delay=4.0, max_delay=10.0):
+    # Implementação unificada evitando redundância com NAB
+    # Retorna: f1, precision, recall, temporal_quality, mean_delay, fp_count, fn_count
+```
+
+### Decisão Tomada
+Eliminamos redundância conceitual entre diferentes abordagens (comprehensive_score vs NAB), optando por uma **métrica única e suficiente** que:
+- ✅ É independente do tamanho do sinal
+- ✅ Não considera detecções antecipadas
+- ✅ Valoriza detecções rápidas sem penalizar excessivamente as lentas (dentro do limite)
+- ✅ Funciona com número variável de mudanças
+- ✅ Fornece métricas interpretáveis para contexto clínico
+
+### Correções Aplicadas
 - Bug inicial: F1 sempre 0.0 (função `evaluate_detections` não retornava F1).
 - Solução: Cálculo manual do F1 = 2*P*R/(P+R) no código.
 - Bug menor: `json.dumps` vs `json.dump` corrigido.

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from .data_loader import load_dataset
 from .detectors import build_detector
-from .evaluation import DetectionEvent, evaluate_detections
+from .evaluation import DetectionEvent, evaluate_detections, evaluate_detections_comprehensive
 import numpy as np
 
 
@@ -43,7 +43,12 @@ def run_stream_on_dataframe(df, detector_name: str, sample_rate: int, tolerance:
                                          sample_index=row.sample_index,
                                          time_seconds=row.sample_index / sample_rate))
 
-    metrics = evaluate_detections(events, df, sample_rate, tolerance=tolerance)
+    # Use comprehensive evaluation that includes both classic and F1* metrics
+    metrics = evaluate_detections_comprehensive(
+        events, df, sample_rate,
+        tolerance=tolerance,
+        signal_duration_samples=len(df)
+    )
 
     # Output results
     return events, metrics, detector.name
@@ -100,7 +105,8 @@ def run_stream(data_path: str | None, detector_name: str, sample_rate: int, batc
             'events_count': len(events),
             'events_preview': [e.__dict__ for e in events[:10]],
             'events_csv': out_events_path,
-            'f1': (lambda p, r: (2*p*r/(p+r) if (p+r)>0 else 0))(metrics.get('precision',0), metrics.get('recall',0))
+            'f1_classic': metrics.get('f1_classic', 0),
+            'f1_star': metrics.get('f1star_f1_star', 0)
         }
         with open(log_path, 'w', encoding='utf-8') as fh:
             json.dump(payload, fh, ensure_ascii=False, indent=2)

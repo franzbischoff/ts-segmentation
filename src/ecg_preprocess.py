@@ -130,7 +130,7 @@ def _read_signal_csv(csv_bz2: Path, n_signals: int) -> pd.DataFrame:
     with bz2.open(csv_bz2, 'rb') as fh:
         data = fh.read()
     # Try without header; some files may already include a header row of text.
-    df = pd.read_csv(io.BytesIO(data), header=None)
+    df = pd.read_csv(io.BytesIO(data), header=None, low_memory=False)
     # Coerce every column to numeric (invalid parsing -> NaN) to avoid object dtypes.
     for c in df.columns:
         if df[c].dtype == object:

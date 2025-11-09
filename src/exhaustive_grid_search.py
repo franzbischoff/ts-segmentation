@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Exhaustive Grid Search para detector ADWIN baseline.
-Similar à abordagedef run_exhaustive_search(data_path: str, output_path: str, sample_rate: int = 250,
-                         n_jobs: int = -1, max_files: int = None, max_samples: int = None) -> None:R: testa todas as combinações possíveis em cada ficheiro,
+Similar à abordagem R: testa todas as combinações possíveis em cada ficheiro,
 depois encontra parâmetros globalmente ótimos.
 """
 
@@ -25,10 +24,10 @@ def create_param_grid() -> Dict[str, List[Any]]:
     """Cria grid exhaustivo de parâmetros similiar ao approach R."""
     return {
         'delta': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1],  # 11 valores
-        'ma_window': list(range(25, 200, 25)),                                            # 7 valores (25,50,75,100,125,150,175)
+        'ma_window': [10, 25, 50, 75, 100, 150, 200, 250, 300],                          # 9 valores específicos
         'min_gap_samples': list(range(1000, 6000, 1000)),                               # 5 valores (1000,2000,3000,4000,5000)
     }
-    # Total: 11 × 7 × 5 = 385 combinações (versão completa)
+    # Total: 11 × 9 × 5 = 495 combinações
 
 
 def evaluate_single_record(record_data: pd.DataFrame, params: Dict[str, Any],
@@ -52,19 +51,32 @@ def evaluate_single_record(record_data: pd.DataFrame, params: Dict[str, Any],
             min_gap_samples=params['min_gap_samples']
         )
 
-        # Extrair métricas do resultado
-        precision = metrics.get('precision', 0.0)
-        recall = metrics.get('recall', 0.0)
-        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+        # Calculate comprehensive metrics using new evaluation function
+        from src.evaluation import calculate_comprehensive_metrics
+
+        # Extract GT and detection timestamps
+        gt_indices = record_data.index[record_data['regime_change'] == 1].tolist()
+        gt_times = [idx / sample_rate for idx in gt_indices]
+        det_times = [event.time_seconds for event in events]
+        duration_seconds = len(record_data) / sample_rate
+
+        # Calculate all comprehensive metrics
+        comprehensive_metrics = calculate_comprehensive_metrics(
+            gt=gt_times,
+            det=det_times,
+            tau=10.0,      # 10s acceptance window
+            plateau=4.0,   # 4s optimal window
+            duration=duration_seconds
+        )
 
         result = {
             **params,
-            'precision': precision,
-            'recall': recall,
-            'f1': f1,
+            # All comprehensive metrics
+            **comprehensive_metrics,
+            # Execution info
             'duration': time.time() - start_time,
             'n_detections': len(events),
-            'n_ground_truth': len(record_data[record_data['regime_change'] == 1])
+            'n_ground_truth': len(gt_times)
         }
 
         return result
@@ -183,31 +195,48 @@ def run_exhaustive_search(data_path: str, output_path: str, sample_rate: int = 2
 def analyze_results(results_df: pd.DataFrame, summary_path: str) -> None:
     """Analisa resultados e encontra melhores parâmetros globais."""
 
-    # Remover erros
-    valid_results = results_df[~results_df['f1'].isna() & (results_df['f1'] > 0)]
+    # Remover erros - usar F3 ponderado como filtro
+    valid_results = results_df[~results_df['f3_weighted'].isna() & (results_df['f3_weighted'] >= 0)]
 
     if valid_results.empty:
         print("WARNING: No valid results found!")
         return
 
-    # Encontrar melhor configuração global (média de F1 por combinação)
+    # Encontrar melhor configuração global usando F3 ponderado como métrica principal
     param_cols = ['delta', 'ma_window', 'min_gap_samples']
-    global_perf = valid_results.groupby(param_cols).agg({
-        'f1': ['mean', 'std', 'count'],
-        'precision': ['mean', 'std'],
-        'recall': ['mean', 'std'],
+
+    # Aggregate comprehensive metrics with F3 weighted as primary
+    agg_metrics = {
+        'f1_classic': ['mean', 'std', 'count'],       # Classic F1
+        'f1_weighted': ['mean', 'std', 'count'],      # F1 weighted
+        'f3_classic': ['mean', 'std', 'count'],       # Classic F3
+        'f3_weighted': ['mean', 'std', 'count'],      # F3 weighted (PRIMARY)
+        'recall_4s': ['mean', 'std'],                 # Recall@4s
+        'recall_10s': ['mean', 'std'],                # Recall@10s
+        'precision_4s': ['mean', 'std'],              # Precision@4s
+        'precision_10s': ['mean', 'std'],             # Precision@10s
+        'edd_median_s': 'mean',                       # Expected Detection Delay
+        'fp_per_min': 'mean',                         # False Positives per minute
         'duration': 'mean'
-    }).round(4)
+    }
+
+    global_perf = valid_results.groupby(param_cols).agg(agg_metrics).round(4)
 
     # Flatten column names
     global_perf.columns = ['_'.join(col).strip() for col in global_perf.columns]
     global_perf = global_perf.reset_index()
 
-    # Best global parameters
-    best_global = global_perf.loc[global_perf['f1_mean'].idxmax()]
+    # Best global parameters based on F3 weighted (primary metric)
+    best_global_f3weighted = global_perf.loc[global_perf['f3_weighted_mean'].idxmax()]
 
-    # Per-file best (para comparação)
-    file_best = valid_results.loc[valid_results.groupby('record_id')['f1'].idxmax()]
+    # Also track best F1 weighted and classic for comparison
+    best_global_f1weighted = global_perf.loc[global_perf['f1_weighted_mean'].idxmax()]
+    best_global_classic = global_perf.loc[global_perf['f1_classic_mean'].idxmax()]
+
+    # Per-file best using F3 weighted metric
+    file_best_f3weighted = valid_results.loc[valid_results.groupby('record_id')['f3_weighted'].idxmax()]
+    file_best_f1weighted = valid_results.loc[valid_results.groupby('record_id')['f1_weighted'].idxmax()]
+    file_best_classic = valid_results.loc[valid_results.groupby('record_id')['f1_classic'].idxmax()]
 
     summary = {
         'total_evaluations': len(results_df),
@@ -215,24 +244,61 @@ def analyze_results(results_df: pd.DataFrame, summary_path: str) -> None:
         'unique_files': results_df['record_id'].nunique(),
         'unique_param_combinations': len(results_df[param_cols].drop_duplicates()),
 
-        'best_global_params': {
-            'delta': best_global['delta'],
-            'ma_window': int(best_global['ma_window']),
-            'min_gap_samples': int(best_global['min_gap_samples'])
+        # F3 weighted based results (PRIMARY)
+        'best_global_params_f3weighted': {
+            'delta': best_global_f3weighted['delta'],
+            'ma_window': int(best_global_f3weighted['ma_window']),
+            'min_gap_samples': int(best_global_f3weighted['min_gap_samples'])
         },
-        'best_global_performance': {
-            'f1_mean': best_global['f1_mean'],
-            'f1_std': best_global['f1_std'],
-            'precision_mean': best_global['precision_mean'],
-            'recall_mean': best_global['recall_mean'],
-            'n_files': int(best_global['f1_count'])
+        'best_global_performance_f3weighted': {
+            'f3_weighted_mean': best_global_f3weighted['f3_weighted_mean'],
+            'f3_weighted_std': best_global_f3weighted['f3_weighted_std'],
+            'f1_weighted_mean': best_global_f3weighted['f1_weighted_mean'],
+            'recall_4s_mean': best_global_f3weighted['recall_4s_mean'],
+            'recall_10s_mean': best_global_f3weighted['recall_10s_mean'],
+            'precision_4s_mean': best_global_f3weighted['precision_4s_mean'],
+            'precision_10s_mean': best_global_f3weighted['precision_10s_mean'],
+            'edd_median_s_mean': best_global_f3weighted['edd_median_s_mean'],
+            'fp_per_min_mean': best_global_f3weighted['fp_per_min_mean'],
+            'n_files': int(best_global_f3weighted['f3_weighted_count'])
         },
 
-        'per_file_performance_stats': {
-            'f1_mean': file_best['f1'].mean(),
-            'f1_std': file_best['f1'].std(),
-            'f1_min': file_best['f1'].min(),
-            'f1_max': file_best['f1'].max()
+        # F1 weighted based results (secondary)
+        'best_global_params_f1weighted': {
+            'delta': best_global_f1weighted['delta'],
+            'ma_window': int(best_global_f1weighted['ma_window']),
+            'min_gap_samples': int(best_global_f1weighted['min_gap_samples'])
+        },
+        'best_global_performance_f1weighted': {
+            'f1_weighted_mean': best_global_f1weighted['f1_weighted_mean'],
+            'f1_weighted_std': best_global_f1weighted['f1_weighted_std'],
+            'n_files': int(best_global_f1weighted['f1_weighted_count'])
+        },
+
+        # Classic F1 based results (for comparison)
+        'best_global_params_classic': {
+            'delta': best_global_classic['delta'],
+            'ma_window': int(best_global_classic['ma_window']),
+            'min_gap_samples': int(best_global_classic['min_gap_samples'])
+        },
+        'best_global_performance_classic': {
+            'f1_classic_mean': best_global_classic['f1_classic_mean'],
+            'f1_classic_std': best_global_classic['f1_classic_std'],
+            'n_files': int(best_global_classic['f1_classic_count'])
+        },
+
+        # Per-file performance statistics
+        'per_file_performance_f3weighted': {
+            'f3_weighted_mean': file_best_f3weighted['f3_weighted'].mean(),
+            'f3_weighted_std': file_best_f3weighted['f3_weighted'].std(),
+            'f3_weighted_min': file_best_f3weighted['f3_weighted'].min(),
+            'f3_weighted_max': file_best_f3weighted['f3_weighted'].max()
+        },
+        'per_file_performance_classic': {
+            'f1_mean': file_best_classic['f1_classic'].mean(),
+            'f1_std': file_best_classic['f1_classic'].std(),
+            'f1_min': file_best_classic['f1_classic'].min(),
+            'f1_max': file_best_classic['f1_classic'].max()
         }
     }
 
@@ -240,14 +306,26 @@ def analyze_results(results_df: pd.DataFrame, summary_path: str) -> None:
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
 
-    print("\nBEST GLOBAL PARAMETERS:")
-    print(f"  delta: {best_global['delta']}")
-    print(f"  ma_window: {int(best_global['ma_window'])}")
-    print(f"  min_gap_samples: {int(best_global['min_gap_samples'])}")
-    print(f"  F1 mean: {best_global['f1_mean']:.4f} ± {best_global['f1_std']:.4f}")
-    print(f"Summary saved to: {summary_path}")
+    print("\n=== BEST GLOBAL PARAMETERS (F3 Weighted Primary Metric) ===")
+    print(f"  delta: {best_global_f3weighted['delta']}")
+    print(f"  ma_window: {int(best_global_f3weighted['ma_window'])}")
+    print(f"  min_gap_samples: {int(best_global_f3weighted['min_gap_samples'])}")
+    print(f"  F3 weighted: {best_global_f3weighted['f3_weighted_mean']:.4f} ± {best_global_f3weighted['f3_weighted_std']:.4f}")
+    print(f"  F3 classic:  {best_global_f3weighted['f3_classic_mean']:.4f} ± {best_global_f3weighted['f3_classic_std']:.4f}")
+    print(f"  F1 weighted: {best_global_f3weighted['f1_weighted_mean']:.4f} ± {best_global_f3weighted['f1_weighted_std']:.4f}")
+    print(f"  F1 classic:  {best_global_f3weighted['f1_classic_mean']:.4f} ± {best_global_f3weighted['f1_classic_std']:.4f}")
+    print(f"  Recall@4s: {best_global_f3weighted['recall_4s_mean']:.4f}")
+    print(f"  Recall@10s: {best_global_f3weighted['recall_10s_mean']:.4f}")
+    print(f"  Precision@4s: {best_global_f3weighted['precision_4s_mean']:.4f}")
+    print(f"  Precision@10s: {best_global_f3weighted['precision_10s_mean']:.4f}")
+    print(f"  EDD median: {best_global_f3weighted['edd_median_s_mean']:.2f}s")
+    print(f"  FP/min: {best_global_f3weighted['fp_per_min_mean']:.2f}")
 
+    print("\n=== COMPARISON WITH OTHER METRICS ===")
+    print(f"F1 Weighted best: delta={best_global_f1weighted['delta']}, ma_window={int(best_global_f1weighted['ma_window'])}, min_gap={int(best_global_f1weighted['min_gap_samples'])}")
+    print(f"F1 Classic best:   delta={best_global_classic['delta']}, ma_window={int(best_global_classic['ma_window'])}, min_gap={int(best_global_classic['min_gap_samples'])}")
 
+    print(f"\nSummary saved to: {summary_path}")
 def main():
     parser = argparse.ArgumentParser(description='Exhaustive Grid Search for ADWIN baseline detector')
     parser.add_argument('--data', required=True, help='Path to tidy CSV with id column')

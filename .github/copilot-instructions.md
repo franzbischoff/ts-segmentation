@@ -4,5 +4,5 @@ Este repositório implementa um baseline de detecção de mudanças de regime (c
 Não crie ficheiros de documentação Markdown adicionais sem antes perguntar ao utilizador. Todas as alterações de documentação devem ser feitas nos ficheiros existentes, a menos que o utilizador solicite explicitamente a criação de novos ficheiros.
 
 ## Memória Persistente
-Sempre que o utilizador indicar que está a iniciar os trabalhos do dia, consulte o ficheiro `.github/memory.md` para obter as informações mais recentes sobre o estado do projeto.
-Quando o utilizador informar que encerrou os trabalhos do dia, atualize o ficheiro `.github/memory.md` com as informações mais recentes sobre o estado do projeto.
+Sempre que o utilizador indicar que está a iniciar os trabalhos do dia, consulte o ficheiro `.github/copilot-memory.md` para obter as informações mais recentes sobre o estado do projeto.
+Quando o utilizador informar que encerrou os trabalhos do dia, atualize o ficheiro `.github/copilot-memory.md` com as informações mais recentes sobre o estado do projeto.

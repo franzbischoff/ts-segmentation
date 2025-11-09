@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 import pandas as pd
 
@@ -50,4 +50,363 @@ def evaluate_detections(events: List[DetectionEvent], df: pd.DataFrame, sample_r
         "recall": recall,
         "mean_delay_samples": mean_delay,
         "mean_delay_seconds": mean_delay / sample_rate if not np.isnan(mean_delay) else float('nan')
+    }
+
+
+def temporal_weight_function(delta: float, plateau: float = 4.0, tau: float = 10.0) -> float:
+    """
+    Temporal weight function w(δ) for latency-weighted F1*.
+
+    Args:
+        delta: Delay in seconds (detection_time - gt_time)
+        plateau: Time threshold for maximum weight (default 4s)
+        tau: Maximum acceptable delay (default 10s)
+
+    Returns:
+        Weight value between 0.0 and 1.0
+    """
+    if delta < 0:
+        return 0.0  # Detection before event is FP (not TP)
+    if delta <= plateau:
+        return 1.0  # 0-4s: maximum weight
+    if delta <= tau:
+        return 1.0 - (delta - plateau) / (tau - plateau)  # Linear decay 4-10s
+    return 0.0  # >10s: doesn't count as success
+
+
+def latency_weighted_f1(
+    gt: List[float],
+    det: List[float],
+    tau: float = 10.0,
+    plateau: float = 4.0,
+    rho: float = 4.0,
+    count_extra_within_rho_as_fp: bool = False,
+    duration: Optional[float] = None
+) -> Dict[str, float]:
+    """
+    Compute F1* score weighted by detection latency for streaming change point detection.
+
+    Args:
+        gt: Ground truth timestamps (seconds), should be sorted
+        det: Detection timestamps (seconds), should be sorted
+        tau: Maximum acceptable delay (seconds)
+        plateau: Optimal delay threshold (seconds)
+        rho: Deduplication window (seconds)
+        count_extra_within_rho_as_fp: If True, extra detections within rho count as FP
+        duration: Total signal duration for FP rate calculation
+
+    Returns:
+        Dictionary with metrics: precision_star, recall_star, f1_star, tp, fp, fn,
+        tp_weight_sum, recall_4s, edd_median, edd_p95, fp_per_min
+    """
+    # Ensure inputs are sorted
+    gt = sorted(gt)
+    det = sorted(det)
+
+    if not gt:  # No ground truth events
+        return {
+            'precision_star': 0.0 if det else 0.0,
+            'recall_star': 0.0,
+            'f1_star': 0.0,
+            'tp': 0,
+            'fp': len(det),
+            'fn': 0,
+            'tp_weight_sum': 0.0,
+            'recall_4s': 0.0,
+            'edd_median': np.nan,
+            'edd_p95': np.nan,
+            'fp_per_min': len(det) / (duration / 60.0) if duration else np.nan
+        }
+
+    if not det:  # No detections
+        return {
+            'precision_star': 0.0,
+            'recall_star': 0.0,
+            'f1_star': 0.0,
+            'tp': 0,
+            'fp': 0,
+            'fn': len(gt),
+            'tp_weight_sum': 0.0,
+            'recall_4s': 0.0,
+            'edd_median': np.nan,
+            'edd_p95': np.nan,
+            'fp_per_min': 0.0
+        }
+
+    # Initialize tracking variables
+    gt_matched = [False] * len(gt)
+    tp_weights = []
+    delays = []
+    fp_count = 0
+
+    # New algorithm: Process GT chronologically, handle overlapping ignore windows
+    det_processed = [False] * len(det)
+    current_ignore_until = -float('inf')  # Track until when we should ignore detections
+
+    for gi, gt_time in enumerate(gt):
+        # Skip this GT if we're still in an ignore window from previous GT
+        if gt_time < current_ignore_until:
+            continue
+
+        # Find first valid detection for this GT (after gt_time, not yet processed)
+        first_detection = None
+        first_detection_idx = None
+
+        for j, det_time in enumerate(det):
+            if (det_time >= gt_time and
+                det_time <= gt_time + tau and
+                not det_processed[j]):
+                first_detection = det_time
+                first_detection_idx = j
+                break
+
+        if first_detection is not None:
+            # Process this detection as TP
+            delta = first_detection - gt_time
+            weight = temporal_weight_function(delta, plateau, tau)
+
+            tp_weights.append(weight)
+            delays.append(delta)
+            gt_matched[gi] = True
+            det_processed[first_detection_idx] = True
+
+            # Set ignore window: ignore detections until gt_time + tau
+            # BUT only if there's no other GT in this interval
+            ignore_until = gt_time + tau
+
+            # Check if there are other GTs within the ignore window
+            next_gt_in_window = None
+            for next_gi in range(gi + 1, len(gt)):
+                if gt[next_gi] <= ignore_until:
+                    next_gt_in_window = gt[next_gi]
+                    break
+
+            if next_gt_in_window is not None:
+                # There's another GT in the ignore window - only ignore until that GT
+                current_ignore_until = next_gt_in_window
+            else:
+                # No GT in ignore window - ignore until full tau
+                current_ignore_until = ignore_until
+
+            # Mark additional detections in current ignore window
+            for j, det_time in enumerate(det):
+                if (det_time > first_detection and
+                    det_time < current_ignore_until and
+                    not det_processed[j]):
+                    det_processed[j] = True
+                    if count_extra_within_rho_as_fp:
+                        fp_count += 1
+        # If no detection found for this GT, it remains unmatched (FN)
+
+    # Count unprocessed detections as FP
+    for j, processed in enumerate(det_processed):
+        if not processed:
+            fp_count += 1    # Count unmatched GT events as FN
+    fn_count = sum(1 for matched in gt_matched if not matched)
+    tp_count = len(tp_weights)
+    tp_weight_sum = sum(tp_weights)
+
+    # Calculate primary metrics
+    # For precision_star: we consider TP count (not weight) + FP count in denominator
+    # but weight the numerator. This makes precision_star = weight_ratio when no FPs
+    precision_star = tp_weight_sum / (tp_count + fp_count) if (tp_count + fp_count) > 0 else 0.0
+    recall_star = tp_weight_sum / len(gt) if len(gt) > 0 else 0.0
+    f1_star = (2 * precision_star * recall_star / (precision_star + recall_star)
+               if (precision_star + recall_star) > 0 else 0.0)
+
+    # Calculate auxiliary metrics
+    recall_4s_weights = [1.0 if d <= plateau else 0.0 for d in delays]
+    recall_4s = sum(recall_4s_weights) / len(gt) if len(gt) > 0 else 0.0
+
+    edd_median = np.median(delays) if delays else np.nan
+    edd_p95 = np.percentile(delays, 95) if delays else np.nan
+    fp_per_min = fp_count / (duration / 60.0) if duration else np.nan
+
+    return {
+        'precision_star': precision_star,
+        'recall_star': recall_star,
+        'f1_star': f1_star,
+        'tp': tp_count,
+        'fp': fp_count,
+        'fn': fn_count,
+        'tp_weight_sum': tp_weight_sum,
+        'recall_4s': recall_4s,
+        'edd_median': edd_median,
+        'edd_p95': edd_p95,
+        'fp_per_min': fp_per_min
+    }
+
+
+def evaluate_detections_comprehensive(
+    events: List[DetectionEvent],
+    df: pd.DataFrame,
+    sample_rate: int,
+    tolerance: int = 50,
+    signal_duration_samples: Optional[int] = None
+) -> Dict[str, float]:
+    """
+    Comprehensive evaluation combining both classic and latency-weighted F1* metrics.
+
+    Args:
+        events: List of detection events
+        df: DataFrame with ground truth regime_change markers
+        sample_rate: Sampling rate in Hz
+        tolerance: Classic tolerance in samples
+        signal_duration_samples: Total signal length for FP rate calculation
+
+    Returns:
+        Dictionary with both classic metrics and F1* metrics
+    """
+    # Get classic metrics
+    classic_metrics = evaluate_detections(events, df, sample_rate, tolerance)
+
+    if not events:
+        # No detections case
+        f1_star_metrics = latency_weighted_f1([], [])
+        # Add signal duration info
+        if signal_duration_samples:
+            f1_star_metrics['fp_per_min'] = 0.0
+
+        # Combine results with prefix
+        result = {}
+        for k, v in classic_metrics.items():
+            result[f'classic_{k}'] = v
+        for k, v in f1_star_metrics.items():
+            result[f'f1star_{k}'] = v
+
+        return result
+
+    # Extract timestamps for F1* calculation
+    gt_times = []
+    if len(df) > 0:
+        gt_indices = df.index[df['regime_change'] == 1].tolist()
+        gt_times = [idx / sample_rate for idx in gt_indices]
+
+    det_times = [event.time_seconds for event in events]
+
+    # Calculate signal duration in seconds
+    duration_seconds = None
+    if signal_duration_samples is not None:
+        duration_seconds = signal_duration_samples / sample_rate
+    elif len(df) > 0:
+        duration_seconds = len(df) / sample_rate
+
+    # Convert tolerance from samples to seconds for F1*
+    tau_seconds = tolerance / sample_rate
+    plateau_seconds = min(4.0, tau_seconds * 0.4)  # 40% of tolerance or 4s, whichever is smaller
+    rho_seconds = min(4.0, tau_seconds * 0.5)      # 50% of tolerance or 4s for deduplication
+
+    # Calculate F1* metrics
+    f1_star_metrics = latency_weighted_f1(
+        gt=gt_times,
+        det=det_times,
+        tau=tau_seconds,
+        plateau=plateau_seconds,
+        rho=rho_seconds,
+        duration=duration_seconds
+    )
+
+    # Combine results with prefixes to avoid naming conflicts
+    result = {}
+    for k, v in classic_metrics.items():
+        result[f'classic_{k}'] = v
+    for k, v in f1_star_metrics.items():
+        result[f'f1star_{k}'] = v
+
+    # Add some convenience metrics
+    result['f1_classic'] = (2 * classic_metrics['precision'] * classic_metrics['recall'] /
+                           (classic_metrics['precision'] + classic_metrics['recall'])
+                           if (classic_metrics['precision'] + classic_metrics['recall']) > 0 else 0.0)
+
+    return result
+
+
+def calculate_comprehensive_metrics(
+    gt: List[float],
+    det: List[float],
+    tau: float = 10.0,
+    plateau: float = 4.0,
+    duration: Optional[float] = None
+) -> Dict[str, float]:
+    """
+    Calculate all comprehensive metrics as requested:
+    - F1-score (classic and weighted)
+    - F3-score (classic and weighted)
+    - Recall@4s, Recall@10s, Precision@4s, Precision@10s
+    - EDD and FP/min
+
+    Args:
+        gt: Ground truth timestamps (seconds)
+        det: Detection timestamps (seconds)
+        tau: Maximum acceptable delay (10s)
+        plateau: Optimal delay threshold (4s)
+        duration: Total signal duration for FP rate
+    """
+    # Use corrected latency_weighted_f1 with count_extra_within_rho_as_fp=False
+    weighted_results = latency_weighted_f1(
+        gt=gt, det=det, tau=tau, plateau=plateau,
+        count_extra_within_rho_as_fp=False, duration=duration
+    )
+
+    # Calculate classic metrics (binary TP/FP/FN without weights)
+    classic_tp = weighted_results['tp']
+    classic_fp = weighted_results['fp']
+    classic_fn = weighted_results['fn']
+
+    classic_precision = classic_tp / (classic_tp + classic_fp) if (classic_tp + classic_fp) > 0 else 0.0
+    classic_recall = classic_tp / (classic_tp + classic_fn) if (classic_tp + classic_fn) > 0 else 0.0
+
+    # F1 scores
+    f1_classic = (2 * classic_precision * classic_recall /
+                  (classic_precision + classic_recall)) if (classic_precision + classic_recall) > 0 else 0.0
+    f1_weighted = weighted_results['f1_star']
+
+    # F3 scores (beta=3 emphasizes recall)
+    beta = 3.0
+    f3_classic = ((1 + beta**2) * classic_precision * classic_recall /
+                  (beta**2 * classic_precision + classic_recall)) if (beta**2 * classic_precision + classic_recall) > 0 else 0.0
+
+    precision_star = weighted_results['precision_star']
+    recall_star = weighted_results['recall_star']
+    f3_weighted = ((1 + beta**2) * precision_star * recall_star /
+                   (beta**2 * precision_star + recall_star)) if (beta**2 * precision_star + recall_star) > 0 else 0.0
+
+    # Calculate Recall@τ and Precision@τ for both 4s and 10s
+    # For this, we need to recompute with different tau values
+
+    # Recall@4s and Precision@4s
+    results_4s = latency_weighted_f1(gt=gt, det=det, tau=4.0, plateau=4.0,
+                                     count_extra_within_rho_as_fp=False, duration=duration)
+    recall_4s = results_4s['tp'] / len(gt) if len(gt) > 0 else 0.0
+    precision_4s = results_4s['tp'] / (results_4s['tp'] + results_4s['fp']) if (results_4s['tp'] + results_4s['fp']) > 0 else 0.0
+
+    # Recall@10s and Precision@10s
+    results_10s = latency_weighted_f1(gt=gt, det=det, tau=10.0, plateau=10.0,
+                                      count_extra_within_rho_as_fp=False, duration=duration)
+    recall_10s = results_10s['tp'] / len(gt) if len(gt) > 0 else 0.0
+    precision_10s = results_10s['tp'] / (results_10s['tp'] + results_10s['fp']) if (results_10s['tp'] + results_10s['fp']) > 0 else 0.0
+
+    return {
+        # F-scores
+        'f1_classic': f1_classic,
+        'f1_weighted': f1_weighted,
+        'f3_classic': f3_classic,
+        'f3_weighted': f3_weighted,
+
+        # Recall and Precision at thresholds
+        'recall_4s': recall_4s,
+        'recall_10s': recall_10s,
+        'precision_4s': precision_4s,
+        'precision_10s': precision_10s,
+
+        # Expected Detection Delay and False Positive rate
+        'edd_median_s': weighted_results['edd_median'],
+        'edd_p95_s': weighted_results['edd_p95'],
+        'fp_per_min': weighted_results['fp_per_min'],
+
+        # Raw counts for reference
+        'tp': classic_tp,
+        'fp': classic_fp,
+        'fn': classic_fn,
+        'tp_weight_sum': weighted_results['tp_weight_sum']
     }
