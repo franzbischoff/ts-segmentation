@@ -54,8 +54,9 @@ def evaluate_single_record(record_data: pd.DataFrame, params: Dict[str, Any],
         # Calculate comprehensive metrics using new evaluation function
         from src.evaluation import calculate_comprehensive_metrics
 
-        # Extract GT and detection timestamps
-        gt_indices = record_data.index[record_data['regime_change'] == 1].tolist()
+        # Extract GT and detection timestamps using per-file sample_index
+        # IMPORTANT: sample_index is per-record; do not use the dataframe index here
+        gt_indices = record_data.loc[record_data['regime_change'] == 1, 'sample_index'].astype(int).tolist()
         gt_times = [idx / sample_rate for idx in gt_indices]
         det_times = [event.time_seconds for event in events]
         duration_seconds = len(record_data) / sample_rate
@@ -99,6 +100,10 @@ def process_single_file_all_params(record_id: str, record_data: pd.DataFrame,
     if max_samples and len(record_data) > max_samples:
         record_data = record_data.head(max_samples).copy()
         print(f"  {record_id}: Limited to {max_samples} samples for testing")
+
+    # Reset per-file index to ensure row positions align with sample_index 0..N-1
+    # This avoids mixing global dataframe index (across all files) with per-file sample_index
+    record_data = record_data.reset_index(drop=True)
 
     print(f"Processing {record_id}: {len(record_data)} samples, {len(param_combinations)} param combinations")
 

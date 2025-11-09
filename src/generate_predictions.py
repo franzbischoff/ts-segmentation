@@ -9,12 +9,17 @@ import argparse
 import itertools
 import json
 import time
+import random
 from pathlib import Path
 from typing import Dict, List, Any
 
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+
+# Set seeds for reproducibility
+random.seed(42)
+np.random.seed(42)
 
 from src.streaming_detector import run_stream_on_dataframe
 from src.data_loader import load_dataset
@@ -28,7 +33,6 @@ def create_param_grid() -> Dict[str, List[Any]]:
         'min_gap_samples': list(range(1000, 6000, 1000)),                               # 5 values (1000,2000,3000,4000,5000)
     }
     # Total: 11 × 9 × 5 = 495 combinations
-
 
 def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
                                   param_combinations: List[Dict[str, Any]],
