@@ -49,6 +49,13 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
 
     print(f"Loaded {len(predictions_df)} predictions from {predictions_df['record_id'].nunique()} files")
 
+    # Identify parameter columns (exclude data columns)
+    exclude_cols = ['record_id', 'detector', 'duration_samples', 'duration_seconds',
+                   'gt_indices', 'gt_times', 'det_indices', 'det_times',
+                   'n_detections', 'n_ground_truth', 'processing_time', 'error']
+    param_cols = [col for col in predictions_df.columns if col not in exclude_cols]
+    print(f"Detected parameter columns: {param_cols}")
+
     # Calculate metrics for each prediction
     metrics_results = []
 
@@ -70,15 +77,23 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
             result = {
                 'record_id': row['record_id'],
                 'detector': row['detector'],
-                'delta': row['delta'],
-                'ma_window': row['ma_window'],
-                'min_gap_samples': row['min_gap_samples'],
+            }
+
+            # Add all parameter columns dynamically
+            for col in param_cols:
+                if col in row:
+                    result[col] = row[col]
+
+            # Add metadata
+            result.update({
                 'duration_samples': row['duration_samples'],
                 'duration_seconds': row['duration_seconds'],
                 'n_ground_truth': row['n_ground_truth'],
                 'n_detections': row['n_detections'],
-                **metrics  # Add all comprehensive metrics
-            }
+            })
+
+            # Add all comprehensive metrics
+            result.update(metrics)
 
             metrics_results.append(result)
 
@@ -87,15 +102,20 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
             result = {
                 'record_id': row['record_id'],
                 'detector': row['detector'],
-                'delta': row['delta'],
-                'ma_window': row['ma_window'],
-                'min_gap_samples': row['min_gap_samples'],
+            }
+
+            # Add all parameter columns dynamically
+            for col in param_cols:
+                if col in row:
+                    result[col] = row[col]
+
+            result.update({
                 'duration_samples': row['duration_samples'],
                 'duration_seconds': row['duration_seconds'],
                 'n_ground_truth': row['n_ground_truth'],
                 'n_detections': row['n_detections'],
                 'error': str(e)
-            }
+            })
             metrics_results.append(result)
 
     elapsed_time = time.time() - start_time
@@ -113,8 +133,18 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
     jsonl_path = csv_path.replace('.csv', '.jsonl')
     with open(jsonl_path, 'w') as f:
         for result in metrics_results:
-            f.write(json.dumps(result) + '\\n')
+            f.write(json.dumps(result) + '\n')
     print(f"JSONL format saved to: {jsonl_path}")
+
+    # Identify parameter columns dynamically for summary
+    exclude_cols_summary = ['record_id', 'detector', 'duration_samples', 'duration_seconds',
+                           'n_ground_truth', 'n_detections', 'error',
+                           'f1_classic', 'f1_weighted', 'f3_classic', 'f3_weighted',
+                           'recall_4s', 'recall_10s', 'precision_4s', 'precision_10s',
+                           'edd_median_s', 'edd_p95_s', 'fp_per_min',
+                           'nab_score_standard', 'nab_score_low_fp', 'nab_score_low_fn',
+                           'tp', 'fp', 'fn', 'tp_weight_sum']
+    param_cols_summary = [col for col in metrics_df.columns if col not in exclude_cols_summary]
 
     # Save summary
     error_count = sum(1 for r in metrics_results if 'error' in r)
@@ -123,7 +153,8 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
         'error_count': error_count,
         'successful_evaluations': len(metrics_results) - error_count,
         'unique_files': metrics_df['record_id'].nunique(),
-        'unique_param_combinations': len(metrics_df[['delta', 'ma_window', 'min_gap_samples']].drop_duplicates()),
+        'unique_param_combinations': len(metrics_df[param_cols_summary].drop_duplicates()) if param_cols_summary else 0,
+        'parameter_columns': param_cols_summary,
         'evaluation_time_seconds': elapsed_time,
         'tau_acceptance_window': tau,
         'plateau_optimal_window': plateau,
@@ -164,8 +195,16 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         print("No valid results to analyze!")
         return
 
-    # Parameter columns for grouping
-    param_cols = ['delta', 'ma_window', 'min_gap_samples']
+    # Identify parameter columns dynamically
+    exclude_cols_params = ['record_id', 'detector', 'duration_samples', 'duration_seconds',
+                          'n_ground_truth', 'n_detections', 'error',
+                          'f1_classic', 'f1_weighted', 'f3_classic', 'f3_weighted',
+                          'recall_4s', 'recall_10s', 'precision_4s', 'precision_10s',
+                          'edd_median_s', 'edd_p95_s', 'fp_per_min',
+                          'nab_score_standard', 'nab_score_low_fp', 'nab_score_low_fn',
+                          'tp', 'fp', 'fn', 'tp_weight_sum']
+    param_cols = [col for col in valid_results.columns if col not in exclude_cols_params]
+    print(f"Parameter columns for grouping: {param_cols}")
 
     # Aggregate metrics by parameter combination
     agg_metrics = {
@@ -256,12 +295,13 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         'best_parameters': best_results,
         'top_10_f3_weighted': convert_numpy_types(global_perf.nlargest(10, 'f3_weighted_mean')[param_cols + ['f3_weighted_mean']].to_dict('records')) if 'f3_weighted_mean' in global_perf.columns else [],
         'top_10_nab_standard': convert_numpy_types(global_perf.nlargest(10, 'nab_score_standard_mean')[param_cols + ['nab_score_standard_mean']].to_dict('records')) if 'nab_score_standard_mean' in global_perf.columns else [],
-        'parameter_grid_coverage': {
-            'delta_values': convert_numpy_types(sorted(global_perf['delta'].unique().tolist())),
-            'ma_window_values': convert_numpy_types(sorted(global_perf['ma_window'].unique().tolist())),
-            'min_gap_samples_values': convert_numpy_types(sorted(global_perf['min_gap_samples'].unique().tolist()))
-        }
+        'parameter_grid_coverage': {}
     }
+
+    # Add parameter value ranges dynamically
+    for param_col in param_cols:
+        if param_col in global_perf.columns:
+            report['parameter_grid_coverage'][f'{param_col}_values'] = convert_numpy_types(sorted(global_perf[param_col].unique().tolist()))
 
     # Save report
     with open(report_output_path, 'w') as f:
@@ -276,9 +316,16 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
     if 'f3_weighted' in best_results:
         best = best_results['f3_weighted']
         print(f"\n=== BEST GLOBAL PARAMETERS (F3 Weighted Primary Metric) ===")
-        print(f"  delta: {best['delta']}")
-        print(f"  ma_window: {int(best['ma_window'])}")
-        print(f"  min_gap_samples: {int(best['min_gap_samples'])}")
+        # Print all parameter values dynamically
+        for param_col in param_cols:
+            if param_col in best:
+                val = best[param_col]
+                # Format integers vs floats nicely
+                if isinstance(val, (int, np.integer)) or (isinstance(val, float) and val.is_integer()):
+                    print(f"  {param_col}: {int(val)}")
+                else:
+                    print(f"  {param_col}: {val}")
+
         if 'f3_weighted_mean' in best:
             print(f"  F3 weighted: {best['f3_weighted_mean']:.4f} ± {best.get('f3_weighted_std', 0):.4f}")
         if 'f3_classic_mean' in best:
@@ -312,7 +359,16 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
     print("\n=== COMPARISON WITH OTHER METRICS ===")
     for metric_name, result in best_results.items():
         if metric_name != 'f3_weighted':
-            params = f"delta={result['delta']}, ma_window={int(result['ma_window'])}, min_gap={int(result['min_gap_samples'])}"
+            # Format parameters dynamically
+            param_strs = []
+            for param_col in param_cols:
+                if param_col in result:
+                    val = result[param_col]
+                    if isinstance(val, (int, np.integer)) or (isinstance(val, float) and val.is_integer()):
+                        param_strs.append(f"{param_col}={int(val)}")
+                    else:
+                        param_strs.append(f"{param_col}={val}")
+            params = ", ".join(param_strs)
 
             # Add score if available - try multiple naming patterns
             score = ""

@@ -30,6 +30,28 @@ def run_stream_on_dataframe(df, detector_name: str, sample_rate: int, tolerance:
         diff[1:] = np.diff(signal)
         signal = diff
 
+    # DDM requires binary error values (0 or 1)
+    # Convert signal to error stream using rolling statistics
+    is_ddm = detector_name.lower() in {'ddm', 'eddm'}
+    if is_ddm:
+        # Use rolling window to detect anomalies
+        window_size = 250  # 1 second at 250 Hz
+        error_signal = np.zeros(len(signal))
+
+        for i in range(window_size, len(signal)):
+            window = signal[i-window_size:i]
+            mean = np.mean(window)
+            std = np.std(window)
+
+            # Flag as error if current value deviates significantly
+            if std > 0:
+                z_score = abs((signal[i] - mean) / std)
+                error_signal[i] = 1 if z_score > 2.0 else 0  # 2-sigma threshold
+            else:
+                error_signal[i] = 0
+
+        signal = error_signal
+
     # Streaming loop
     last_detection_idx = -10**12
     for idx, row in enumerate(df.itertuples()):

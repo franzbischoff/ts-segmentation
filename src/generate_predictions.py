@@ -25,17 +25,115 @@ from src.streaming_detector import run_stream_on_dataframe
 from src.data_loader import load_dataset
 
 
-def create_param_grid() -> Dict[str, List[Any]]:
-    """Create exhaustive parameter grid."""
+def create_param_grid_adwin(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for ADWIN detector."""
+    if custom_params:
+        return custom_params
+
     return {
-        'delta': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1],  # 11 values
-        'ma_window': [10, 25, 50, 75, 100, 150, 200, 250, 300],                          # 9 specific values
-        'min_gap_samples': list(range(1000, 6000, 1000)),                               # 5 values (1000,2000,3000,4000,5000)
+        'delta': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1],
+        'ma_window': [10, 25, 50, 75, 100, 150, 200, 250, 300],
+        'min_gap_samples': list(range(1000, 6000, 1000)),
     }
     # Total: 11 × 9 × 5 = 495 combinations
 
+
+def create_param_grid_page_hinkley(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for Page-Hinkley detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'lambda_': [10, 20, 30, 40, 50, 60, 80, 100],  # Threshold
+        'delta': [0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05],  # Permissiveness
+        'alpha': [0.9999, 0.999, 0.99, 0.9],  # Forgetting factor
+        'ma_window': [10, 30, 50, 100, 200, 300],
+        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
+    }
+    # Total: 8 × 7 × 4 × 6 × 7 = 9,408 combinations (large!)
+
+
+def create_param_grid_ddm(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for DDM detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'ma_window': [10, 30, 50, 100, 200, 300],
+        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
+        'use_derivative': [True, False],  # DDM may need derivative
+    }
+    # Total: 6 × 7 × 2 = 84 combinations (DDM has no tunable params)
+
+
+def create_param_grid_eddm(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for EDDM detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'ma_window': [10, 30, 50, 100, 200, 300],
+        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
+        'use_derivative': [True, False],  # EDDM may need derivative
+    }
+    # Total: 6 × 7 × 2 = 84 combinations (EDDM has no tunable params)
+
+
+def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid based on detector type."""
+    detector_lower = detector_name.lower()
+
+    if detector_lower == 'adwin':
+        return create_param_grid_adwin(custom_params)
+    elif detector_lower in ['page_hinkley', 'ph']:
+        return create_param_grid_page_hinkley(custom_params)
+    elif detector_lower == 'ddm':
+        return create_param_grid_ddm(custom_params)
+    elif detector_lower == 'eddm':
+        return create_param_grid_eddm(custom_params)
+    else:
+        raise ValueError(f"Unknown detector: {detector_name}")
+
+
+def extract_detector_params(detector_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract detector-specific parameters from combined params dict."""
+    detector_lower = detector_name.lower()
+
+    if detector_lower == 'adwin':
+        return {'delta': params['delta']}
+    elif detector_lower in ['page_hinkley', 'ph']:
+        return {
+            'lambda_': params['lambda_'],
+            'delta': params['delta'],
+            'alpha': params['alpha']
+        }
+    elif detector_lower == 'ddm':
+        return {}  # DDM has no tunable parameters
+    elif detector_lower == 'eddm':
+        return {}  # EDDM has no tunable parameters
+    else:
+        raise ValueError(f"Unknown detector: {detector_name}")
+
+
+def get_result_columns(detector_name: str) -> List[str]:
+    """Get parameter column names for a specific detector."""
+    detector_lower = detector_name.lower()
+
+    if detector_lower == 'adwin':
+        return ['delta', 'ma_window', 'min_gap_samples']
+    elif detector_lower in ['page_hinkley', 'ph']:
+        return ['lambda_', 'delta', 'alpha', 'ma_window', 'min_gap_samples']
+    elif detector_lower == 'ddm':
+        return ['ma_window', 'min_gap_samples', 'use_derivative']
+    elif detector_lower == 'eddm':
+        return ['ma_window', 'min_gap_samples', 'use_derivative']
+    else:
+        raise ValueError(f"Unknown detector: {detector_name}")
+
+
 def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
                                   param_combinations: List[Dict[str, Any]],
+                                  detector_name: str = 'adwin',
                                   sample_rate: int = 250, max_samples: int = None) -> List[Dict[str, Any]]:
     """Process a single file and generate predictions for all parameter combinations."""
 
@@ -60,17 +158,20 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
 
         try:
             # Configure detector parameters
-            detector_params = {'delta': params['delta']}
+            detector_params = extract_detector_params(detector_name, params)
+
+            # Get use_derivative if present (for DDM)
+            use_derivative = params.get('use_derivative', False)
 
             # Run detection
-            events, metrics, detector_name = run_stream_on_dataframe(
+            events, metrics, actual_detector_name = run_stream_on_dataframe(
                 df=record_data,
-                detector_name='adwin',
+                detector_name=detector_name,
                 sample_rate=sample_rate,
                 tolerance=500,  # Not used for evaluation here, just for compatibility
                 detector_params=detector_params,
                 ma_window=params['ma_window'],
-                use_derivative=False,
+                use_derivative=use_derivative,
                 min_gap_samples=params['min_gap_samples']
             )
 
@@ -80,10 +181,8 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
 
             result = {
                 'record_id': record_id,
-                'detector': detector_name,
-                'delta': params['delta'],
-                'ma_window': params['ma_window'],
-                'min_gap_samples': params['min_gap_samples'],
+                'detector': actual_detector_name,
+                **params,  # Include all parameters
                 'duration_samples': len(record_data),
                 'duration_seconds': len(record_data) / sample_rate,
                 'gt_indices': gt_indices,
@@ -100,10 +199,8 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
         except Exception as e:
             result = {
                 'record_id': record_id,
-                'detector': 'adwin',
-                'delta': params['delta'],
-                'ma_window': params['ma_window'],
-                'min_gap_samples': params['min_gap_samples'],
+                'detector': detector_name,
+                **params,  # Include all parameters
                 'duration_samples': len(record_data),
                 'duration_seconds': len(record_data) / sample_rate,
                 'gt_indices': gt_indices,
@@ -120,9 +217,74 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
     return results
 
 
-def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: int = 250,
-                               n_jobs: int = -1, max_files: int = None, max_samples: int = None) -> None:
-    """Generate intermediate predictions dataset."""
+def load_existing_predictions(file_path: str) -> pd.DataFrame:
+    """Load existing predictions CSV if it exists."""
+    path = Path(file_path)
+    if path.exists():
+        print(f"Loading existing predictions from {file_path}")
+        df = pd.read_csv(file_path)
+        print(f"Found {len(df)} existing predictions")
+        return df
+    return pd.DataFrame()
+
+
+def filter_new_combinations(param_combinations: List[Dict[str, Any]],
+                           existing_df: pd.DataFrame,
+                           detector_name: str,
+                           record_ids: List[str]) -> List[Dict[str, Any]]:
+    """Filter out parameter combinations that already exist in the dataset."""
+    if existing_df.empty:
+        return param_combinations
+
+    # Get parameter column names for this detector
+    param_cols = get_result_columns(detector_name)
+
+    # Get unique combinations from existing data
+    existing_combos = existing_df[param_cols].drop_duplicates()
+
+    # Create set of existing tuples for fast lookup
+    existing_set = set()
+    for _, row in existing_combos.iterrows():
+        combo_tuple = tuple(row[col] for col in param_cols)
+        existing_set.add(combo_tuple)
+
+    # Filter out existing combinations
+    new_combinations = []
+    for params in param_combinations:
+        combo_tuple = tuple(params[col] for col in param_cols)
+        if combo_tuple not in existing_set:
+            new_combinations.append(params)
+
+    skipped = len(param_combinations) - len(new_combinations)
+    print(f"Skipping {skipped} existing combinations, {len(new_combinations)} new combinations to process")
+
+    return new_combinations
+
+
+def generate_predictions_dataset(data_path: str, output_path: str,
+                               detector_name: str = 'adwin',
+                               sample_rate: int = 250,
+                               n_jobs: int = -1, max_files: int = None, max_samples: int = None,
+                               custom_param_grid: Dict[str, List[Any]] = None,
+                               append_mode: bool = False) -> None:
+    """Generate intermediate predictions dataset.
+
+    Args:
+        data_path: Path to tidy CSV with id column
+        output_path: Output CSV path for predictions
+        detector_name: Name of detector ('adwin', 'page_hinkley', 'ddm')
+        sample_rate: Sampling rate
+        n_jobs: Number of parallel jobs (-1 for all cores)
+        max_files: Limit number of files (for testing)
+        max_samples: Limit samples per file (for testing)
+        custom_param_grid: Custom parameter grid (if None, use default)
+        append_mode: If True, load existing predictions and only generate new combinations
+    """
+
+    # Load existing predictions if in append mode
+    existing_df = pd.DataFrame()
+    if append_mode:
+        existing_df = load_existing_predictions(output_path)
 
     # Load data
     print(f"Loading data from {data_path}")
@@ -138,14 +300,23 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
         print(f"Limited to {max_files} files for testing")
 
     print(f"Found {len(unique_ids)} unique record IDs")
+    print(f"Using detector: {detector_name}")
 
     # Create parameter combinations
-    param_grid = create_param_grid()
+    param_grid = create_param_grid(detector_name, custom_param_grid)
     param_names = list(param_grid.keys())
     param_combinations = [
         dict(zip(param_names, values))
         for values in itertools.product(*param_grid.values())
     ]
+
+    # Filter out existing combinations if in append mode
+    if append_mode:
+        param_combinations = filter_new_combinations(param_combinations, existing_df, detector_name, unique_ids.tolist())
+
+        if len(param_combinations) == 0:
+            print("No new combinations to process. All requested parameters already exist.")
+            return
 
     print(f"Testing {len(param_combinations)} parameter combinations per file")
     print(f"Total predictions to generate: {len(unique_ids)} files × {len(param_combinations)} params = {len(unique_ids) * len(param_combinations):,}")
@@ -160,7 +331,7 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
             record_data = df[df['id'] == record_id].copy()
             record_data = record_data.reset_index(drop=True)
             results = process_single_file_predictions(
-                record_id, record_data, param_combinations, sample_rate, max_samples
+                record_id, record_data, param_combinations, detector_name, sample_rate, max_samples
             )
             all_results.extend(results)
     else:
@@ -171,7 +342,7 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
             record_data = df[df['id'] == record_id].copy()
             record_data = record_data.reset_index(drop=True)
             return process_single_file_predictions(
-                record_id, record_data, param_combinations, sample_rate, max_samples
+                record_id, record_data, param_combinations, detector_name, sample_rate, max_samples
             )
 
         parallel_results = Parallel(n_jobs=n_jobs)(
@@ -185,10 +356,18 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
 
     elapsed_time = time.time() - start_time
     print(f"\nPrediction generation completed in {elapsed_time:.1f}s")
-    print(f"Generated {len(all_results):,} total predictions")
+    print(f"Generated {len(all_results):,} new predictions")
 
-    # Convert to DataFrame and save
-    results_df = pd.DataFrame(all_results)
+    # Convert to DataFrame
+    new_results_df = pd.DataFrame(all_results)
+
+    # Merge with existing data if in append mode
+    if append_mode and not existing_df.empty:
+        print(f"Merging {len(new_results_df)} new predictions with {len(existing_df)} existing predictions")
+        results_df = pd.concat([existing_df, new_results_df], ignore_index=True)
+        print(f"Total predictions after merge: {len(results_df)}")
+    else:
+        results_df = new_results_df
 
     # Save as CSV
     csv_path = output_path
@@ -205,13 +384,15 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
     # Save summary statistics
     summary = {
         'total_files': len(unique_ids),
-        'total_param_combinations': len(param_combinations),
-        'total_predictions': len(all_results),
+        'new_param_combinations': len(param_combinations),
+        'new_predictions': len(all_results),
+        'total_predictions_in_file': len(results_df),
         'processing_time_seconds': elapsed_time,
         'param_grid': param_grid,
         'sample_rate': sample_rate,
+        'append_mode': append_mode,
         'error_count': sum(1 for r in all_results if 'error' in r),
-        'avg_processing_time_per_prediction': elapsed_time / len(all_results)
+        'avg_processing_time_per_prediction': elapsed_time / len(all_results) if all_results else 0
     }
 
     summary_path = output_path.replace('.csv', '_summary.json')
@@ -221,7 +402,28 @@ def generate_predictions_dataset(data_path: str, output_path: str, sample_rate: 
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate intermediate predictions dataset')
+    parser = argparse.ArgumentParser(
+        description='Generate intermediate predictions dataset',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Generate with default grid for ADWIN
+  python -m src.generate_predictions --detector adwin --data data.csv --output results/adwin/predictions.csv
+
+  # Generate for Page-Hinkley
+  python -m src.generate_predictions --detector page_hinkley --data data.csv --output results/page_hinkley/predictions.csv
+
+  # Append new min_gap values to existing predictions
+  python -m src.generate_predictions --detector adwin --data data.csv --output results/adwin/predictions.csv \\
+      --append --min-gap 100 200 300 400 500 750
+
+  # Custom full grid for Page-Hinkley
+  python -m src.generate_predictions --detector page_hinkley --data data.csv --output results/page_hinkley/predictions.csv \\
+      --lambda 10 20 30 --delta 0.01 0.02 --alpha 0.9999 0.999 --ma-window 10 50 100 --min-gap 500 1000 1500
+        """
+    )
+    parser.add_argument('--detector', required=True, choices=['adwin', 'page_hinkley', 'ddm', 'eddm'],
+                       help='Detector type to use')
     parser.add_argument('--data', required=True, help='Path to tidy CSV with id column')
     parser.add_argument('--output', required=True, help='Output CSV path for predictions')
     parser.add_argument('--sample-rate', type=int, default=250, help='Sampling rate')
@@ -229,15 +431,89 @@ def main():
     parser.add_argument('--max-files', type=int, default=None, help='Limit number of files (for testing)')
     parser.add_argument('--max-samples', type=int, default=None, help='Limit samples per file (for testing)')
 
+    # Append mode
+    parser.add_argument('--append', action='store_true',
+                       help='Append mode: load existing predictions and only generate new combinations')
+
+    # Custom parameter grid - Common parameters
+    parser.add_argument('--ma-window', type=int, nargs='+', default=None,
+                       help='MA window values to test (overrides default)')
+    parser.add_argument('--min-gap', type=int, nargs='+', default=None,
+                       help='Min gap samples to test (overrides default)')
+
+    # ADWIN specific
+    parser.add_argument('--delta', type=float, nargs='+', default=None,
+                       help='Delta values to test (ADWIN) (overrides default)')
+
+    # Page-Hinkley specific
+    parser.add_argument('--lambda', '--lambda_', dest='lambda_', type=float, nargs='+', default=None,
+                       help='Lambda (threshold) values to test (Page-Hinkley) (overrides default)')
+    parser.add_argument('--ph-delta', type=float, nargs='+', default=None,
+                       help='Delta (permissiveness) values for Page-Hinkley (overrides default)')
+    parser.add_argument('--alpha', type=float, nargs='+', default=None,
+                       help='Alpha (forgetting factor) values to test (Page-Hinkley) (overrides default)')
+
+    # DDM specific
+    parser.add_argument('--use-derivative', action='store_true',
+                       help='Use derivative of signal (DDM) (overrides default)')
+
     args = parser.parse_args()
+
+    # Build custom parameter grid if specified
+    custom_param_grid = None
+    detector_lower = args.detector.lower()
+
+    # Check if any custom params specified
+    has_custom = (args.ma_window or args.min_gap or args.delta or
+                  args.lambda_ or args.ph_delta or args.alpha or args.use_derivative)
+
+    if has_custom:
+        # Load defaults for this detector
+        default_grid = create_param_grid(detector_lower)
+
+        if detector_lower == 'adwin':
+            custom_param_grid = {
+                'delta': args.delta if args.delta else default_grid['delta'],
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
+            }
+        elif detector_lower in ['page_hinkley', 'ph']:
+            custom_param_grid = {
+                'lambda_': args.lambda_ if args.lambda_ else default_grid['lambda_'],
+                'delta': args.ph_delta if args.ph_delta else default_grid['delta'],
+                'alpha': args.alpha if args.alpha else default_grid['alpha'],
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
+            }
+        elif detector_lower == 'ddm':
+            use_deriv_values = [True, False] if args.use_derivative else default_grid['use_derivative']
+            custom_param_grid = {
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples'],
+                'use_derivative': use_deriv_values
+            }
+        elif detector_lower == 'eddm':
+            use_deriv_values = [True, False] if args.use_derivative else default_grid['use_derivative']
+            custom_param_grid = {
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples'],
+                'use_derivative': use_deriv_values
+            }
+
+        print("Using custom parameter grid:")
+        for param, values in custom_param_grid.items():
+            print(f"  {param}: {values}")
 
     generate_predictions_dataset(
         data_path=args.data,
         output_path=args.output,
+        detector_name=args.detector,
         sample_rate=args.sample_rate,
         n_jobs=args.n_jobs,
         max_files=args.max_files,
-        max_samples=args.max_samples
+        max_samples=args.max_samples,
+        custom_param_grid=custom_param_grid,
+        append_mode=args.append
     )
 
 

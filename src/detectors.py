@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any
 
-from skmultiflow.drift_detection import PageHinkley, ADWIN, DDM
+from skmultiflow.drift_detection import PageHinkley, ADWIN, DDM, EDDM
 
 
 class DriftDetectorWrapper:
@@ -37,4 +37,7 @@ def build_detector(name: str, **kwargs) -> DriftDetectorWrapper:
     if name_lower in {"ddm"}:
         detector = DDM()
         return DriftDetectorWrapper(detector, 'ddm')
+    if name_lower in {"eddm"}:
+        detector = EDDM()
+        return DriftDetectorWrapper(detector, 'eddm')
     raise ValueError(f"Detector '{name}' não suportado.")
