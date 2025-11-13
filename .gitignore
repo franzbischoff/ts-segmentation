@@ -51,3 +51,8 @@ dist/
 # Misc
 *.log
 tmp/
+
+# Backups automáticos
+*.backup_*
+*.csv.backup_*
+

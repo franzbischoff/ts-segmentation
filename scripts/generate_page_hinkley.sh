@@ -26,15 +26,15 @@ echo ""
 # Create output directory
 mkdir -p results/page_hinkley
 
-echo "Grid Search Configuration:"
-echo "  lambda_: [20, 30, 40, 50, 60, 80]  (6 values)"
-echo "  delta: [0.005, 0.01, 0.02, 0.03]  (4 values)"
-echo "  alpha: [0.9999, 0.999, 0.99]  (3 values)"
-echo "  ma_window: [10, 30, 50, 100, 200, 300]  (6 values)"
-echo "  min_gap: [500, 1000, 1500, 2000, 3000, 4000, 5000]  (7 values)"
+echo "Grid Search Configuration (MODERADO):"
+echo "  lambda_: [10, 30, 50, 80]  (4 values)"
+echo "  delta: [0.005, 0.01, 0.02, 0.04]  (4 values)"
+echo "  alpha: [0.9999, 0.99]  (2 values)"
+echo "  ma_window: [10, 50, 200]  (3 values)"
+echo "  min_gap: [500, 1000, 2000, 4000]  (4 values)"
 echo ""
-echo "Total combinations: 6 × 4 × 3 × 6 × 7 = 3,024"
-echo "Estimated time: ~2-3 hours (229 files)"
+echo "Total combinations: 4 × 4 × 2 × 3 × 4 = 384"
+echo "Estimated time: ~29 minutes (229 files)"
 echo ""
 
 read -p "Press Enter to start or Ctrl+C to cancel..."
@@ -44,11 +44,11 @@ python -m src.generate_predictions \
     --detector page_hinkley \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
-    --lambda 20 30 40 50 60 80 \
-    --ph-delta 0.005 0.01 0.02 0.03 \
-    --alpha 0.9999 0.999 0.99 \
-    --ma-window 10 30 50 100 200 300 \
-    --min-gap 500 1000 1500 2000 3000 4000 5000 \
+    --lambda 10 30 50 80 \
+    --ph-delta 0.005 0.01 0.02 0.04 \
+    --alpha 0.9999 0.99 \
+    --ma-window 10 50 200 \
+    --min-gap 500 1000 2000 4000 \
     --n-jobs -1
 
 echo ""

@@ -1,20 +1,21 @@
-# Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
+# Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistent- **Predições geradas**: `results/adwin/predi2. **Avaliar Métricas**: `python -m src.evaluate_predictions --predictions results/<detector>/predictions_intermediate.csv`
+3. **Visualizar**: `python -m src.visualize_results --metrics results/<detector>/metrics_comprehensive_with_nab.csv`
 
-**Última atualização**: 2025-11-13 (Sessão 2 - Modo Incremental)
-**Status**: Grid search incremental implementado, ADWIN sendo estendido (min_gap < 1000), scripts obsoletos arquivados
+#### Comparação entre Detectores
+- **Script criado**: `src/compare_detectors.py`
+- **Outputs**: Relatório markdown + CSV de rankings
+- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm eddm kswin hddm_a hddm_w`
 
-Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
+#### Grid Search Incremental
+- **`src/generate_predictions.py`**: Modo incremental implementado
+  - Parâmetro `--append`: carrega predições existentes e gera apenas novas combinações
+  - Parâmetros customizados para todos os detectores
+  - Merge automático de resultados antigos + novos
+  - Backup automático antes de modificar
 
-## 1. Objetivo Geral
-Criar um baseline reproduzível de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), com geração sintética, integração de dados reais (afib_regimes), avaliação de métricas completas (F1/F3 weighted/classic, NAB, timing), grid search exhaustivo, visualizações comparativas e estrutura organizada por detector para facilitar comparações.
+## 3. Componentes Implementados
 
-## 2. Estado Atual do Projeto (2025-11-13)
-
-### ✅ COMPLETO: Detector ADWIN
-- **Dataset**: 229 ficheiros afib_paroxysmal
-- **Grid search**: 495 combinações de parâmetros
-- **Avaliações**: 113,355 (495 × 229 ficheiros)
-- **Predições geradas**: `results/adwin/predictions_intermediate.csv` (126 MB)
+### Core Detection System (7 Detectores)ediate.csv` (126 MB)
 - **Métricas calculadas**: `results/adwin/metrics_comprehensive_with_nab.csv` (33 MB)
 - **Relatório final**: `results/adwin/final_report_with_nab.json` (12 KB)
 - **Visualizações**: 9 gráficos PNG em `results/adwin/visualizations/` (4.3 MB)
@@ -25,69 +26,165 @@ Criar um baseline reproduzível de detecção de mudanças de regime (concept dr
 - **NAB Low FN**: delta=0.080, ma_window=100, min_gap=2000 → Score: -3.3841, Recall@10s: 91.19%
 - **NAB Low FP**: delta=0.005, ma_window=10, min_gap=5000 → Score: -7.0183, Recall@10s: 34.98%
 
-### 🔄 PREPARADO: Detectores Page-Hinkley e DDM
-- Templates README criados em `results/page_hinkley/` e `results/ddm/`
-- Grid search sugerido definido
-- Instruções de implementação documentadas
-- Aguardando execução do pipeline
-
-### � EM PROGRESSO: Extensão Grid ADWIN (2025-11-13 Sessão 2)
+### 🔄 EM PROGRESSO: Extensão Grid ADWIN
 - **Motivação**: Gráfico `parameter_sensitivity.png` mostra potencial de melhora em min_gap < 1000
-- **Grid atual**: min_gap = [1000, 2000, 3000, 4000, 5000]
-- **Extensão**: min_gap = [100, 200, 300, 400, 500, 750]
 - **Status**: Rodando em background (tmux)
-- **Novas combinações**: 594 (11 deltas × 9 ma_windows × 6 min_gaps)
+- **Novas combinações**: 594 (11 deltas × 9 ma_windows × 6 min_gaps: 100, 200, 300, 400, 500, 750)
 - **Tempo estimado**: ~53 min
 - **Após completar**: Re-avaliar métricas + re-gerar visualizações
 
-### 📦 ARQUIVADO: Scripts Obsoletos (2025-11-13 Sessão 2)
+### ⏳ PRÓXIMOS PASSOS: Grid Searches de Produção
+
+#### Ordem Recomendada (3 Fases)
+**Fase 1 - Rápida (~30 min)**:
+- `./scripts/generate_ddm.sh` - 84 combos, ~15 min
+- `./scripts/generate_eddm.sh` - 84 combos, ~15 min
+
+**Fase 2 - Média (~119 min)**:
+- `./scripts/generate_page_hinkley.sh` - 384 combos, ~29 min
+- `./scripts/generate_kswin.sh` - 1,280 combos, ~90 min
+
+**Fase 3 - Lenta (~240 min)**:
+- `./scripts/generate_hddm_a.sh` - 640 combos, ~60 min
+- `./scripts/generate_hddm_w.sh` - 2,560 combos, ~180 min
+
+Após cada grid search, executar pipeline completo:
+1. Avaliar: `python -m src.evaluate_predictions --predictions results/<detector>/predictions_intermediate.csv`
+2. Visualizar: `python -m src.visualize_results --metrics results/<detector>/metrics_comprehensive_with_nab.csv`
 - `deprecated/grid_search.py` - Substituído por pipeline de 3 passos
 - `deprecated/exhaustive_grid_search.py` - Substituído por generate_predictions.py
+- `scripts/test_page_hinkley.sh` - Removido (obsoleto)
 
-### �📊 IMPLEMENTADO: Sistema Completo de Avaliação
+### 📊 IMPLEMENTADO: Sistema Completo de Avaliação
 
 #### Pipeline de 3 Passos
-1. **Gerar Predições**: `python -m src.generate_predictions --detector <NAME> --output results/<NAME>/predictions_intermediate.csv`
-2. **Avaliar Métricas**: `python -m src.evaluate_predictions --predictions results/<NAME>/predictions_intermediate.csv --metrics-output results/<NAME>/metrics_comprehensive_with_nab.csv`
-3. **Visualizar**: `python -m src.visualize_results --metrics results/<NAME>/metrics_comprehensive_with_nab.csv --output-dir results/<NAME>/visualizations`
-
-#### Comparação entre Detectores
-- **Script criado**: `src/compare_detectors.py`
-- **Outputs**: Relatório markdown + CSV de rankings
-- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm --output results/comparisons/comparative_report.md`
-
-#### Grid Search Incremental (2025-11-13 Sessão 2)
-- **`src/generate_predictions.py`**: Modo incremental implementado
-  - Novo parâmetro `--append`: carrega predições existentes e gera apenas novas combinações
-  - Parâmetros customizados: `--delta`, `--ma-window`, `--min-gap`
-  - Merge automático de resultados antigos + novos
-  - Backup automático antes de modificar
-
-- **`scripts/extend_min_gap_grid.sh`**: Script pronto para extensão
-  - Testa min_gap < 1000 (valores: 100, 200, 300, 400, 500, 750)
-  - Backup automático
-  - Instruções de próximos passos
-
-- **Documentação**:
-  - `docs/incremental_grid_search.md` - Guia completo
-  - `docs/append_mode_summary.md` - Resumo executivo
+1. **Gerar Predições**: `python -m src.generate_predictions --detector <NAME> --output results/<NAME>/predictions_intermediate.csv`tualização**: 2025-11-13 (Sessão 3 - Multi-Detector Framework)
+**Status**: 7 detectores implementados e validados, grid searches otimizados, scripts de automação completos
 
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
 
-## 1. Objetivo Geral
-Criar um baseline reprodutível de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), com geração sintética, integração de dados reais (afib_regimes), avaliação de métricas (delay, precision, recall), grid search simples e logging estruturado, mantendo estritamente processamento streaming (sem lookahead) e dependências pinadas.
 
-## 2. Componentes Implementados
+### ✅ COMPLETO: Framework Multi-Detector (7 Detectores)
 
-### Core Detection System
-- Geração de sinal sintético + ground-truth em `src/data_loader.py`
-- Detectores (PageHinkley, ADWIN, DDM) em `src/detectors.py`
-- Loop de detecção streaming + CLI em `src/streaming_detector.py`
+#### Implementação e Validação
+   - Validação (5 ficheiros): F3=0.3687, Recall@10s=70.63%, FP/min=6.71
+   - Extensão rodando: 594 combinações para min_gap < 1000 (tmux)
+   - Script: `scripts/extended_min_gap_grid.sh`
+
+2. **Page-Hinkley** (Cumulative Sum Test)
+   - Grid: 384 combinações (4 lambdas × 4 deltas × 2 alphas × 3 ma_windows × 4 min_gaps)
+   - Grid otimizado: Reduzido de 9,408 para 384 (redução de 96%)
+   - Validação (5 ficheiros): F3=0.1629, Recall@10s=32.76%, FP/min=3.08 (melhor!)
+   - Script: `scripts/generate_page_hinkley.sh` (~29 min)
+
+3. **DDM** (Drift Detection Method) ⭐ MELHOR F3
+   - Grid: 84 combinações (6 min_instances × 7 warning_levels × 2 out_control_levels)
+   - **Conversão Binária**: Z-score > 2.0 (janela 250 amostras)
+   - Validação (5 ficheiros): **F3=0.5477**, Recall@10s=93.33%, **EDD=1.65s**, FP/min=7.45
+   - Script: `scripts/generate_ddm.sh` (~15 min)
+
+4. **EDDM** (Early Drift Detection Method) ⭐ ÚNICO NAB POSITIVO
+   - Grid: 84 combinações (6 min_instances × 7 warning_levels × 2 out_control_levels)
+   - **Conversão Binária**: Mesma lógica do DDM (z-score > 2.0)
+   - Grid: 1,280 combinações (4 alphas × 4 window_sizes × 4 stat_sizes × 4 ma_windows × 5 min_gaps)
+   - Valores contínuos (sem conversão binária)
+6. **HDDM_A** (Hoeffding Drift Detection Method - Average)
+   - Grid: 640 combinações (4 drift_confs × 4 warning_confs × 2 two_sides × 4 ma_windows × 5 min_gaps)
+   - Validação (5 ficheiros): F3=0.2967, Recall@10s=48.57%, FP/min=3.75
+   - Script: `scripts/generate_hddm_a.sh` (~60 min)
+
+7. **HDDM_W** (Hoeffding Drift Detection Method - Weighted) ⭐ SEGUNDO MELHOR F3
+   - Grid: 2,560 combinações (4 drift_confs × 4 warning_confs × 4 lambdas × 2 two_sides × 4 ma_windows × 5 min_gaps)
+   - Validação (5 ficheiros): **F3=0.5342**, Recall@10s=74.29%, **EDD=1.73s**, FP/min=3.84
+   - Script: `scripts/generate_hddm_w.sh` (~180 min)
+
+**Total de Combinações**: 5,527 (todos os detectores)
+**Tempo Estimado Total**: ~442 min (~7.4 horas)
+
+#### Scripts de Automação
+Documentação completa em `scripts/README.md` (8.3KB):
+- 7 scripts de produção (todos executáveis)
+- Ordem de execução recomendada em 3 fases (rápido → médio → lento)
+- Workflow padronizado: gerar → avaliar → visualizar → comparar
+- Detalhes técnicos e troubleshooting
+
+#### Conversão Binária (DDM/EDDM)
+Implementada em `src/streaming_detector.py` (linhas 34-48):
+- Janela rolante: 250 amostras (1 segundo @ 250 Hz)
+- Cálculo Z-score: `(valor - média) / desvio_padrão`
+- Threshold: `|z| > 2.0` → erro (1), caso contrário correto (0)
+- Aplicado quando `detector_name.lower() in {'ddm', 'eddm'}`
+
+### ✅ COMPLETO: Detector ADWIN (Dataset Completo)
+- **Dataset**: 229 ficheiros afib_paroxysmal
+- **Grid search**: 495 combinações de parâmetros
+- **Avaliações**: 113,355 (495 × 229 ficheiros)
+### Executar Grid Search com Scripts
+```bash
+# Fase 1 - Rápida (~30 min)
+cd scripts && ./generate_ddm.sh && ./generate_eddm.sh
+
+# Fase 2 - Média (~119 min)
+./generate_page_hinkley.sh && ./generate_kswin.sh
+
+# Fase 3 - Lenta (~240 min)
+./generate_hddm_a.sh && ./generate_hddm_w.sh
+```
+
+- **Métricas calculadas**: `results/adwin/metrics_comprehensive_with_nab.csv` (33 MB)
+- **Relatório final**: `results/adwin/final_report_with_nab.json` (12 KB)
+**Última Atualização**: 2025-11-13 (Sessão 3 - Multi-Detector Framework)
+
+## 10. Resumo da Sessão 3 (2025-11-13)
+
+### Trabalho Realizado
+1. ✅ **Implementados 5 novos detectores**: DDM, EDDM, KSWIN, HDDM_A, HDDM_W
+2. ✅ **Conversão binária para DDM/EDDM**: Z-score > 2.0 (janela 250 samples)
+3. ✅ **Validação completa**: Cada detector testado com 5 ficheiros
+4. ✅ **Grid search otimizado**: Page-Hinkley reduzido 96% (9,408 → 384 combos)
+5. ✅ **Scripts de automação**: 7 scripts prontos (total ~442 min, ~7.4h)
+6. ✅ **Documentação completa**: scripts/README.md (8.3KB)
+7. ✅ **Memória do projeto atualizada**: Estado completo documentado
+
+### Detectores Validados (Ranking por F3)
+1. **DDM**: F3=0.5477 ⭐ (melhor), Recall@10s=93.33%, EDD=1.65s
+2. **HDDM_W**: F3=0.5342 (segundo), Recall@10s=74.29%, EDD=1.73s
+3. **EDDM**: F3=0.5122, Recall@10s=100% ⭐, NAB Low FN=+0.27 ⭐ (único positivo!)
+4. **KSWIN**: F3=0.5035, Recall@10s=100% ⭐, FP/min=10.65
+5. **ADWIN**: F3=0.3687, Recall@10s=70.63% (dataset completo: F3=0.3994)
+6. **HDDM_A**: F3=0.2967, Recall@10s=48.57%
+7. **Page-Hinkley**: F3=0.1629, FP/min=3.08 ⭐ (melhor)
+
+### Próximos Passos Recomendados
+
+**Curto Prazo** (próxima sessão):
+1. ⏳ Monitorar conclusão ADWIN extensão (min_gap < 1000, ~53 min restante)
+2. ⏳ Executar grid searches de produção (ordem recomendada em scripts/README.md):
+   - Fase 1 (~30 min): DDM + EDDM
+   - Fase 2 (~119 min): Page-Hinkley + KSWIN
+   - Fase 3 (~240 min): HDDM_A + HDDM_W
+3. ⏳ Gerar visualizações para cada detector concluído
+4. ⏳ Atualizar READMEs individuais com resultados
+
+**Médio Prazo**:
+1. Comparações multi-detector:
+   - DDM vs HDDM_W (top 2 por F3)
+   - EDDM vs KSWIN (ambos 100% Recall)
+   - Binary (DDM/EDDM) vs Continuous (KSWIN/HDDM)
+2. Análise de trade-offs:
+   - F3 vs FP/min vs EDD
+   - Recall vs Precision
+   - Performance vs Tempo de Execução
+3. Documentação final:
+   - Relatório comparativo completo
+   - Recomendações de uso por cenário
+   - Matriz de decisão (qual detector usar quando)
 
 ### Data Processing
-- Download de dataset Zenodo (record 6879233) em `src/zenodo_download.py`
-- Preprocessamento simples genérico em `src/prepare_dataset.py`
-- Port de scripts R convertido para Python em `src/ecg_preprocess.py`
+- **Geração sintética**: `src/data_loader.py` - sinal sintético + ground-truth
+- **Download Zenodo**: `src/zenodo_download.py` - dataset record 6879233
+- **Preprocessamento genérico**: `src/prepare_dataset.py`
+- **ECG preprocessing**: `src/ecg_preprocess.py` (port de scripts R)
   - Descoberta de ficheiros `.hea` com filtro por classe
   - Leitura de cabeçalho + CSV comprimido + anotações
   - Extração de eventos de regime (label_store ∈ {28,32,33})
@@ -95,28 +192,38 @@ Criar um baseline reprodutível de detecção de mudanças de regime (concept dr
   - Limpeza de eventos duplicados e bordas
 
 ### Evaluation & Metrics
-- **`src/evaluation.py`**: Sistema completo de métricas
+- **Sistema de métricas**: `src/evaluation.py`
   - Métricas clássicas (F1/F3 classic)
   - Métricas ponderadas por latência (F1*/F3* weighted)
   - Métricas temporais (Recall@4s/10s, Precision@4s/10s, EDD, FP/min)
   - **NAB Scores** (Standard, Low FP, Low FN) - Implementado 2025-11-13
 
-- **`src/evaluate_predictions.py`**: Avaliação em lote
+- **Avaliação em lote**: `src/evaluate_predictions.py`
   - Processa CSV de predições intermediárias
   - Calcula todas as métricas por ficheiro
   - Agrega por combinação de parâmetros
   - Gera relatório JSON com melhores configurações
-  - Inclui NAB scores no output terminal
+  - Suporta todos os 7 detectores dinamicamente
 
 ### Grid Search & Predictions
-- **`src/exhaustive_grid_search.py`**: Grid search exhaustivo per-file (legado)
-- **`src/generate_predictions.py`**: Geração otimizada de predições
-  - Grid search parametrizado
+- **Geração de predições**: `src/generate_predictions.py`
+  - Suporta todos os 7 detectores
+  - Grid search parametrizado por detector
+  - Modo incremental (--append) para extensões de grid
+  - Paralelização com joblib (--n-jobs -1)
+  - Grids configurados:
+    - ADWIN: 495 combinações
+    - Page-Hinkley: 384 combinações (otimizado de 9,408)
+    - DDM: 84 combinações
+    - EDDM: 84 combinações
+    - KSWIN: 1,280 combinações
+    - HDDM_A: 640 combinações
+    - HDDM_W: 2,560 combinações
   - Output: `predictions_intermediate.csv` com detecções brutas
   - Suporta múltiplos detectores
 
 ### Visualization
-- **`src/visualize_results.py`**: Sistema completo de visualizações (Implementado 2025-11-13)
+   **Sistema de visualizações**: `src/visualize_results.py` (Implementado 2025-11-13)
   - **Precision-Recall scatter plots** (4s e 10s windows)
   - **Pareto front** (soluções não-dominadas)
   - **Parameter heatmaps** (4 métricas: F3, NAB, Recall, FP/min)
@@ -124,18 +231,35 @@ Criar um baseline reprodutível de detecção de mudanças de regime (concept dr
   - **3D trade-off surface** (Recall × FP × EDD)
   - **Parameter sensitivity** (análise de sensibilidade)
   - Output: 9 gráficos PNG de alta qualidade
+   - Documentação: `docs/visualizations_guide.md`
 
 ### Comparison & Analysis
-- **`src/compare_detectors.py`**: Comparação entre detectores (Implementado 2025-11-13)
+   **Comparação entre detectores**: `src/compare_detectors.py` (Implementado 2025-11-13)
   - Tabela de melhores configurações por métrica
   - Rankings de detectores
   - Comparação estatística (mean ± std)
   - Relatório markdown completo
   - Recomendações de uso
 
-## 3. Estrutura de Resultados Organizada (2025-11-13)
+### Automation Scripts
+- **Scripts de produção**: `scripts/` (7 scripts executáveis)
+   - `extended_min_gap_grid.sh` - ADWIN extensão (594 combos, ~53 min)
+   - `generate_page_hinkley.sh` - Page-Hinkley (384 combos, ~29 min)
+   - `generate_ddm.sh` - DDM (84 combos, ~15 min)
+   - `generate_eddm.sh` - EDDM (84 combos, ~15 min)
+   - `generate_kswin.sh` - KSWIN (1,280 combos, ~90 min)
+   - `generate_hddm_a.sh` - HDDM_A (640 combos, ~60 min)
+   - `generate_hddm_w.sh` - HDDM_W (2,560 combos, ~180 min)
+- **Documentação**: `scripts/README.md` (8.3KB)
+   - Descrição detalhada de cada script
+   - Tabela de comparação (combos, tempo, F3)
+   - Ordem de execução recomendada (3 fases)
+   - Workflow completo (gerar → avaliar → visualizar)
+   - Troubleshooting
 
-### Organização por Detector
+## 4. Estrutura de Resultados Organizada (2025-11-13)
+
+### Diretórios por Detector
 ```
 results/
 ├── adwin/                          # ✅ COMPLETO
@@ -145,32 +269,38 @@ results/
 │   ├── visualizations/ (9 gráficos PNG, 4.3 MB)
 │   └── README.md
 │
-├── page_hinkley/                   # 🔄 PREPARADO
-│   └── README.md (template)
+├── page_hinkley/                   # ⏳ PRONTO PARA PRODUÇÃO
+│   └── README.md (template para preencher após grid search)
 │
-├── ddm/                            # 🔄 PREPARADO
-│   └── README.md (template)
+├── ddm/                            # ⏳ PRONTO PARA PRODUÇÃO
+│   └── README.md (template para preencher após grid search)
 │
-├── comparisons/                    # ⏸️ AGUARDANDO
-│   └── (a preencher após implementar outros)
+├── eddm/                           # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── kswin/                          # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── hddm_a/                         # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── hddm_w/                         # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── comparisons/                    # ⏳ AGUARDA MÚLTIPLOS DETECTORES
+│   └── (a criar após executar grid searches)
 │
 └── README.md
 ```
 
 ### Documentação Completa
-- **README.md** (raiz) - Documentação geral, uso, métricas, visualizações
-- **results/README.md** - Organização por detector, workflow padronizado
-- **results/adwin/README.md** - Resultados ADWIN, melhores configurações
-- **results/page_hinkley/README.md** - Template para implementação
-- **results/ddm/README.md** - Template para implementação
-- **docs/evaluation_metrics_v1.md** - Métricas detalhadas (F1/F3, NAB, temporal)
-- **docs/visualizations_guide.md** - Guia de interpretação de gráficos (400+ linhas)
-- **docs/reorganization_summary.md** - Resumo da reorganização
-- **docs/nab_comparison_report.md** - Análise comparativa NAB
+- **results/page_hinkley/README.md** - Template (preencher pós grid search)
+- **results/ddm/README.md** - Template (preencher pós grid search)
+- **scripts/README.md** - Documentação completa de automação (8.3KB)
 
-## 4. Métricas de Avaliação (Sistema Completo)
+## 5. Métricas de Avaliação (Sistema Completo)
 
-### 4.1. Métricas Clássicas (F1/F3 Classic)
+### 5.1. Métricas Clássicas (F1/F3 Classic)
 - F1-classic: Média harmônica de precision e recall
 - F3-classic: Versão que enfatiza recall (β=3)
 - Uso: Baseline para comparação com literatura

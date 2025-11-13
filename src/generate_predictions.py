@@ -44,13 +44,13 @@ def create_param_grid_page_hinkley(custom_params: Dict[str, List[Any]] = None) -
         return custom_params
 
     return {
-        'lambda_': [10, 20, 30, 40, 50, 60, 80, 100],  # Threshold
-        'delta': [0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05],  # Permissiveness
-        'alpha': [0.9999, 0.999, 0.99, 0.9],  # Forgetting factor
-        'ma_window': [10, 30, 50, 100, 200, 300],
-        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
+        'lambda_': [10, 30, 50, 80],  # Threshold (4 valores)
+        'delta': [0.005, 0.01, 0.02, 0.04],  # Permissiveness (4 valores)
+        'alpha': [0.9999, 0.99],  # Forgetting factor (2 valores - 0.9999 melhor na validação)
+        'ma_window': [10, 50, 200],  # Moving average (3 valores)
+        'min_gap_samples': [500, 1000, 2000, 4000],  # Gap samples (4 valores)
     }
-    # Total: 8 × 7 × 4 × 6 × 7 = 9,408 combinations (large!)
+    # Total: 4 × 4 × 2 × 3 × 4 = 384 combinations (moderado - reduzido de 9,408)
 
 
 def create_param_grid_ddm(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:

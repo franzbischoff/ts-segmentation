@@ -121,8 +121,9 @@ Detecção streaming verdadeira: nenhuma amostra futura é usada; pré-processam
 | Page Hinkley    | Mudança de média (cumulativa)       | `lambda_`, `delta`, `alpha`               | Sensível ao escalonamento; requer shifts claros |
 | ADWIN           | Média adaptativa / janelas dinâmicas| `delta`                                   | Auto-ajusta janela; pode gerar muitos FP se `delta` pequeno |
 | DDM             | Desempenho de erro (classificação)  | (sem expostos aqui)                       | Menos adequado sem rótulos de erro de classificação |
+| EDDM            | Detecção precoce de drift gradual   | (sem expostos aqui)                       | Menos adequado sem rótulos de erro de classificação |
 
-Para dados ECG contínuos, ADWIN tende a detectar quando há mudança de nível médio ou dispersão após filtragens.
+**Atenção:** DDM e EDDM foram projetados para fluxos binários de acertos/erros (ex: classificadores). Para uso em sinais contínuos como ECG, é necessário converter o sinal em uma sequência binária de erros (z-score > 2.0). Essa adaptação pode perder nuances importantes do sinal e limitar a sensibilidade a mudanças sutis. Por isso, **não recomendamos o uso de DDM e EDDM no comparativo final** para dados de ECG streaming. Prefira detectores como ADWIN, Page-Hinkley, KSWIN e HDDM para dados contínuos.
 
 ---
 
@@ -491,33 +492,6 @@ Para métricas customizadas, adicione em `load_metrics()` e crie nova função d
 11. Testes Unitários Básicos: validar geração sintética, casamento de detecções e cálculo de atraso.
 12. Múltiplas Séries: suportar processamento de vários pacientes concatenando resultados.
 
----
-
-## 8. Próximos Passos Sugeridos
-
-1. Logging Estruturado: salvar JSON com parâmetros + métricas por execução (`results/run_YYYYMMDD_HHMM.json`).
-2. Grid Search Automático: script para iterar sobre `delta`, `ma-window`, `min-gap-samples` e consolidar ranking.
-3. Visualização Notebook (`notebooks/exploratory.ipynb`): plot do sinal, ground-truth e detecções (linhas verticais).
-4. Ensemble de Detectores: combinar ADWIN + PageHinkley (ex: consenso ou votação com janela curta).
-5. Métricas Avançadas: distribuição de atrasos (boxplot) e curva Precision–Recall parametrizada por `delta`.
-6. Normalização Dinâmica: z-score em janela deslizante causal para reduzir efeito de deriva lenta de amplitude.
-7. Ajuste Causal da Média Móvel: substituir convolução 'same' por buffer FIFO para evitar qualquer olhar futuro (rigor metodológico).
-8. Integração ECG Real: parsing do dataset verdadeiro (R-peaks, marcações clínicas) e alinhamento de timestamps → conversão para `sample_index` a 250 Hz.
-9. Feature Engineering: extrair energia por janela, variação RR (se tiver picos), entropia → alimentar detectores sobre feature agregada.
-10. Exportação para Comparação: criar função que gera tabela LaTeX / Markdown com melhores configurações para anexar na tese.
-11. Testes Unitários Básicos: validar geração sintética, casamento de detecções e cálculo de atraso.
-12. Múltiplas Séries: suportar processamento de vários pacientes concatenando resultados.
-
----
-
-## 9. Integração com Dados Reais (Guia Rápido)
-
-Quando tiver o CSV real:
-1. Garantir colunas: `sample_index` (ou `timestamp`) e `ecg`.
-2. Criar coluna `regime_change` com 1 nos instantes de início de novo regime (0 caso contrário).
-3. Rodar:
-```bash
-python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-window 25 --min-gap-samples 100 --param delta=0.01 --tolerance 200
 ---
 
 ## 9. Integração com Dados Reais (Guia Rápido)
