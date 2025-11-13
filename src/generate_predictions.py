@@ -94,6 +94,37 @@ def create_param_grid_kswin(custom_params: Dict[str, List[Any]] = None) -> Dict[
     # Total: 4 × 4 × 4 × 4 × 5 = 1,280 combinations
 
 
+def create_param_grid_hddm_a(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for HDDM_A detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'drift_confidence': [0.0001, 0.0005, 0.001, 0.005],  # Drift confidence level
+        'warning_confidence': [0.001, 0.005, 0.01, 0.05],  # Warning confidence level
+        'two_side_option': [True, False],  # Two-sided or one-sided test
+        'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        'min_gap_samples': [500, 1000, 2000, 3000, 5000],
+    }
+    # Total: 4 × 4 × 2 × 4 × 5 = 640 combinations
+
+
+def create_param_grid_hddm_w(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for HDDM_W detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'drift_confidence': [0.0001, 0.0005, 0.001, 0.005],  # Drift confidence level
+        'warning_confidence': [0.001, 0.005, 0.01, 0.05],  # Warning confidence level
+        'lambda_option': [0.01, 0.05, 0.1, 0.2],  # Weighting factor
+        'two_side_option': [True, False],  # Two-sided or one-sided test
+        'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        'min_gap_samples': [500, 1000, 2000, 3000, 5000],
+    }
+    # Total: 4 × 4 × 4 × 2 × 4 × 5 = 2,560 combinations
+
+
 def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
     """Create parameter grid based on detector type."""
     detector_lower = detector_name.lower()
@@ -108,6 +139,10 @@ def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = 
         return create_param_grid_eddm(custom_params)
     elif detector_lower == 'kswin':
         return create_param_grid_kswin(custom_params)
+    elif detector_lower in ['hddm_a', 'hddm-a']:
+        return create_param_grid_hddm_a(custom_params)
+    elif detector_lower in ['hddm_w', 'hddm-w']:
+        return create_param_grid_hddm_w(custom_params)
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -134,6 +169,19 @@ def extract_detector_params(detector_name: str, params: Dict[str, Any]) -> Dict[
             'window_size': params['window_size'],
             'stat_size': params['stat_size']
         }
+    elif detector_lower in ['hddm_a', 'hddm-a']:
+        return {
+            'drift_confidence': params['drift_confidence'],
+            'warning_confidence': params['warning_confidence'],
+            'two_side_option': params['two_side_option']
+        }
+    elif detector_lower in ['hddm_w', 'hddm-w']:
+        return {
+            'drift_confidence': params['drift_confidence'],
+            'warning_confidence': params['warning_confidence'],
+            'lambda_option': params['lambda_option'],
+            'two_side_option': params['two_side_option']
+        }
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -152,6 +200,10 @@ def get_result_columns(detector_name: str) -> List[str]:
         return ['ma_window', 'min_gap_samples', 'use_derivative']
     elif detector_lower == 'kswin':
         return ['alpha', 'window_size', 'stat_size', 'ma_window', 'min_gap_samples']
+    elif detector_lower in ['hddm_a', 'hddm-a']:
+        return ['drift_confidence', 'warning_confidence', 'two_side_option', 'ma_window', 'min_gap_samples']
+    elif detector_lower in ['hddm_w', 'hddm-w']:
+        return ['drift_confidence', 'warning_confidence', 'lambda_option', 'two_side_option', 'ma_window', 'min_gap_samples']
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -447,7 +499,8 @@ Examples:
       --lambda 10 20 30 --delta 0.01 0.02 --alpha 0.9999 0.999 --ma-window 10 50 100 --min-gap 500 1000 1500
         """
     )
-    parser.add_argument('--detector', required=True, choices=['adwin', 'page_hinkley', 'ddm', 'eddm', 'kswin'],
+    parser.add_argument('--detector', required=True,
+                       choices=['adwin', 'page_hinkley', 'ddm', 'eddm', 'kswin', 'hddm_a', 'hddm_w'],
                        help='Detector type to use')
     parser.add_argument('--data', required=True, help='Path to tidy CSV with id column')
     parser.add_argument('--output', required=True, help='Output CSV path for predictions')
@@ -489,6 +542,16 @@ Examples:
                        help='Window size values for KSWIN (overrides default)')
     parser.add_argument('--stat-size', type=int, nargs='+', default=None,
                        help='Statistical window size values for KSWIN (overrides default)')
+
+    # HDDM specific
+    parser.add_argument('--drift-confidence', type=float, nargs='+', default=None,
+                       help='Drift confidence values for HDDM (overrides default)')
+    parser.add_argument('--warning-confidence', type=float, nargs='+', default=None,
+                       help='Warning confidence values for HDDM (overrides default)')
+    parser.add_argument('--lambda-option', type=float, nargs='+', default=None,
+                       help='Lambda (weighting) values for HDDM_W (overrides default)')
+    parser.add_argument('--two-side', action='store_true',
+                       help='Use two-sided test for HDDM (overrides default)')
 
     args = parser.parse_args()
 
@@ -537,6 +600,25 @@ Examples:
                 'alpha': args.ks_alpha if args.ks_alpha else default_grid['alpha'],
                 'window_size': args.window_size if args.window_size else default_grid['window_size'],
                 'stat_size': args.stat_size if args.stat_size else default_grid['stat_size'],
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
+            }
+        elif detector_lower in ['hddm_a', 'hddm-a']:
+            two_side_values = [True, False] if args.two_side else default_grid['two_side_option']
+            custom_param_grid = {
+                'drift_confidence': args.drift_confidence if args.drift_confidence else default_grid['drift_confidence'],
+                'warning_confidence': args.warning_confidence if args.warning_confidence else default_grid['warning_confidence'],
+                'two_side_option': two_side_values,
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
+            }
+        elif detector_lower in ['hddm_w', 'hddm-w']:
+            two_side_values = [True, False] if args.two_side else default_grid['two_side_option']
+            custom_param_grid = {
+                'drift_confidence': args.drift_confidence if args.drift_confidence else default_grid['drift_confidence'],
+                'warning_confidence': args.warning_confidence if args.warning_confidence else default_grid['warning_confidence'],
+                'lambda_option': args.lambda_option if args.lambda_option else default_grid['lambda_option'],
+                'two_side_option': two_side_values,
                 'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
                 'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
             }

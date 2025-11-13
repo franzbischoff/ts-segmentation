@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any
 
-from skmultiflow.drift_detection import PageHinkley, ADWIN, DDM, EDDM, KSWIN
+from skmultiflow.drift_detection import PageHinkley, ADWIN, DDM, EDDM, KSWIN, HDDM_A, HDDM_W
 
 
 class DriftDetectorWrapper:
@@ -46,4 +46,22 @@ def build_detector(name: str, **kwargs) -> DriftDetectorWrapper:
         stat_size = kwargs.get('stat_size', 30)
         detector = KSWIN(alpha=alpha, window_size=window_size, stat_size=stat_size)
         return DriftDetectorWrapper(detector, 'kswin')
+    if name_lower in {"hddm_a", "hddm-a"}:
+        drift_confidence = kwargs.get('drift_confidence', 0.001)
+        warning_confidence = kwargs.get('warning_confidence', 0.005)
+        two_side_option = kwargs.get('two_side_option', True)
+        detector = HDDM_A(drift_confidence=drift_confidence,
+                         warning_confidence=warning_confidence,
+                         two_side_option=two_side_option)
+        return DriftDetectorWrapper(detector, 'hddm_a')
+    if name_lower in {"hddm_w", "hddm-w"}:
+        drift_confidence = kwargs.get('drift_confidence', 0.001)
+        warning_confidence = kwargs.get('warning_confidence', 0.005)
+        lambda_option = kwargs.get('lambda_option', 0.05)
+        two_side_option = kwargs.get('two_side_option', True)
+        detector = HDDM_W(drift_confidence=drift_confidence,
+                         warning_confidence=warning_confidence,
+                         lambda_option=lambda_option,
+                         two_side_option=two_side_option)
+        return DriftDetectorWrapper(detector, 'hddm_w')
     raise ValueError(f"Detector '{name}' não suportado.")
