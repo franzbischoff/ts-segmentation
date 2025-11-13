@@ -19,11 +19,10 @@ ENV/
 *.ipynb_meta
 
 # Logs / Results
-results/*.json
-results/*.jsonl
-results/*.parquet
-results/*.csv
-results/report.md
+results/**/*.json
+results/**/*.jsonl
+results/**/*.parquet
+results/**/*.csv
 
 # Synthetic / Generated data (keep real data separately)
 data/
@@ -51,3 +50,4 @@ dist/
 
 # Misc
 *.log
+tmp/
