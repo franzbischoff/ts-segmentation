@@ -1,109 +1,395 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+**Última atualização**: 2025-11-13
+**Status**: Reorganização completa por detector, ADWIN implementado, métricas NAB integradas, visualizações criadas
+
+Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
+
+## 1. Objetivo Geral
+Criar um baseline reproduzível de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), com geração sintética, integração de dados reais (afib_regimes), avaliação de métricas completas (F1/F3 weighted/classic, NAB, timing), grid search exhaustivo, visualizações comparativas e estrutura organizada por detector para facilitar comparações.
+
+## 2. Estado Atual do Projeto (2025-11-13)
+
+### ✅ COMPLETO: Detector ADWIN
+- **Dataset**: 229 ficheiros afib_paroxysmal
+- **Grid search**: 495 combinações de parâmetros
+- **Avaliações**: 113,355 (495 × 229 ficheiros)
+- **Predições geradas**: `results/adwin/predictions_intermediate.csv` (126 MB)
+- **Métricas calculadas**: `results/adwin/metrics_comprehensive_with_nab.csv` (33 MB)
+- **Relatório final**: `results/adwin/final_report_with_nab.json` (12 KB)
+- **Visualizações**: 9 gráficos PNG em `results/adwin/visualizations/` (4.3 MB)
+
+**Melhores Configurações ADWIN**:
+- **F3-weighted**: delta=0.005, ma_window=300, min_gap=1000 → Score: 0.3994, Recall@10s: 97.77%, FP/min: 10.00
+- **NAB Standard**: delta=0.050, ma_window=10, min_gap=2000 → Score: -4.2820, Recall@10s: 74.01%
+- **NAB Low FN**: delta=0.080, ma_window=100, min_gap=2000 → Score: -3.3841, Recall@10s: 91.19%
+- **NAB Low FP**: delta=0.005, ma_window=10, min_gap=5000 → Score: -7.0183, Recall@10s: 34.98%
+
+### 🔄 PREPARADO: Detectores Page-Hinkley e DDM
+- Templates README criados em `results/page_hinkley/` e `results/ddm/`
+- Grid search sugerido definido
+- Instruções de implementação documentadas
+- Aguardando execução do pipeline
+
+### 📊 IMPLEMENTADO: Sistema Completo de Avaliação
+
+#### Pipeline de 3 Passos
+1. **Gerar Predições**: `python -m src.generate_predictions --detector <NAME> --output results/<NAME>/predictions_intermediate.csv`
+2. **Avaliar Métricas**: `python -m src.evaluate_predictions --predictions results/<NAME>/predictions_intermediate.csv --metrics-output results/<NAME>/metrics_comprehensive_with_nab.csv`
+3. **Visualizar**: `python -m src.visualize_results --metrics results/<NAME>/metrics_comprehensive_with_nab.csv --output-dir results/<NAME>/visualizations`
+
+#### Comparação entre Detectores
+- **Script criado**: `src/compare_detectors.py`
+- **Outputs**: Relatório markdown + CSV de rankings
+- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm --output results/comparisons/comparative_report.md`eto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
+
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
 
 ## 1. Objetivo Geral
 Criar um baseline reprodutível de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), com geração sintética, integração de dados reais (afib_regimes), avaliação de métricas (delay, precision, recall), grid search simples e logging estruturado, mantendo estritamente processamento streaming (sem lookahead) e dependências pinadas.
 
 ## 2. Componentes Implementados
-- Geração de sinal sintético + ground-truth em `src/data_loader.py`.
-- Detectores (PageHinkley, ADWIN, DDM) em `src/detectors.py`.
-- Métricas de avaliação (TP/FP/FN, atraso médio) em `src/evaluation.py`.
-- Loop de detecção streaming + CLI em `src/streaming_detector.py`.
-- Grid search simples com ranking por F1 em `src/grid_search.py`.
-- Download de dataset Zenodo (record 6879233) em `src/zenodo_download.py`.
-- Preprocessamento simples genérico em `src/prepare_dataset.py` (entrada única + eventos externos).
-- Port/parcial de scripts R (`find_all_files.R`, `read_ecg.R`, `pre_process.R`) convertido para Python em `src/ecg_preprocess.py`.
-- **NOVO**: Grid search exhaustivo per-file em `src/exhaustive_grid_search.py`.
-- README expandido (seções de integração real + novo preprocess de regimes).
-- Instruções permanentes para assistente em `.github/copilot-instructions.md`.
 
-## 3. Módulo: `ecg_preprocess.py`
-Funções principais:
-- Descoberta de ficheiros `.hea` filtrando classes (persistent_afib, paroxysmal_afib, non_afib) + limite por classe (`--limit-per-class`).
-- Leitura de cabeçalho (freq, nº sinais) + CSV comprimido (`.csv.bz2`) + anotações (`.atr.csv.bz2`).
-- Extração de eventos de regime a partir de `label_store ∈ {28,32,33}`.
-- Resample opcional (ex.: 200 → 250 Hz) via interpolação linear.
-- Limpeza de eventos duplicados próximos (<15 samples) e remoção de bordas (<=10 do início/fim) – fiel ao `clean_truth` do R.
-- Construção de CSV tidy: colunas `id, sample_index, ecg, regime_change`.
-- Filtro: remove registos sem qualquer evento de regime.
+### Core Detection System
+- Geração de sinal sintético + ground-truth em `src/data_loader.py`
+- Detectores (PageHinkley, ADWIN, DDM) em `src/detectors.py`
+- Loop de detecção streaming + CLI em `src/streaming_detector.py`
 
-Correções aplicadas:
-- Erro inicial: falha ao converter colunas object → float ("Cannot cast array data from dtype('O')...").
-- Solução: coerção numérica robusta + detecção de header redundante + preenchimento de NaNs.
+### Data Processing
+- Download de dataset Zenodo (record 6879233) em `src/zenodo_download.py`
+- Preprocessamento simples genérico em `src/prepare_dataset.py`
+- Port de scripts R convertido para Python em `src/ecg_preprocess.py`
+  - Descoberta de ficheiros `.hea` com filtro por classe
+  - Leitura de cabeçalho + CSV comprimido + anotações
+  - Extração de eventos de regime (label_store ∈ {28,32,33})
+  - Resample opcional (ex.: 200 → 250 Hz)
+  - Limpeza de eventos duplicados e bordas
 
-## 4. **NOVO: Grid Search Exhaustivo (`src/exhaustive_grid_search.py`)**
+### Evaluation & Metrics
+- **`src/evaluation.py`**: Sistema completo de métricas
+  - Métricas clássicas (F1/F3 classic)
+  - Métricas ponderadas por latência (F1*/F3* weighted)
+  - Métricas temporais (Recall@4s/10s, Precision@4s/10s, EDD, FP/min)
+  - **NAB Scores** (Standard, Low FP, Low FN) - Implementado 2025-11-13
 
-### Implementação Completa
-- **Abordagem similar ao R**: Grid exhaustivo testando todas as combinações possíveis.
-- **Per-file evaluation**: Processa cada ficheiro (paciente) independentemente.
-- **Paralelização**: Suporte a processamento paralelo com joblib.
-- **385 combinações de parâmetros**:
-  ```python
-  'delta': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1]  # 11 valores
-  'ma_window': [25, 50, 75, 100, 125, 150, 175]                                   # 7 valores
-  'min_gap_samples': [1000, 2000, 3000, 4000, 5000]                              # 5 valores
-  ```
-- **Outputs**: CSV completo, JSONL, summary JSON com melhores parâmetros globais.
-- **Métricas**: Precision, Recall, F1 calculado corretamente por ficheiro.
+- **`src/evaluate_predictions.py`**: Avaliação em lote
+  - Processa CSV de predições intermediárias
+  - Calcula todas as métricas por ficheiro
+  - Agrega por combinação de parâmetros
+  - Gera relatório JSON com melhores configurações
+  - Inclui NAB scores no output terminal
 
-### Correções Aplicadas
+### Grid Search & Predictions
+- **`src/exhaustive_grid_search.py`**: Grid search exhaustivo per-file (legado)
+- **`src/generate_predictions.py`**: Geração otimizada de predições
+  - Grid search parametrizado
+  - Output: `predictions_intermediate.csv` com detecções brutas
+  - Suporta múltiplos detectores
 
-## 5. **DISCUSSÃO: Seleção de Métricas para Streaming** (Novembro 2025)
+### Visualization
+- **`src/visualize_results.py`**: Sistema completo de visualizações (Implementado 2025-11-13)
+  - **Precision-Recall scatter plots** (4s e 10s windows)
+  - **Pareto front** (soluções não-dominadas)
+  - **Parameter heatmaps** (4 métricas: F3, NAB, Recall, FP/min)
+  - **Score distributions** (box plots comparativos)
+  - **3D trade-off surface** (Recall × FP × EDD)
+  - **Parameter sensitivity** (análise de sensibilidade)
+  - Output: 9 gráficos PNG de alta qualidade
 
-### Problema Identificado
-O utilizador questionou qual métrica usar para avaliação de detecção de regimes em dados biológicos streaming, identificando limitações das métricas existentes:
+### Comparison & Analysis
+- **`src/compare_detectors.py`**: Comparação entre detectores (Implementado 2025-11-13)
+  - Tabela de melhores configurações por métrica
+  - Rankings de detectores
+  - Comparação estatística (mean ± std)
+  - Relatório markdown completo
+  - Recomendações de uso
 
-1. **Impossibilidade de comparar séries diferentes** (tamanhos variados)
-2. **Detecções "antes" da alteração são irreais** em streaming
-3. **Score otimizado apenas para mesmo número de detecções e alterações**
-4. **Impossível ponderar pelo tamanho do sinal**
+## 3. Estrutura de Resultados Organizada (2025-11-13)
 
-### Requisitos do Domínio
-- **Sinais biológicos** que requerem atenção rápida (≤4s ideal, ≤10s aceitável)
-- **Múltiplas detecções consolidáveis** dentro da janela temporal
-- **Detecção após 10s = falso positivo**
-- **Streaming real-time** (sem conhecimento prévio do tamanho)
-
-### Métrica Recomendada: F1-Score Temporal Unificado
-Decidimos implementar uma métrica única que combina:
-- **F1-Score** para comparabilidade com literatura
-- **Temporal Quality Score** (inspirado NAB) para avaliação de rapidez
-- **Matching temporal** com janela `[true_cp, true_cp + max_delay]`
-- **Score decrescente** com atraso (sigmoide entre 4s-10s)
-
-```python
-def calculate_streaming_metrics(true_changes, detected_changes,
-                                optimal_delay=4.0, max_delay=10.0):
-    # Implementação unificada evitando redundância com NAB
-    # Retorna: f1, precision, recall, temporal_quality, mean_delay, fp_count, fn_count
+### Organização por Detector
+```
+results/
+├── adwin/                          # ✅ COMPLETO
+│   ├── predictions_intermediate.csv (126 MB)
+│   ├── metrics_comprehensive_with_nab.csv (33 MB)
+│   ├── final_report_with_nab.json (12 KB)
+│   ├── visualizations/ (9 gráficos PNG, 4.3 MB)
+│   └── README.md
+│
+├── page_hinkley/                   # 🔄 PREPARADO
+│   └── README.md (template)
+│
+├── ddm/                            # 🔄 PREPARADO
+│   └── README.md (template)
+│
+├── comparisons/                    # ⏸️ AGUARDANDO
+│   └── (a preencher após implementar outros)
+│
+└── README.md
 ```
 
-### Decisão Tomada
-Eliminamos redundância conceitual entre diferentes abordagens (comprehensive_score vs NAB), optando por uma **métrica única e suficiente** que:
-- ✅ É independente do tamanho do sinal
-- ✅ Não considera detecções antecipadas
-- ✅ Valoriza detecções rápidas sem penalizar excessivamente as lentas (dentro do limite)
-- ✅ Funciona com número variável de mudanças
-- ✅ Fornece métricas interpretáveis para contexto clínico
+### Documentação Completa
+- **README.md** (raiz) - Documentação geral, uso, métricas, visualizações
+- **results/README.md** - Organização por detector, workflow padronizado
+- **results/adwin/README.md** - Resultados ADWIN, melhores configurações
+- **results/page_hinkley/README.md** - Template para implementação
+- **results/ddm/README.md** - Template para implementação
+- **docs/evaluation_metrics_v1.md** - Métricas detalhadas (F1/F3, NAB, temporal)
+- **docs/visualizations_guide.md** - Guia de interpretação de gráficos (400+ linhas)
+- **docs/reorganization_summary.md** - Resumo da reorganização
+- **docs/nab_comparison_report.md** - Análise comparativa NAB
 
-### Correções Aplicadas
-- Bug inicial: F1 sempre 0.0 (função `evaluate_detections` não retornava F1).
-- Solução: Cálculo manual do F1 = 2*P*R/(P+R) no código.
-- Bug menor: `json.dumps` vs `json.dump` corrigido.
+## 4. Métricas de Avaliação (Sistema Completo)
 
-### Validação Realizada (2025-09-28)
+### 4.1. Métricas Clássicas (F1/F3 Classic)
+- F1-classic: Média harmônica de precision e recall
+- F3-classic: Versão que enfatiza recall (β=3)
+- Uso: Baseline para comparação com literatura
 
-#### **Teste 1: Ficheiro Único (data_101_5.par)**
-- **20,665 samples, 6 eventos**
-- **385 combinações testadas em ~2.5 minutos**
-- **Melhor resultado**: F1=0.435, P=0.294, R=0.833
-- **Parâmetros ótimos**: delta=0.015, ma_window=175, min_gap=1000
+### 4.2. Métricas Ponderadas por Latência (F1*/F3* Weighted)
+**Função de Peso Temporal**:
+```
+w(δ) = {
+    1.0,                se δ ≤ 4s    (detecção ideal)
+    1 - (δ-4)/(10-4),  se 4s < δ ≤ 10s (decaimento linear)
+    0.0,                se δ > 10s   (detecção tardia demais)
+}
+```
 
-#### **Teste 2: Multi-Paciente (3 ficheiros)**
-- **Ficheiros**: data_101_5.par, data_101_7.par, data_101_6.par
-- **Total**: 70,939 samples, 20 eventos
-- **1,155 avaliações (3×385) em ~7 minutos com paralelização**
+**Métricas Auxiliares**:
+- Recall@4s, Recall@10s: % eventos detectados dentro da janela
+- Precision@4s, Precision@10s: Precisão temporal
+- EDD (Expected Detection Delay): Atraso mediano
+- FP/min: Taxa de falsos positivos
+
+**Uso**: **F3-weighted é a métrica primária** para otimização
+
+### 4.3. NAB Score (Numenta Anomaly Benchmark)
+**Implementado**: 2025-11-13
+
+**Função Sigmoid**:
+```python
+S(r) = 2 × sigmoid(-5r) - 1
+# r = posição relativa na janela
+# r = -1.0 → score ≈ +0.987 (início)
+# r = 0.0  → score = 0.0 (fim)
+# r > 0.0  → score negativo (FP)
+```
+
+**Profiles de Custo**:
+1. **NAB Standard** (balanceado): tp=1.0, fp=0.11, fn=1.0
+2. **NAB Low FP** (penalizar FP 2×): tp=1.0, fp=0.22, fn=1.0
+3. **NAB Low FN** (penalizar FN 2×): tp=1.0, fp=0.055, fn=2.0
+
+**Características**:
+- Período probatório (15% inicial ignorado)
+- Recompensa detecção antecipada
+- Penalidade crescente para FPs
+- Scores podem ser negativos (comum em dados ruidosos)
+
+**Implementação**:
+- `src/evaluation.py`: Funções `sigmoid()`, `nab_scaled_sigmoid()`, `NABCostMatrix`, `calculate_nab_score()`
+- Integrado em `calculate_comprehensive_metrics()`
+- Testado com suite completa (`test_nab_metric.py` - 8/8 tests passed)
+
+### 4.4. Comparação entre Métricas
+| Métrica | Temporal? | Melhor Para | Range |
+|---------|-----------|-------------|-------|
+| F1-classic | ❌ | Baseline | [0, 1] |
+| F3-classic | ❌ | Recall sem tempo | [0, 1] |
+| F1-weighted | ✅ | Balance precision/recall | [0, 1] |
+| **F3-weighted** | ✅ | **Otimização primária** | [0, 1] |
+| NAB Standard | ✅ | Comparação com literatura | ℝ |
+| NAB Low FP | ✅ | Minimizar alarmes | ℝ |
+| NAB Low FN | ✅ | Aplicações críticas | ℝ |
+
+## 5. Visualizações (Implementado 2025-11-13)
+
+### Script: `src/visualize_results.py`
+Sistema completo de análise visual dos resultados de grid search.
+
+### Gráficos Gerados (9 total)
+
+1. **pr_scatter_plots.png** - Precision-Recall scatter
+   - Painel 4s e 10s
+   - Cor = F3-weighted score
+   - Estrela vermelha = melhor configuração
+
+2. **pareto_front.png** - Fronteira de soluções não-dominadas
+   - Eixos: Recall@10s vs FP/min
+   - Identifica trade-offs ótimos
+   - Mostra nº de soluções Pareto-ótimas
+
+3. **heatmap_f3-weighted.png** - Sensibilidade de parâmetros
+4. **heatmap_nab-score-standard.png** - Efeito em NAB Standard
+5. **heatmap_recall-10s.png** - Efeito em Recall@10s
+6. **heatmap_fp-per-min.png** - Efeito em taxa de FP
+   - Layout: delta × ma_window, painéis por min_gap
+   - Cores quentes = melhores valores
+
+7. **score_distributions.png** - Box plots comparativos
+   - 4 painéis: F-scores, NAB, Recall@4s/10s, FP/min e EDD
+
+8. **3d_tradeoff.png** - Superfície 3D
+   - Eixos: Recall@10s × FP/min × EDD
+   - Cor = F3-weighted
+
+9. **parameter_sensitivity.png** - Sensibilidade paramétrica
+   - Linhas: F3-weighted e Recall@10s
+   - Colunas: delta, ma_window, min_gap
+   - Área sombreada = ± 1 std
+
+### Workflow de Análise Recomendado
+1. `pr_scatter_plots.png` → Entender trade-offs gerais
+2. `pareto_front.png` → Identificar soluções ótimas
+3. `heatmap_*.png` → Refinar valores de parâmetros
+4. `score_distributions.png` → Verificar variabilidade
+5. `3d_tradeoff.png` → Trade-offs multi-objetivo
+6. `parameter_sensitivity.png` → Entender impacto de parâmetros
+
+## 6. Próximos Passos Prioritários
+
+### Alta Prioridade
+1. **Implementar Page-Hinkley**
+   - Gerar predições com grid search sugerido
+   - Avaliar métricas completas
+   - Criar visualizações
+   - Documentar resultados em `results/page_hinkley/README.md`
+
+2. **Implementar DDM**
+   - Adaptar para sinais contínuos (usar derivada ou z-score)
+   - Seguir pipeline padronizado
+   - Comparar com ADWIN
+
+3. **Comparação Multi-Detector**
+   - Executar `src/compare_detectors.py` após ter ≥2 detectores
+   - Gerar relatório comparativo
+   - Identificar detector superior por métrica
+
+### Média Prioridade
+4. **Análise de Ensemble**
+   - Voting (maioria entre 2-3 detectores)
+   - Weighted voting (ponderar por F3-score)
+   - Cascata (detector rápido → detector preciso)
+
+5. **Validação Cruzada**
+   - Testar em outras classes (persistent_afib, non_afib)
+   - Split por paciente
+   - Análise de variabilidade inter-paciente
+
+### Baixa Prioridade
+6. **Outros Detectores**
+   - EDDM (Early DDM)
+   - HDDM (Hoeffding's Bound)
+   - KSWIN (Kolmogorov-Smirnov)
+
+7. **Otimizações**
+   - Paralelização de generate_predictions
+   - Cache de resultados intermediários
+   - Streaming incremental real
+
+## 7. Lições Aprendidas & Boas Práticas
+
+### Métricas
+- ✅ F3-weighted é melhor métrica primária para otimização
+- ✅ NAB scores úteis para comparação com literatura, mas valores negativos são normais
+- ✅ Reportar sempre múltiplas métricas (F3, NAB, Recall@10s, FP/min)
+- ⚠️ Evitar otimizar apenas para recall (gera muitos FPs)
+
+### Parâmetros
+- **delta**: Menor = mais sensível (↑ recall, ↑ FP)
+- **ma_window**: Suavização reduz ruído mas pode atrasar detecção
+- **min_gap**: Crucial para reduzir FPs em clustering
+
+### Workflow
+- ✅ Pipeline de 3 passos (Predict → Evaluate → Visualize) funciona bem
+- ✅ Separação clara entre predições brutas e métricas facilita debug
+- ✅ Organização por detector permite comparações limpas
+- ✅ Visualizações são essenciais para entender trade-offs
+
+### Performance
+- ADWIN: ~50 min para 229 ficheiros × 495 combinações
+- Avaliação: ~84 segundos para 113k avaliações
+- Visualizações: ~30 segundos para 9 gráficos
+
+## 8. Bugs Conhecidos & Limitações
+
+### Resolvidos ✅
+- NAB scores ausentes do terminal → Corrigido (2025-11-13)
+- Quebras de linha `\n` literais no terminal → Corrigido (2025-11-13)
+- NAB scores sem valores no relatório comparativo → Corrigido (2025-11-13)
+
+### Limitações Atuais
+- ⚠️ Média móvel não estritamente causal (usa convolução 'same')
+- ⚠️ Processamento sequencial de ficheiros (pode paralelizar)
+- ⚠️ Apenas canal único por vez (multi-lead futuro)
+- ⚠️ NAB scores negativos podem confundir (normal para dados ruidosos)
+
+### A Resolver
+- [ ] Implementar média móvel estritamente causal (buffer FIFO)
+- [ ] Adicionar suporte multi-lead
+- [ ] Paralelizar generate_predictions por ficheiro
+- [ ] Adicionar testes unitários completos
+
+## 9. Comandos Rápidos (Cheat Sheet)
+
+### Preprocessar Dataset
+```bash
+python -m src.ecg_preprocess \
+    --root data/zenodo_6879233/extracted/afib_regimes \
+    --classes paroxysmal_afib \
+    --limit-per-class 10 \
+    --output data/afib_paroxysmal_tidy.csv
+```
+
+### Pipeline Completo para Novo Detector
+```bash
+# 1. Gerar predições
+python -m src.generate_predictions \
+    --detector <NAME> \
+    --output results/<NAME>/predictions_intermediate.csv \
+    --delta 0.005 0.01 0.015 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 \
+    --ma-window 10 30 50 100 200 300 500 \
+    --min-gap 500 1000 1500 2000 2500 3000 4000 5000 7500 10000
+
+# 2. Avaliar métricas
+python -m src.evaluate_predictions \
+    --predictions results/<NAME>/predictions_intermediate.csv \
+    --metrics-output results/<NAME>/metrics_comprehensive_with_nab.csv \
+    --report-output results/<NAME>/final_report_with_nab.json
+
+# 3. Visualizar
+python -m src.visualize_results \
+    --metrics results/<NAME>/metrics_comprehensive_with_nab.csv \
+    --output-dir results/<NAME>/visualizations
+```
+
+### Comparar Detectores
+```bash
+python -m src.compare_detectors \
+    --detectors adwin page_hinkley ddm \
+    --output results/comparisons/comparative_report.md \
+    --csv-output results/comparisons/detector_rankings.csv
+```
+
+### Ver Resultados ADWIN
+```bash
+# Relatório terminal
+python -m src.evaluate_predictions \
+    --predictions results/adwin/predictions_intermediate.csv \
+    --metrics-output results/adwin/metrics_comprehensive_with_nab.csv \
+    --report-output results/adwin/final_report_with_nab.json \
+    --skip-evaluation
+
+# Abrir visualizações
+xdg-open results/adwin/visualizations/pareto_front.png
+```
+
+---
+
+**Fim da Memória Persistente**
+**Última Atualização**: 2025-11-13 (Reorganização completa, NAB implementado, visualizações criadas)
+**Próxima Sessão**: Implementar Page-Hinkley e DDM, gerar comparações
 - **Resultados per-patient**:
   - data_101_7.par: F1=0.400 (delta=0.005, ma_window=125, min_gap=3000)
   - data_101_6.par: F1=0.250 (delta=0.080, ma_window=175, min_gap=3000)

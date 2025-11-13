@@ -7,19 +7,58 @@ Demonstrar um baseline simples que:
 1. Lê um sinal de ECG (ou um mock caso real não esteja disponível).
 2. Processa o sinal em fluxo (stream) em janelas (chunks) ou amostra a amostra.
 3. Usa detectores de mudança (Page Hinkley, ADWIN, DDM etc.).
-4. Produz uma lista de timestamps (em segundos e índice de amostra) onde o detector acusou mudança.
+4. Produz uma lista de timestamps (---
+
+## 10. Limitações Atuais
+
+- Sem visualização embutida (apenas métricas numéricas).
+- Média móvel não estritamente causal (potencial micro-viés no alinhamento do pico de detecção).
+- Sem persistência de hyperparameter search.
+- Apenas uma métrica de delay média (sem variância / distribuição completa explicitada).
+- Não há distinção entre tipos de mudança (ex: nível vs variância) — poderia classificar pelo sinal pré/pós.
+
+---
+
+## 11. Conclusão
+
+Este baseline fornece uma fundação reproduzível para comparação com seu algoritmo de detecção de mudanças de regime em ECG streaming. A estrutura facilita extensão, logging mais robusto e integração de dados reais. Recomenda-se agora adicionar logging estruturado e visualização para fortalecer a seção experimental da tese.
+
+---
+
+## 12. Integração com Dataset no Zenodo (Record 6879233)e de amostra) onde o detector acusou mudança.
 5. Compara com metadados de verdade-terreno (ground-truth) de mudanças de regime.
 
 ## Estrutura
 ```
 ├── data/
-│   ├── ecg_signal.csv              # Sinal + metadados (placeholder)
+│   ├── afib_paroxysmal_tidy.csv    # Dataset preprocessado (paroxysmal afib)
+│   ├── synthetic_ecg.csv           # Sinal sintético para testes
+│   └── zenodo_6879233/             # Dados originais do Zenodo
 ├── src/
 │   ├── streaming_detector.py       # Loop principal de detecção
 │   ├── detectors.py                # Wrappers utilitários para detectores
 │   ├── evaluation.py               # Métricas de atraso e precisão
 │   ├── data_loader.py              # Carregamento e normalização
+│   ├── generate_predictions.py     # Grid search para gerar predições
+│   ├── evaluate_predictions.py     # Avaliação de métricas completas
+│   ├── visualize_results.py        # Geração de gráficos e análises
+│   ├── ecg_preprocess.py           # Preprocessamento de dados WFDB
 │   └── utils.py                    # Funções auxiliares
+├── results/
+│   ├── adwin/                      # Resultados do detector ADWIN (completo)
+│   │   ├── predictions_intermediate.csv
+│   │   ├── metrics_comprehensive_with_nab.csv
+│   │   ├── final_report_with_nab.json
+│   │   ├── visualizations/         # 9 gráficos PNG
+│   │   └── README.md
+│   ├── page_hinkley/               # Resultados Page-Hinkley (a implementar)
+│   ├── ddm/                        # Resultados DDM (a implementar)
+│   ├── comparisons/                # Comparações entre detectores
+│   └── README.md                   # Documentação da organização
+├── docs/
+│   ├── evaluation_metrics_v1.md    # Documentação completa das métricas
+│   ├── visualizations_guide.md     # Guia de interpretação de gráficos
+│   └── nab_comparison_report.md    # Análise comparativa NAB
 ├── notebooks/
 │   └── exploratory.ipynb           # Exploração opcional (a criar depois)
 ├── requirements.txt
@@ -323,7 +362,121 @@ nab_result = calculate_nab_score(
 
 ---
 
-## 7. Próximos Passos Sugeridos
+## 7. Visualização de Resultados
+
+O projeto inclui ferramentas abrangentes de visualização para análise dos resultados do grid search.
+
+### 7.1. Script de Visualização
+
+```bash
+python -m src.visualize_results \
+    --metrics results/metrics_comprehensive_with_nab.csv \
+    --output-dir results/visualizations
+```
+
+### 7.2. Gráficos Gerados
+
+#### 1. **Precision-Recall Scatter Plots** (`pr_scatter_plots.png`)
+Gráficos de dispersão mostrando trade-offs entre Precision e Recall:
+- **Painel Esquerdo**: Recall@4s vs Precision@4s
+- **Painel Direito**: Recall@10s vs Precision@10s
+- Cada ponto representa uma combinação de parâmetros (delta, ma_window, min_gap)
+- Cor indica o score F3-weighted
+- Estrela vermelha marca a melhor configuração F3
+
+**Interpretação**:
+- Pontos no canto superior direito = alta precision e recall (ideal)
+- Cores quentes (amarelo/verde) = melhores scores F3
+- Permite identificar regiões viáveis de operação
+
+#### 2. **Pareto Front** (`pareto_front.png`)
+Fronteira de Pareto mostrando soluções não-dominadas:
+- **Eixo X**: Recall@10s (↑ melhor)
+- **Eixo Y**: FP por minuto (↓ melhor)
+- Pontos vermelhos grandes = soluções Pareto-ótimas
+- Linha tracejada conecta a fronteira
+
+**Interpretação**:
+- Soluções na fronteira representam melhor trade-off possível
+- Escolha depende da aplicação: tolerância a FP vs necessidade de recall alto
+- Identificar "joelho da curva" para compromisso balanceado
+
+#### 3. **Parameter Heatmaps** (`heatmap_*.png`)
+Mapas de calor mostrando efeito de parâmetros em métricas:
+- `heatmap_f3-weighted.png`: Score F3-weighted
+- `heatmap_nab-score-standard.png`: NAB Standard Score
+- `heatmap_recall-10s.png`: Recall @ 10s
+- `heatmap_fp-per-min.png`: Taxa de falsos positivos
+
+**Layout**:
+- Linhas = valores de `delta`
+- Colunas = valores de `ma_window`
+- Painéis separados para diferentes `min_gap_samples`
+- Cores quentes = valores melhores (invertido para FP/min)
+
+**Uso**:
+- Identificar regiões ótimas no espaço de parâmetros
+- Entender interações entre delta e ma_window
+- Validar robustez das configurações (regiões amplas vs picos isolados)
+
+#### 4. **Score Distributions** (`score_distributions.png`)
+Box plots comparando distribuições de métricas:
+- **Painel 1**: F1/F3 Weighted vs Classic
+- **Painel 2**: NAB Standard/Low FP/Low FN
+- **Painel 3**: Recall@4s vs Recall@10s
+- **Painel 4**: FP/min e EDD (Detection Delay)
+
+**Interpretação**:
+- Caixas mostram quartis (25%, 50%, 75%)
+- Bigodes indicam variabilidade
+- Outliers aparecem como pontos individuais
+- Comparar medianas e dispersões entre métricas
+
+#### 5. **3D Trade-off Surface** (`3d_tradeoff.png`)
+Superfície 3D mostrando trade-offs multi-objetivo:
+- **Eixo X**: Recall@10s (↑ melhor)
+- **Eixo Y**: FP por minuto (↓ melhor)
+- **Eixo Z**: EDD median (↓ melhor)
+- **Cor**: Score F3-weighted
+- Estrela vermelha = melhor configuração F3
+
+**Uso**:
+- Visualizar trade-off triplo: detecção vs alarmes falsos vs latência
+- Rotação interativa (se aberto em viewer apropriado)
+- Identificar clusters de configurações similares
+
+#### 6. **Parameter Sensitivity** (`parameter_sensitivity.png`)
+Gráficos de linha mostrando sensibilidade paramétrica:
+- **Linha 1**: Efeito em F3-weighted
+- **Linha 2**: Efeito em Recall@10s
+- **Colunas**: delta / ma_window / min_gap_samples
+- Linha central = média
+- Área sombreada = ± 1 desvio padrão
+
+**Interpretação**:
+- Inclinação acentuada = alta sensibilidade ao parâmetro
+- Linha plana = parâmetro tem pouco efeito
+- Área sombreada ampla = alta variabilidade entre ficheiros/pacientes
+- Identifica parâmetros críticos para tuning
+
+### 7.3. Workflow Típico de Análise
+
+1. **Exploração Inicial**: Olhar `pr_scatter_plots.png` para entender trade-offs gerais
+2. **Identificar Fronteira**: Usar `pareto_front.png` para soluções ótimas
+3. **Parameter Tuning**: Consultar `heatmap_*.png` para refinar valores
+4. **Validar Robustez**: Verificar `score_distributions.png` para variabilidade
+5. **Trade-off Multi-objetivo**: Analisar `3d_tradeoff.png` para decisão final
+6. **Sensitivity Analysis**: Usar `parameter_sensitivity.png` para entender impacto
+
+### 7.4. Customização
+
+Para gerar apenas gráficos específicos, edite `src/visualize_results.py` e comente as funções não desejadas no `main()`.
+
+Para métricas customizadas, adicione em `load_metrics()` e crie nova função de plot seguindo padrão existente.
+
+---
+
+## 8. Próximos Passos Sugeridos
 
 1. Logging Estruturado: salvar JSON com parâmetros + métricas por execução (`results/run_YYYYMMDD_HHMM.json`).
 2. Grid Search Automático: script para iterar sobre `delta`, `ma-window`, `min-gap-samples` e consolidar ranking.
@@ -340,7 +493,34 @@ nab_result = calculate_nab_score(
 
 ---
 
-## 8. Integração com Dados Reais (Guia Rápido)
+## 8. Próximos Passos Sugeridos
+
+1. Logging Estruturado: salvar JSON com parâmetros + métricas por execução (`results/run_YYYYMMDD_HHMM.json`).
+2. Grid Search Automático: script para iterar sobre `delta`, `ma-window`, `min-gap-samples` e consolidar ranking.
+3. Visualização Notebook (`notebooks/exploratory.ipynb`): plot do sinal, ground-truth e detecções (linhas verticais).
+4. Ensemble de Detectores: combinar ADWIN + PageHinkley (ex: consenso ou votação com janela curta).
+5. Métricas Avançadas: distribuição de atrasos (boxplot) e curva Precision–Recall parametrizada por `delta`.
+6. Normalização Dinâmica: z-score em janela deslizante causal para reduzir efeito de deriva lenta de amplitude.
+7. Ajuste Causal da Média Móvel: substituir convolução 'same' por buffer FIFO para evitar qualquer olhar futuro (rigor metodológico).
+8. Integração ECG Real: parsing do dataset verdadeiro (R-peaks, marcações clínicas) e alinhamento de timestamps → conversão para `sample_index` a 250 Hz.
+9. Feature Engineering: extrair energia por janela, variação RR (se tiver picos), entropia → alimentar detectores sobre feature agregada.
+10. Exportação para Comparação: criar função que gera tabela LaTeX / Markdown com melhores configurações para anexar na tese.
+11. Testes Unitários Básicos: validar geração sintética, casamento de detecções e cálculo de atraso.
+12. Múltiplas Séries: suportar processamento de vários pacientes concatenando resultados.
+
+---
+
+## 9. Integração com Dados Reais (Guia Rápido)
+
+Quando tiver o CSV real:
+1. Garantir colunas: `sample_index` (ou `timestamp`) e `ecg`.
+2. Criar coluna `regime_change` com 1 nos instantes de início de novo regime (0 caso contrário).
+3. Rodar:
+```bash
+python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-window 25 --min-gap-samples 100 --param delta=0.01 --tolerance 200
+---
+
+## 9. Integração com Dados Reais (Guia Rápido)
 
 Quando tiver o CSV real:
 1. Garantir colunas: `sample_index` (ou `timestamp`) e `ecg`.
@@ -353,7 +533,7 @@ python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-w
 
 ---
 
-## 9. Limitações Atuais
+## 10. Limitações Atuais
 
 - Sem visualização embutida (apenas métricas numéricas).
 - Média móvel não estritamente causal (potencial micro-viés no alinhamento do pico de detecção).
