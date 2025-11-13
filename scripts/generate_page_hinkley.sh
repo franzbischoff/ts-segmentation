@@ -49,7 +49,7 @@ python -m src.generate_predictions \
     --alpha 0.9999 0.99 \
     --ma-window 10 50 200 \
     --min-gap 500 1000 2000 4000 \
-    --n-jobs -1
+    --n-jobs 20
 
 echo ""
 echo "========================================="

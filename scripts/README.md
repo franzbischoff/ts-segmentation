@@ -241,7 +241,7 @@ python -m src.compare_detectors \
 
 Todos os scripts usam:
 - **Dataset**: `data/afib_paroxysmal_full.csv` (229 ficheiros)
-- **Paralelização**: `--n-jobs -1` (todos os cores disponíveis)
+- **Paralelização**: `--n-jobs 20` (todos os cores disponíveis)
 - **Output**: `results/<detector>/predictions_intermediate.csv`
 - **Confirmação**: Prompt interativo antes de iniciar
 - **Instruções**: Next steps após conclusão

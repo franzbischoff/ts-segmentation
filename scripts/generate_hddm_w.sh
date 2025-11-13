@@ -49,7 +49,7 @@ python -m src.generate_predictions \
     --detector hddm_w \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
-    --n-jobs -1
+    --n-jobs 20
 
 echo ""
 echo "========================================="

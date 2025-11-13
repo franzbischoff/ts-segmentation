@@ -36,4 +36,4 @@ python -m src.generate_predictions \
     --detector adwin \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
-    --n-jobs -1
+    --n-jobs 20

@@ -47,7 +47,7 @@ python -m src.generate_predictions \
     --detector kswin \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
-    --n-jobs -1
+    --n-jobs 20
 
 echo ""
 echo "========================================="
