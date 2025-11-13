@@ -147,7 +147,7 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         report_output_path: Path to save final report
     """
 
-    print(f"\\nGenerating report from metrics: {metrics_path}")
+    print(f"\nGenerating report from metrics: {metrics_path}")
 
     # Load metrics
     metrics_df = pd.read_csv(metrics_path)
@@ -179,6 +179,9 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         'precision_10s': ['mean', 'std'],
         'edd_median_s': 'mean',
         'fp_per_min': 'mean',
+        'nab_score_standard': ['mean', 'std'],
+        'nab_score_low_fp': ['mean', 'std'],
+        'nab_score_low_fn': ['mean', 'std'],
         'n_ground_truth': 'sum',
         'n_detections': 'sum'
     }
@@ -226,6 +229,21 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         best_f3_classic = global_perf.loc[global_perf['f3_classic_mean'].idxmax()]
         best_results['f3_classic'] = convert_numpy_types(best_f3_classic.to_dict())
 
+    # NAB Standard
+    if 'nab_score_standard_mean' in global_perf.columns:
+        best_nab_standard = global_perf.loc[global_perf['nab_score_standard_mean'].idxmax()]
+        best_results['nab_standard'] = convert_numpy_types(best_nab_standard.to_dict())
+
+    # NAB Low FP
+    if 'nab_score_low_fp_mean' in global_perf.columns:
+        best_nab_low_fp = global_perf.loc[global_perf['nab_score_low_fp_mean'].idxmax()]
+        best_results['nab_low_fp'] = convert_numpy_types(best_nab_low_fp.to_dict())
+
+    # NAB Low FN
+    if 'nab_score_low_fn_mean' in global_perf.columns:
+        best_nab_low_fn = global_perf.loc[global_perf['nab_score_low_fn_mean'].idxmax()]
+        best_results['nab_low_fn'] = convert_numpy_types(best_nab_low_fn.to_dict())
+
     # Generate report
     report = {
         'evaluation_summary': {
@@ -237,6 +255,7 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         },
         'best_parameters': best_results,
         'top_10_f3_weighted': convert_numpy_types(global_perf.nlargest(10, 'f3_weighted_mean')[param_cols + ['f3_weighted_mean']].to_dict('records')) if 'f3_weighted_mean' in global_perf.columns else [],
+        'top_10_nab_standard': convert_numpy_types(global_perf.nlargest(10, 'nab_score_standard_mean')[param_cols + ['nab_score_standard_mean']].to_dict('records')) if 'nab_score_standard_mean' in global_perf.columns else [],
         'parameter_grid_coverage': {
             'delta_values': convert_numpy_types(sorted(global_perf['delta'].unique().tolist())),
             'ma_window_values': convert_numpy_types(sorted(global_perf['ma_window'].unique().tolist())),
@@ -250,13 +269,13 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
     print(f"Final report saved to: {report_output_path}")
 
     # Print summary to console
-    print("\\n" + "="*80)
+    print("\n" + "="*80)
     print("FINAL RESULTS SUMMARY")
     print("="*80)
 
     if 'f3_weighted' in best_results:
         best = best_results['f3_weighted']
-        print(f"\\n=== BEST GLOBAL PARAMETERS (F3 Weighted Primary Metric) ===")
+        print(f"\n=== BEST GLOBAL PARAMETERS (F3 Weighted Primary Metric) ===")
         print(f"  delta: {best['delta']}")
         print(f"  ma_window: {int(best['ma_window'])}")
         print(f"  min_gap_samples: {int(best['min_gap_samples'])}")
@@ -281,12 +300,42 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         if 'fp_per_min_mean' in best:
             print(f"  FP/min: {best['fp_per_min_mean']:.2f}")
 
-    print("\\n=== COMPARISON WITH OTHER METRICS ===")
+        # NAB scores
+        if 'nab_score_standard_mean' in best:
+            print(f"\n  NAB Scores:")
+            print(f"    Standard:  {best['nab_score_standard_mean']:.4f} ± {best.get('nab_score_standard_std', 0):.4f}")
+        if 'nab_score_low_fp_mean' in best:
+            print(f"    Low FP:    {best['nab_score_low_fp_mean']:.4f} ± {best.get('nab_score_low_fp_std', 0):.4f}")
+        if 'nab_score_low_fn_mean' in best:
+            print(f"    Low FN:    {best['nab_score_low_fn_mean']:.4f} ± {best.get('nab_score_low_fn_std', 0):.4f}")
+
+    print("\n=== COMPARISON WITH OTHER METRICS ===")
     for metric_name, result in best_results.items():
         if metric_name != 'f3_weighted':
-            print(f"{metric_name.replace('_', ' ').title()} best: delta={result['delta']}, ma_window={int(result['ma_window'])}, min_gap={int(result['min_gap_samples'])}")
+            params = f"delta={result['delta']}, ma_window={int(result['ma_window'])}, min_gap={int(result['min_gap_samples'])}"
 
+            # Add score if available - try multiple naming patterns
+            score = ""
+            # Try with _mean suffix
+            score_key = f"{metric_name}_mean"
+            if score_key in result:
+                score = f" (score={result[score_key]:.4f})"
+            else:
+                # For NAB metrics, try with nab_score_ prefix
+                if metric_name.startswith('nab_'):
+                    nab_score_key = f"nab_score_{metric_name[4:]}_mean"  # Remove 'nab_' and add 'nab_score_' prefix
+                    if nab_score_key in result:
+                        score = f" (score={result[nab_score_key]:.4f})"
+                # Try without suffix
+                elif metric_name in result:
+                    score = f" (score={result[metric_name]:.4f})"
 
+            # Format metric name
+            display_name = metric_name.replace('_', ' ').title()
+            if 'Nab' in display_name:
+                display_name = display_name.replace('Nab', 'NAB').replace(' Fp', ' FP').replace(' Fn', ' FN')
+
+            print(f"{display_name} best: {params}{score}")
 def main():
     parser = argparse.ArgumentParser(description='Evaluate predictions and generate comprehensive metrics')
     parser.add_argument('--predictions', required=True, help='Path to predictions CSV/JSONL file')

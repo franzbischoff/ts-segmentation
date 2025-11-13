@@ -191,7 +191,139 @@ Se precisar mais precisão (menos falsos): subir `min-gap-samples` para 120–15
 
 ---
 
-## 6. Próximos Passos Sugeridos
+## 6. Métricas de Avaliação
+
+Este projeto implementa três famílias de métricas para avaliação de detecção de mudanças de regime em streaming:
+
+### 6.1. Métricas Clássicas (F1/F3 Classic)
+
+Métricas tradicionais de classificação binária sem consideração temporal:
+- **F1-classic**: Média harmônica de precision e recall
+- **F3-classic**: Versão ponderada que enfatiza recall (β=3), importante quando não perder eventos é crítico
+
+```
+Precision = TP / (TP + FP)
+Recall = TP / (TP + FN)
+F1 = 2 × (Precision × Recall) / (Precision + Recall)
+F3 = 10 × (Precision × Recall) / (9 × Precision + Recall)
+```
+
+### 6.2. Métricas Ponderadas por Latência (F1*/F3*)
+
+Métricas que incorporam peso temporal baseado na rapidez da detecção:
+
+**Função de Peso Temporal w(δ)**:
+```
+w(δ) = {
+    1.0,                    se δ ≤ 4s    (peso total - detecção ideal)
+    1 - (δ-4)/(10-4),      se 4s < δ ≤ 10s    (decaimento linear)
+    0.0,                    se δ > 10s   (peso zero - detecção tardia demais)
+}
+```
+
+onde δ é a latência de detecção em segundos.
+
+- **F1-weighted (F1*)**: F1 com precision e recall ponderados por w(δ)
+- **F3-weighted (F3*)**: F3 com ponderação temporal, **métrica primária** para otimização
+
+**Métricas Auxiliares**:
+- **Recall@4s**: Fração de mudanças detectadas dentro de 4 segundos
+- **Recall@10s**: Fração de mudanças detectadas dentro de 10 segundos
+- **Precision@4s, Precision@10s**: Precisão considerando janelas temporais
+- **EDD (Expected Detection Delay)**: Atraso médio/mediano de detecção
+- **FP/min**: Taxa de falsos positivos por minuto
+
+**Vantagens**:
+- Reflete importância clínica de detecção precoce
+- Penaliza detecções tardias mesmo que tecnicamente corretas
+- Mais realista para aplicações em tempo real
+
+### 6.3. NAB Score (Numenta Anomaly Benchmark)
+
+Métrica desenvolvida pela Numenta para avaliação de detecção de anomalias em streaming, baseada em função sigmoid que recompensa detecções precoces e penaliza detecções tardias ou falsos positivos.
+
+**Função de Scoring Sigmoid**:
+```
+S(r) = 2 × sigmoid(-5r) - 1
+
+onde r = posição relativa na janela de anomalia:
+  r = -1.0  →  início da janela (score máximo ≈ +0.987)
+  r = -0.5  →  meio da janela (score ≈ +0.848)
+  r =  0.0  →  fim da janela (score = 0.0)
+  r >  0.0  →  após janela / FP (score negativo até -1.0)
+```
+
+**Profiles de Aplicação** (Cost Matrix):
+
+1. **Standard** (Balanceado):
+   - TP weight: 1.0
+   - FP weight: 0.11
+   - FN weight: 1.0
+   - *Uso*: Avaliação geral, balanço entre precision e recall
+
+2. **Reward Low FP** (Penalizar Falsos Positivos):
+   - TP weight: 1.0
+   - FP weight: 0.22 (2× penalidade)
+   - FN weight: 1.0
+   - *Uso*: Aplicações onde alarmes falsos são muito custosos
+
+3. **Reward Low FN** (Penalizar Falsos Negativos):
+   - TP weight: 1.0
+   - FP weight: 0.055 (1/2 penalidade)
+   - FN weight: 2.0 (2× penalidade)
+   - *Uso*: Aplicações críticas onde não pode perder eventos
+
+**Cálculo do Score**:
+```
+NAB Score = Σ(TP scores) + Σ(FP scores) + Σ(FN penalties)
+
+onde:
+- TP score = S(r) × tp_weight / max_tp
+- FP score = S(r_fp) × fp_weight  (negativo)
+- FN penalty = -fn_weight por evento não detectado
+```
+
+**Características**:
+- Normalizado para comparação entre datasets
+- Recompensa detecção antecipada dentro da janela
+- Penalidade crescente para FPs mais distantes do evento
+- Permite diferentes profiles para diferentes aplicações
+
+**Exemplo de Uso**:
+```python
+from src.evaluation import calculate_nab_score, NABCostMatrix
+
+nab_result = calculate_nab_score(
+    gt_times=[10.0, 30.0],       # Ground truth em segundos
+    det_times=[10.5, 29.8],      # Detecções em segundos
+    window_width=10.0,            # Janela de 10s após cada GT
+    cost_matrix=NABCostMatrix.standard(),
+    signal_duration=60.0,
+    probation_percent=0.15        # Ignora primeiros 15% para warm-up
+)
+# Returns: {'nab_score': 1.85, 'tp': 2, 'fp': 0, 'fn': 0}
+```
+
+### 6.4. Comparação entre Métricas
+
+| Métrica | Considera Tempo? | Melhor Para | Range de Valores |
+|---------|------------------|-------------|------------------|
+| F1-classic | ❌ | Avaliação binária básica | [0, 1] |
+| F3-classic | ❌ | Enfatizar recall sem latência | [0, 1] |
+| F1-weighted | ✅ | Balancear precision/recall com tempo | [0, 1] |
+| **F3-weighted** | ✅ | **Otimização primária com recall temporal** | [0, 1] |
+| NAB Standard | ✅ | Comparação com benchmarks NAB | ℝ (típico: -2 a +2) |
+| NAB Low FP | ✅ | Minimizar alarmes falsos | ℝ (penaliza FP 2×) |
+| NAB Low FN | ✅ | Aplicações críticas | ℝ (penaliza FN 2×) |
+
+**Recomendação**:
+- Use **F3-weighted** como métrica primária para grid search
+- Reporte também **NAB Standard** para comparação com literatura
+- Use **NAB Low FP/FN** para análise de trade-offs específicos da aplicação
+
+---
+
+## 7. Próximos Passos Sugeridos
 
 1. Logging Estruturado: salvar JSON com parâmetros + métricas por execução (`results/run_YYYYMMDD_HHMM.json`).
 2. Grid Search Automático: script para iterar sobre `delta`, `ma-window`, `min-gap-samples` e consolidar ranking.
@@ -208,7 +340,7 @@ Se precisar mais precisão (menos falsos): subir `min-gap-samples` para 120–15
 
 ---
 
-## 7. Integração com Dados Reais (Guia Rápido)
+## 8. Integração com Dados Reais (Guia Rápido)
 
 Quando tiver o CSV real:
 1. Garantir colunas: `sample_index` (ou `timestamp`) e `ecg`.
@@ -221,7 +353,7 @@ python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-w
 
 ---
 
-## 8. Limitações Atuais
+## 9. Limitações Atuais
 
 - Sem visualização embutida (apenas métricas numéricas).
 - Média móvel não estritamente causal (potencial micro-viés no alinhamento do pico de detecção).
@@ -231,13 +363,13 @@ python -m src.streaming_detector --data data/seu_ecg.csv --detector adwin --ma-w
 
 ---
 
-## 9. Conclusão
+## 10. Conclusão
 
 Este baseline fornece uma fundação reproduzível para comparação com seu algoritmo de detecção de mudanças de regime em ECG streaming. A estrutura facilita extensão, logging mais robusto e integração de dados reais. Recomenda-se agora adicionar logging estruturado e visualização para fortalecer a seção experimental da tese.
 
 ---
 
-## 10. Integração com Dataset no Zenodo (Record 6879233)
+## 11. Integração com Dataset no Zenodo (Record 6879233)
 
 Para usar um dataset hospedado no Zenodo (ex: record `6879233`):
 

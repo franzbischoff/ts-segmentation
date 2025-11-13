@@ -386,6 +386,35 @@ def calculate_comprehensive_metrics(
     recall_10s = results_10s['tp'] / len(gt) if len(gt) > 0 else 0.0
     precision_10s = results_10s['tp'] / (results_10s['tp'] + results_10s['fp']) if (results_10s['tp'] + results_10s['fp']) > 0 else 0.0
 
+    # Calculate NAB scores with different application profiles
+    # Use tau as window width for NAB (events within tau seconds are in the window)
+    nab_standard = calculate_nab_score(
+        gt_times=gt,
+        det_times=det,
+        window_width=tau,
+        cost_matrix=NABCostMatrix.standard(),
+        signal_duration=duration if duration else max(gt[-1], det[-1]) if gt and det else 100.0,
+        probation_percent=0.15
+    ) if gt else {'nab_score': 0.0, 'tp': 0, 'fp': len(det), 'fn': 0}
+
+    nab_low_fp = calculate_nab_score(
+        gt_times=gt,
+        det_times=det,
+        window_width=tau,
+        cost_matrix=NABCostMatrix.reward_low_fp(),
+        signal_duration=duration if duration else max(gt[-1], det[-1]) if gt and det else 100.0,
+        probation_percent=0.15
+    ) if gt else {'nab_score': 0.0, 'tp': 0, 'fp': len(det), 'fn': 0}
+
+    nab_low_fn = calculate_nab_score(
+        gt_times=gt,
+        det_times=det,
+        window_width=tau,
+        cost_matrix=NABCostMatrix.reward_low_fn(),
+        signal_duration=duration if duration else max(gt[-1], det[-1]) if gt and det else 100.0,
+        probation_percent=0.15
+    ) if gt else {'nab_score': 0.0, 'tp': 0, 'fp': len(det), 'fn': 0}
+
     return {
         # F-scores
         'f1_classic': f1_classic,
@@ -404,9 +433,243 @@ def calculate_comprehensive_metrics(
         'edd_p95_s': weighted_results['edd_p95'],
         'fp_per_min': weighted_results['fp_per_min'],
 
+        # NAB scores (Numenta Anomaly Benchmark)
+        'nab_score_standard': nab_standard['nab_score'],
+        'nab_score_low_fp': nab_low_fp['nab_score'],
+        'nab_score_low_fn': nab_low_fn['nab_score'],
+
         # Raw counts for reference
         'tp': classic_tp,
         'fp': classic_fp,
         'fn': classic_fn,
         'tp_weight_sum': weighted_results['tp_weight_sum']
+    }
+
+
+# ============================================================================
+# Numenta Anomaly Benchmark (NAB) Scoring Functions
+# ============================================================================
+
+def sigmoid(x: float) -> float:
+    """Standard sigmoid function."""
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def nab_scaled_sigmoid(relative_position_in_window: float) -> float:
+    """
+    Return a scaled sigmoid function given a relative position within a labeled window.
+
+    This is the NAB scoring function that assigns scores based on how early/late
+    a detection occurs relative to an anomaly window.
+
+    The function is computed as follows:
+    - A relative position of -1.0 is the far left edge of the anomaly window and
+      corresponds to S = 2*sigmoid(5) - 1.0 = 0.98661. This is the earliest detection
+      to be counted as a true positive (maximum score).
+
+    - A relative position of -0.5 is halfway into the anomaly window and
+      corresponds to S = 2*sigmoid(0.5*5) - 1.0 = 0.84828.
+
+    - A relative position of 0.0 consists of the right edge of the window and
+      corresponds to S = 2*sigmoid(0) - 1 = 0.0.
+
+    - Relative positions > 0 correspond to false positives increasingly far away
+      from the right edge of the window. A relative position of 1.0 is past the
+      right edge of the window and corresponds to a score of 2*sigmoid(-5) - 1.0 = -0.98661.
+
+    Args:
+        relative_position_in_window: A relative position within or after a window.
+            -1.0 = left edge (start) of window
+             0.0 = right edge (end) of window
+            >0.0 = after window (false positive territory)
+
+    Returns:
+        Score value between -1.0 and ~1.0
+    """
+    if relative_position_in_window > 3.0:
+        # FP well behind window
+        return -1.0
+    else:
+        return 2.0 * sigmoid(-5.0 * relative_position_in_window) - 1.0
+
+
+@dataclass
+class NABAnomalyPoint:
+    """Represents a single point in NAB scoring."""
+    timestamp: float
+    anomaly_score: float
+    sweep_score: float
+    window_name: Optional[str]
+
+
+@dataclass
+class NABCostMatrix:
+    """
+    NAB cost matrix for different application profiles.
+
+    Three standard profiles defined by NAB:
+    1. Standard: Balanced (tp=1.0, fp=0.11, fn=1.0)
+    2. Reward Low FP: Heavily penalize false positives (tp=1.0, fp=0.22, fn=1.0)
+    3. Reward Low FN: Heavily penalize false negatives (tp=1.0, fp=0.055, fn=2.0)
+    """
+    tp_weight: float = 1.0
+    fp_weight: float = 0.11
+    fn_weight: float = 1.0
+
+    @classmethod
+    def standard(cls) -> 'NABCostMatrix':
+        """Standard balanced profile."""
+        return cls(tp_weight=1.0, fp_weight=0.11, fn_weight=1.0)
+
+    @classmethod
+    def reward_low_fp(cls) -> 'NABCostMatrix':
+        """Profile that rewards low false positive rate."""
+        return cls(tp_weight=1.0, fp_weight=0.22, fn_weight=1.0)
+
+    @classmethod
+    def reward_low_fn(cls) -> 'NABCostMatrix':
+        """Profile that rewards low false negative rate."""
+        return cls(tp_weight=1.0, fp_weight=0.055, fn_weight=2.0)
+
+
+def calculate_nab_score(
+    gt_times: List[float],
+    det_times: List[float],
+    window_width: float,
+    cost_matrix: NABCostMatrix,
+    signal_duration: float,
+    probation_percent: float = 0.15
+) -> Dict[str, float]:
+    """
+    Calculate NAB (Numenta Anomaly Benchmark) score for streaming anomaly detection.
+
+    The NAB scoring rewards early detection within anomaly windows and penalizes
+    late detection and false positives. The score uses a sigmoid function to
+    weight detections based on their position within the anomaly window.
+
+    Args:
+        gt_times: Ground truth event timestamps (seconds)
+        det_times: Detection timestamps (seconds)
+        window_width: Width of anomaly window after each GT event (seconds)
+        cost_matrix: Cost matrix defining weights for TP, FP, FN
+        signal_duration: Total signal duration (seconds)
+        probation_percent: Fraction of signal at start to exclude from scoring
+
+    Returns:
+        Dictionary with NAB metrics:
+        - nab_score: Final NAB score (normalized)
+        - nab_score_raw: Raw score before normalization
+        - tp: True positive count
+        - fp: False positive count
+        - fn: False negative count
+        - tn: True negative count
+    """
+    if not gt_times:
+        # No ground truth - only FP penalties
+        return {
+            'nab_score': -cost_matrix.fp_weight * len(det_times),
+            'nab_score_raw': -cost_matrix.fp_weight * len(det_times),
+            'tp': 0,
+            'fp': len(det_times),
+            'fn': 0,
+            'tn': 0
+        }
+
+    # Sort inputs
+    gt_times = sorted(gt_times)
+    det_times = sorted(det_times)
+
+    # Calculate probationary period (data at start that doesn't count toward score)
+    probation_length = min(
+        signal_duration * probation_percent,
+        probation_percent * 5000.0  # NAB caps probation at this many seconds
+    )
+
+    # Create windows: each GT event has a window of [gt_time, gt_time + window_width]
+    windows = [(gt, gt + window_width) for gt in gt_times]
+
+    # Maximum TP score (score at left edge of window)
+    max_tp = nab_scaled_sigmoid(-1.0)
+
+    # Track which detections and windows have been matched
+    det_matched = [False] * len(det_times)
+    window_best_score = {}  # window_name -> best score seen so far
+
+    # Initialize FN penalty for each window
+    for i, (win_start, win_end) in enumerate(windows):
+        window_name = f"window_{i}"
+        window_best_score[window_name] = -cost_matrix.fn_weight
+
+    # Process each detection
+    fp_score = 0.0
+    prev_window_end = -float('inf')
+
+    for det_idx, det_time in enumerate(det_times):
+        # Skip if in probationary period
+        if det_time < probation_length:
+            continue
+
+        # Find which window (if any) this detection falls into or after
+        in_window = False
+        window_name = None
+
+        for i, (win_start, win_end) in enumerate(windows):
+            if win_start <= det_time <= win_end:
+                # Detection inside window - potential TP
+                window_name = f"window_{i}"
+                in_window = True
+
+                # Calculate position within window
+                # -1.0 at start, 0.0 at end
+                position_in_window = -1.0 + (det_time - win_start) / window_width
+                unweighted_score = nab_scaled_sigmoid(position_in_window)
+                weighted_score = unweighted_score * cost_matrix.tp_weight / max_tp
+
+                # Only update if this is better than what we've seen for this window
+                if weighted_score > window_best_score[window_name]:
+                    window_best_score[window_name] = weighted_score
+
+                det_matched[det_idx] = True
+                break
+
+        if not in_window:
+            # Detection outside any window - FP
+            # Calculate how far from nearest previous window
+            if prev_window_end > -float('inf'):
+                # There was a previous window
+                # Calculate relative position past the window
+                # Find the window width of that previous window
+                prev_width = window_width  # assuming all windows same width
+                position_past_window = (det_time - prev_window_end) / prev_width
+                unweighted_score = nab_scaled_sigmoid(position_past_window)
+            else:
+                # No previous window - far from any anomaly
+                unweighted_score = -1.0
+
+            weighted_score = unweighted_score * cost_matrix.fp_weight
+            fp_score += weighted_score
+            det_matched[det_idx] = True
+
+        # Update prev_window_end for FP scoring
+        for win_start, win_end in windows:
+            if win_end < det_time and win_end > prev_window_end:
+                prev_window_end = win_end
+
+    # Calculate final score
+    total_score = fp_score + sum(window_best_score.values())
+
+    # Count TP, FP, FN
+    tp = sum(1 for score in window_best_score.values() if score > -cost_matrix.fn_weight)
+    fn = sum(1 for score in window_best_score.values() if score <= -cost_matrix.fn_weight)
+    fp = sum(1 for matched in det_matched if matched and det_matched[det_matched.index(matched)])
+    fp = len([d for d in det_times if d >= probation_length]) - tp  # Simplified FP count
+    tn = 0  # NAB doesn't explicitly count TN
+
+    return {
+        'nab_score': total_score,
+        'nab_score_raw': total_score,
+        'tp': tp,
+        'fp': fp,
+        'fn': fn,
+        'tn': tn
     }
