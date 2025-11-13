@@ -1,7 +1,7 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
-**Última atualização**: 2025-11-13
-**Status**: Reorganização completa por detector, ADWIN implementado, métricas NAB integradas, visualizações criadas
+**Última atualização**: 2025-11-13 (Sessão 2 - Modo Incremental)
+**Status**: Grid search incremental implementado, ADWIN sendo estendido (min_gap < 1000), scripts obsoletos arquivados
 
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
 
@@ -31,7 +31,20 @@ Criar um baseline reproduzível de detecção de mudanças de regime (concept dr
 - Instruções de implementação documentadas
 - Aguardando execução do pipeline
 
-### 📊 IMPLEMENTADO: Sistema Completo de Avaliação
+### � EM PROGRESSO: Extensão Grid ADWIN (2025-11-13 Sessão 2)
+- **Motivação**: Gráfico `parameter_sensitivity.png` mostra potencial de melhora em min_gap < 1000
+- **Grid atual**: min_gap = [1000, 2000, 3000, 4000, 5000]
+- **Extensão**: min_gap = [100, 200, 300, 400, 500, 750]
+- **Status**: Rodando em background (tmux)
+- **Novas combinações**: 594 (11 deltas × 9 ma_windows × 6 min_gaps)
+- **Tempo estimado**: ~53 min
+- **Após completar**: Re-avaliar métricas + re-gerar visualizações
+
+### 📦 ARQUIVADO: Scripts Obsoletos (2025-11-13 Sessão 2)
+- `deprecated/grid_search.py` - Substituído por pipeline de 3 passos
+- `deprecated/exhaustive_grid_search.py` - Substituído por generate_predictions.py
+
+### �📊 IMPLEMENTADO: Sistema Completo de Avaliação
 
 #### Pipeline de 3 Passos
 1. **Gerar Predições**: `python -m src.generate_predictions --detector <NAME> --output results/<NAME>/predictions_intermediate.csv`
@@ -41,7 +54,23 @@ Criar um baseline reproduzível de detecção de mudanças de regime (concept dr
 #### Comparação entre Detectores
 - **Script criado**: `src/compare_detectors.py`
 - **Outputs**: Relatório markdown + CSV de rankings
-- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm --output results/comparisons/comparative_report.md`eto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
+- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm --output results/comparisons/comparative_report.md`
+
+#### Grid Search Incremental (2025-11-13 Sessão 2)
+- **`src/generate_predictions.py`**: Modo incremental implementado
+  - Novo parâmetro `--append`: carrega predições existentes e gera apenas novas combinações
+  - Parâmetros customizados: `--delta`, `--ma-window`, `--min-gap`
+  - Merge automático de resultados antigos + novos
+  - Backup automático antes de modificar
+
+- **`scripts/extend_min_gap_grid.sh`**: Script pronto para extensão
+  - Testa min_gap < 1000 (valores: 100, 200, 300, 400, 500, 750)
+  - Backup automático
+  - Instruções de próximos passos
+
+- **Documentação**:
+  - `docs/incremental_grid_search.md` - Guia completo
+  - `docs/append_mode_summary.md` - Resumo executivo
 
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
 

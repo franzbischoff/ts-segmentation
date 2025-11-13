@@ -79,6 +79,21 @@ def create_param_grid_eddm(custom_params: Dict[str, List[Any]] = None) -> Dict[s
     # Total: 6 × 7 × 2 = 84 combinations (EDDM has no tunable params)
 
 
+def create_param_grid_kswin(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
+    """Create parameter grid for KSWIN detector."""
+    if custom_params:
+        return custom_params
+
+    return {
+        'alpha': [0.001, 0.005, 0.01, 0.05],  # Significance level
+        'window_size': [50, 100, 200, 500],  # Reference window size
+        'stat_size': [20, 30, 50, 100],  # Statistical window size
+        'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        'min_gap_samples': [500, 1000, 2000, 3000, 5000],
+    }
+    # Total: 4 × 4 × 4 × 4 × 5 = 1,280 combinations
+
+
 def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
     """Create parameter grid based on detector type."""
     detector_lower = detector_name.lower()
@@ -91,6 +106,8 @@ def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = 
         return create_param_grid_ddm(custom_params)
     elif detector_lower == 'eddm':
         return create_param_grid_eddm(custom_params)
+    elif detector_lower == 'kswin':
+        return create_param_grid_kswin(custom_params)
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -111,6 +128,12 @@ def extract_detector_params(detector_name: str, params: Dict[str, Any]) -> Dict[
         return {}  # DDM has no tunable parameters
     elif detector_lower == 'eddm':
         return {}  # EDDM has no tunable parameters
+    elif detector_lower == 'kswin':
+        return {
+            'alpha': params['alpha'],
+            'window_size': params['window_size'],
+            'stat_size': params['stat_size']
+        }
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -127,6 +150,8 @@ def get_result_columns(detector_name: str) -> List[str]:
         return ['ma_window', 'min_gap_samples', 'use_derivative']
     elif detector_lower == 'eddm':
         return ['ma_window', 'min_gap_samples', 'use_derivative']
+    elif detector_lower == 'kswin':
+        return ['alpha', 'window_size', 'stat_size', 'ma_window', 'min_gap_samples']
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
@@ -422,7 +447,7 @@ Examples:
       --lambda 10 20 30 --delta 0.01 0.02 --alpha 0.9999 0.999 --ma-window 10 50 100 --min-gap 500 1000 1500
         """
     )
-    parser.add_argument('--detector', required=True, choices=['adwin', 'page_hinkley', 'ddm', 'eddm'],
+    parser.add_argument('--detector', required=True, choices=['adwin', 'page_hinkley', 'ddm', 'eddm', 'kswin'],
                        help='Detector type to use')
     parser.add_argument('--data', required=True, help='Path to tidy CSV with id column')
     parser.add_argument('--output', required=True, help='Output CSV path for predictions')
@@ -451,11 +476,19 @@ Examples:
     parser.add_argument('--ph-delta', type=float, nargs='+', default=None,
                        help='Delta (permissiveness) values for Page-Hinkley (overrides default)')
     parser.add_argument('--alpha', type=float, nargs='+', default=None,
-                       help='Alpha (forgetting factor) values to test (Page-Hinkley) (overrides default)')
+                       help='Alpha (forgetting factor) values to test (Page-Hinkley/KSWIN) (overrides default)')
 
-    # DDM specific
+    # DDM/EDDM specific
     parser.add_argument('--use-derivative', action='store_true',
-                       help='Use derivative of signal (DDM) (overrides default)')
+                       help='Use derivative of signal (DDM/EDDM) (overrides default)')
+
+    # KSWIN specific
+    parser.add_argument('--ks-alpha', type=float, nargs='+', default=None,
+                       help='Alpha (significance level) values for KSWIN (overrides default)')
+    parser.add_argument('--window-size', type=int, nargs='+', default=None,
+                       help='Window size values for KSWIN (overrides default)')
+    parser.add_argument('--stat-size', type=int, nargs='+', default=None,
+                       help='Statistical window size values for KSWIN (overrides default)')
 
     args = parser.parse_args()
 
@@ -498,6 +531,14 @@ Examples:
                 'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
                 'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples'],
                 'use_derivative': use_deriv_values
+            }
+        elif detector_lower == 'kswin':
+            custom_param_grid = {
+                'alpha': args.ks_alpha if args.ks_alpha else default_grid['alpha'],
+                'window_size': args.window_size if args.window_size else default_grid['window_size'],
+                'stat_size': args.stat_size if args.stat_size else default_grid['stat_size'],
+                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
+                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
             }
 
         print("Using custom parameter grid:")
