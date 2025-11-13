@@ -10,7 +10,7 @@ echo "========================================="
 echo ""
 
 # Define paths
-DATA_PATH="data/afib_paroxysmal_tidy.csv"
+DATA_PATH="data/afib_paroxysmal_full.csv"
 OUTPUT_PATH="results/hddm_a/predictions_intermediate.csv"
 
 # Check if data file exists

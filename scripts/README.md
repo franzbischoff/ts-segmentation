@@ -240,7 +240,7 @@ python -m src.compare_detectors \
 ## ⚙️ Configuração Comum
 
 Todos os scripts usam:
-- **Dataset**: `data/afib_paroxysmal_tidy.csv` (229 ficheiros)
+- **Dataset**: `data/afib_paroxysmal_full.csv` (229 ficheiros)
 - **Paralelização**: `--n-jobs -1` (todos os cores disponíveis)
 - **Output**: `results/<detector>/predictions_intermediate.csv`
 - **Confirmação**: Prompt interativo antes de iniciar
@@ -285,7 +285,7 @@ Detectores DDM e EDDM requerem valores binários (0/1). O sistema converte autom
 ### Erro: "Data file not found"
 ```bash
 # Verificar se dataset existe
-ls -lh data/afib_paroxysmal_tidy.csv
+ls -lh data/afib_paroxysmal_full.csv
 ```
 
 ### Erro: "ModuleNotFoundError"
