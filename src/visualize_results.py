@@ -24,8 +24,33 @@ def load_metrics(metrics_path):
     """Load metrics CSV and aggregate by parameters."""
     df = pd.read_csv(metrics_path)
 
-    # Aggregate by parameter combinations
-    param_cols = ['delta', 'ma_window', 'min_gap_samples']
+    # Auto-detect parameter columns (detector-specific)
+    # Common parameter patterns: delta, lambda_, alpha, ma_window, min_gap_samples,
+    # drift_confidence, warning_confidence, etc.
+    all_cols = df.columns.tolist()
+
+    # Known metric/metadata columns to exclude
+    exclude_patterns = [
+        'file_id', 'f1_', 'f3_', 'precision', 'recall', 'edd_', 'fp_per_min',
+        'nab_score', 'tp', 'fp', 'fn', 'n_detections', 'n_gt_events'
+    ]
+
+    param_cols = []
+    for col in all_cols:
+        if any(pattern in col for pattern in exclude_patterns):
+            continue
+        # Include if it looks like a parameter (not a metric)
+        if col in ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
+                   'drift_confidence', 'warning_confidence', 'two_side_option',
+                   'lambda_option', 'ks_alpha', 'window_size', 'stat_size',
+                   'min_instances', 'warning_level', 'out_control_level',
+                   'use_derivative']:
+            param_cols.append(col)
+
+    if not param_cols:
+        raise ValueError(f"No parameter columns detected in {metrics_path}")
+
+    print(f"Detected parameters: {param_cols}")
 
     # Define metrics to aggregate
     metric_cols = [
@@ -57,8 +82,22 @@ def load_metrics(metrics_path):
 def plot_pr_scatter(df, output_dir):
     """
     Precision-Recall scatter plot with multiple temporal thresholds.
-    Each point is a parameter combination, colored by F3-weighted score.
+    Each point is a parameter combination, colored by delta or ma_window.
     """
+    # Select color variable: min_gap_samples if available, else ma_window, else delta
+    if 'min_gap_samples' in df.columns:
+        color_var = 'min_gap_samples'
+        color_label = 'Min Gap (samples)'
+    elif 'ma_window' in df.columns:
+        color_var = 'ma_window'
+        color_label = 'MA Window'
+    elif 'delta' in df.columns:
+        color_var = 'delta'
+        color_label = 'Delta'
+    else:
+        color_var = 'f3_weighted_mean'
+        color_label = 'F3-weighted Score'
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # Plot 1: Recall@4s vs Precision@4s
@@ -66,7 +105,7 @@ def plot_pr_scatter(df, output_dir):
     scatter1 = ax1.scatter(
         df['recall_4s_mean'],
         df['precision_4s_mean'],
-        c=df['f3_weighted_mean'],
+        c=df[color_var],
         s=50,
         alpha=0.6,
         cmap='viridis',
@@ -78,7 +117,7 @@ def plot_pr_scatter(df, output_dir):
     ax1.set_title('Precision-Recall Trade-off (4s window)', fontsize=14, fontweight='bold')
     ax1.grid(True, alpha=0.3)
     cbar1 = plt.colorbar(scatter1, ax=ax1)
-    cbar1.set_label('F3-weighted Score', fontsize=10)
+    cbar1.set_label(color_label, fontsize=10)
 
     # Add best point
     best_idx = df['f3_weighted_mean'].idxmax()
@@ -100,7 +139,7 @@ def plot_pr_scatter(df, output_dir):
     scatter2 = ax2.scatter(
         df['recall_10s_mean'],
         df['precision_10s_mean'],
-        c=df['f3_weighted_mean'],
+        c=df[color_var],
         s=50,
         alpha=0.6,
         cmap='viridis',
@@ -112,7 +151,7 @@ def plot_pr_scatter(df, output_dir):
     ax2.set_title('Precision-Recall Trade-off (10s window)', fontsize=14, fontweight='bold')
     ax2.grid(True, alpha=0.3)
     cbar2 = plt.colorbar(scatter2, ax=ax2)
-    cbar2.set_label('F3-weighted Score', fontsize=10)
+    cbar2.set_label(color_label, fontsize=10)
 
     # Add best point
     ax2.scatter(
@@ -227,10 +266,35 @@ def plot_pareto_front(df, output_dir):
 def plot_parameter_heatmaps(df, output_dir):
     """
     Heatmaps showing how parameters affect different metrics.
-    Creates multiple panels for different min_gap values.
+    Creates heatmaps based on available parameters.
     """
-    # Get unique min_gap values (take top 3 most common)
-    top_gaps = df['min_gap_samples'].value_counts().head(3).index.sort_values()
+    # Identify parameter columns
+    param_cols = [col for col in df.columns if col.replace('_mean', '').replace('_std', '') in
+                  ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
+                   'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size']]
+
+    # Filter to just the base parameter names (without _mean/_std)
+    param_cols = [col for col in param_cols if not col.endswith('_mean') and not col.endswith('_std')]
+
+    if len(param_cols) < 2:
+        print(f"Warning: Need at least 2 parameters for heatmaps, found {len(param_cols)}. Skipping heatmaps.")
+        return
+
+    # Try to find a grouping parameter (prefer min_gap_samples, then others)
+    group_param = None
+    if 'min_gap_samples' in param_cols:
+        group_param = 'min_gap_samples'
+    elif len(param_cols) > 2:
+        # Use the parameter with fewest unique values for grouping
+        group_param = min(param_cols, key=lambda p: df[p].nunique())
+
+    # Get top values for grouping parameter
+    if group_param:
+        top_gaps = df[group_param].value_counts().head(3).index.sort_values()
+        heatmap_params = [p for p in param_cols if p != group_param][:2]  # Use first 2 remaining
+    else:
+        top_gaps = [None]  # No grouping, single heatmap
+        heatmap_params = param_cols[:2]
 
     metrics = [
         ('f3_weighted_mean', 'F3-Weighted Score'),
@@ -248,15 +312,23 @@ def plot_parameter_heatmaps(df, output_dir):
             axes = [axes]
 
         for idx, gap in enumerate(top_gaps):
-            subset = df[df['min_gap_samples'] == gap]
+            if gap is not None:
+                subset = df[df[group_param] == gap]
+                title_suffix = f'{group_param} = {gap}'
+            else:
+                subset = df
+                title_suffix = ''
 
-            # Pivot for heatmap
-            pivot = subset.pivot_table(
-                values=metric_col,
-                index='delta',
-                columns='ma_window',
-                aggfunc='mean'
-            )
+            # Pivot for heatmap using detected parameters
+            if len(heatmap_params) >= 2:
+                pivot = subset.pivot_table(
+                    values=metric_col,
+                    index=heatmap_params[0],
+                    columns=heatmap_params[1],
+                    aggfunc='mean'
+                )
+            else:
+                continue  # Skip if not enough parameters
 
             ax = axes[idx]
             sns.heatmap(
@@ -267,9 +339,9 @@ def plot_parameter_heatmaps(df, output_dir):
                 ax=ax,
                 cbar_kws={'label': metric_name}
             )
-            ax.set_title(f'min_gap = {int(gap)}', fontsize=12, fontweight='bold')
-            ax.set_xlabel('MA Window', fontsize=10)
-            ax.set_ylabel('Delta', fontsize=10)
+            ax.set_title(title_suffix, fontsize=12, fontweight='bold')
+            ax.set_xlabel(heatmap_params[1].replace('_', ' ').title(), fontsize=10)
+            ax.set_ylabel(heatmap_params[0].replace('_', ' ').title(), fontsize=10)
 
         plt.suptitle(f'{metric_name} by Parameters', fontsize=14, fontweight='bold', y=1.02)
         plt.tight_layout()
@@ -401,17 +473,41 @@ def plot_parameter_sensitivity(df, output_dir):
     """
     Line plots showing how each parameter affects key metrics.
     """
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    # Auto-detect parameters
+    param_cols = [col for col in df.columns if col in
+                  ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
+                   'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size',
+                   'stat_size', 'lambda_option']]
 
-    params = ['delta', 'ma_window', 'min_gap_samples']
+    if not param_cols:
+        print("Warning: No parameters found for sensitivity analysis. Skipping.")
+        return
+
+    # Limit to 6 parameters max (2 rows × 3 cols)
+    params = param_cols[:6]
+    n_params = len(params)
+    n_cols = min(3, n_params)
+    n_rows = (n_params + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5.5 * n_cols, 5 * n_rows))
+    if n_rows == 1 and n_cols == 1:
+        axes = np.array([[axes]])
+    elif n_rows == 1 or n_cols == 1:
+        axes = axes.reshape(n_rows, n_cols)
     metrics = [
         ('f3_weighted_mean', 'F3-Weighted'),
         ('recall_10s_mean', 'Recall @ 10s')
     ]
 
-    for row_idx, (metric_col, metric_name) in enumerate(metrics):
-        for col_idx, param in enumerate(params):
+    plot_idx = 0
+    for metric_col, metric_name in metrics:
+        for param in params:
+            if plot_idx >= n_rows * n_cols:
+                break
+            row_idx = plot_idx // n_cols
+            col_idx = plot_idx % n_cols
             ax = axes[row_idx, col_idx]
+            plot_idx += 1
 
             # Group by parameter and calculate mean/std
             grouped = df.groupby(param)[metric_col].agg(['mean', 'std']).reset_index()
@@ -424,14 +520,21 @@ def plot_parameter_sensitivity(df, output_dir):
                 alpha=0.3
             )
 
-            ax.set_xlabel(param.replace('_', ' ').title(), fontsize=10)
+            param_label = param.replace('_', ' ').title()
+            ax.set_xlabel(param_label, fontsize=10)
             ax.set_ylabel(metric_name, fontsize=10)
-            ax.set_title(f'{metric_name} vs {param.replace("_", " ").title()}', fontsize=11, fontweight='bold')
+            ax.set_title(f'{metric_name} vs {param_label}', fontsize=11, fontweight='bold')
             ax.grid(True, alpha=0.3)
 
-            # Log scale for ma_window if applicable
-            if param == 'ma_window':
+            # Log scale for certain parameters
+            if param in ['ma_window', 'window_size', 'stat_size']:
                 ax.set_xscale('log')
+
+    # Hide unused subplots
+    for idx in range(plot_idx, n_rows * n_cols):
+        row_idx = idx // n_cols
+        col_idx = idx % n_cols
+        axes[row_idx, col_idx].set_visible(False)
 
     plt.tight_layout()
     output_path = output_dir / 'parameter_sensitivity.png'
