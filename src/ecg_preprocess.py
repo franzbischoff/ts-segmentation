@@ -192,7 +192,12 @@ def resample_signal(df: pd.DataFrame, orig_fs: int, target_fs: int) -> pd.DataFr
 
 
 def clean_truth(truth: Sequence[int], data_size: int, first: bool = True, last: bool = True) -> np.ndarray:
-    """Mirror R clean_truth: remove events within 15 samples of each other; drop edges."""
+    """Mirror R clean_truth: remove events within 15 samples of each other; drop edges.
+
+    When only one regime change exists at the edges, returns a placeholder value (1 or data_size).
+    These placeholders should be detected and the record should be skipped during preprocessing.
+    See main() for the check: if rec.regimes.size == 1 and rec.regimes[0] in (0, 1, data_size).
+    """
     if last and data_size is None:
         raise ValueError("data_size must be provided when last is True")
     truth = np.sort(np.asarray(truth, dtype=int))
@@ -202,9 +207,9 @@ def clean_truth(truth: Sequence[int], data_size: int, first: bool = True, last: 
     keep_mask = np.concatenate(([True], np.diff(truth) > 15))
     truth = truth[keep_mask]
     if first and truth.size and truth[0] <= 10:
-        truth = truth[1:] if truth.size > 1 else np.array([1])
+        truth = truth[1:] if truth.size > 1 else np.array([1])  # placeholder if only 1
     if last and truth.size and truth[-1] >= (data_size - 10):
-        truth = truth[:-1] if truth.size > 1 else np.array([data_size])
+        truth = truth[:-1] if truth.size > 1 else np.array([data_size])  # placeholder if only 1
     return truth
 
 
@@ -290,6 +295,13 @@ def main():
             rec = load_record(h, resample_to=args.resample_to)
             if rec.regimes.size == 0:  # drop records with no regime change
                 continue
+            # Drop records with only invalid placeholder values (0, 1, or data_size)
+            # These are created by clean_truth when the only regime change is at the edges
+            if rec.regimes.size == 1:
+                placeholder_value = rec.regimes[0]
+                data_size = len(rec.signals)
+                if placeholder_value in (0, 1, data_size):
+                    continue
             records.append(rec)
         except Exception as e:  # noqa
             # Skip problematic file but continue

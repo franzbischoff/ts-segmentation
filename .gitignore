@@ -23,6 +23,8 @@ results/**/*.json
 results/**/*.jsonl
 results/**/*.parquet
 results/**/*.csv
+results/**/*.zip
+results/**/*.bz2
 
 # Synthetic / Generated data (keep real data separately)
 data/
