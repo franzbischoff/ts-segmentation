@@ -1,6 +1,6 @@
 # Métrica utilizada pelo scikit-multiflow (agente)
 
-- A biblioteca **scikit-multiflow** fornece apenas os detectores (ADWIN, PageHinkley, DDM)
+-- A biblioteca **scikit-multiflow** fornece vários detectores (ADWIN, PageHinkley, DDM, EDDM, KSWIN, HDDM_A, HDDM_W). Neste repositório, DDM e EDDM foram removidos do fluxo de trabalho por não serem adequados para detecção de mudanças em valores contínuos.
 - As métricas foram estabelecidas pelo agente que implementou o teste da biblioteca
 
 Sendo:

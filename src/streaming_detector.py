@@ -30,28 +30,6 @@ def run_stream_on_dataframe(df, detector_name: str, sample_rate: int, tolerance:
         diff[1:] = np.diff(signal)
         signal = diff
 
-    # DDM requires binary error values (0 or 1)
-    # Convert signal to error stream using rolling statistics
-    is_ddm = detector_name.lower() in {'ddm', 'eddm'}
-    if is_ddm:
-        # Use rolling window to detect anomalies
-        window_size = 250  # 1 second at 250 Hz
-        error_signal = np.zeros(len(signal))
-
-        for i in range(window_size, len(signal)):
-            window = signal[i-window_size:i]
-            mean = np.mean(window)
-            std = np.std(window)
-
-            # Flag as error if current value deviates significantly
-            if std > 0:
-                z_score = abs((signal[i] - mean) / std)
-                error_signal[i] = 1 if z_score > 2.0 else 0  # 2-sigma threshold
-            else:
-                error_signal[i] = 0
-
-        signal = error_signal
-
     # Streaming loop
     last_detection_idx = -10**12
     for idx, row in enumerate(df.itertuples()):
@@ -140,7 +118,7 @@ def run_stream(data_path: str | None, detector_name: str, sample_rate: int, batc
 def parse_args():
     ap = argparse.ArgumentParser(description="Streaming regime change detection baseline")
     ap.add_argument('--data', type=str, default=None, help='Caminho para CSV com sinal ECG')
-    ap.add_argument('--detector', type=str, default='page_hinkley', help='Detector: page_hinkley|adwin|ddm')
+    ap.add_argument('--detector', type=str, default='page_hinkley', help='Detector: page_hinkley|adwin|kswin|hddm_a|hddm_w')
     ap.add_argument('--sample-rate', type=int, default=250, help='Frequência de amostragem (Hz)')
     ap.add_argument('--tolerance', type=int, default=50, help='Tolerância em samples para casar detecção com ground-truth')
     ap.add_argument('--force-regen', action='store_true', help='Força regenerar sinal sintético (se sem data)')

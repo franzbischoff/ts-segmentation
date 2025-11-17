@@ -49,18 +49,7 @@ results/
 **Vantagens**: Rápido, baixa memória
 **Parâmetros**: lambda, delta, alpha
 
-### 🔄 DDM (Drift Detection Method)
-**Status**: A implementar
-**Pasta**: `results/ddm/`
-**Princípio**: Monitora taxa de erro (para classificação)
-**Adaptação**: Usar threshold em valor absoluto ou derivada
-**Parâmetros**: warning_level, drift_level
-
-### 🔄 EDDM (Early Drift Detection Method)
-**Status**: Planejado
-**Pasta**: `results/eddm/`
-**Princípio**: Versão precoce do DDM
-**Vantagens**: Detecta mudanças graduais
+<!-- DDM/EDDM removidos do pipeline: não são usados para detecção de mudanças em séries temporais contínuas. -->
 
 ### 🔄 HDDM (Hoeffding's Bound Drift Detection)
 **Status**: Planejado
@@ -150,10 +139,10 @@ Documento markdown comparando:
 Tabela CSV com rankings por métrica:
 ```csv
 metric,rank1,rank2,rank3,...
-f3_weighted,adwin,page_hinkley,ddm,...
+f3_weighted,adwin,page_hinkley,kswin,hddm_w,...
 nab_standard,page_hinkley,adwin,kswin,...
 recall_10s,adwin,hddm,page_hinkley,...
-fp_per_min,ddm,page_hinkley,adwin,...
+fp_per_min,page_hinkley,adwin,kswin,hddm_w,...
 ```
 
 ### Ensemble Analysis
@@ -216,8 +205,8 @@ MIN_GAP_VALUES = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000]
 - Tempo visualizações: ~30 segundos
 - **Total**: ~50 minutos por detector
 
-### Estimativas para 6 detectores
-- Tempo total: ~5 horas
+### Estimativas para 5 detectores
+- Tempo total: ~4 horas
 - Espaço em disco: ~1 GB (predições + métricas + visualizações)
 - RAM necessária: ~2 GB
 

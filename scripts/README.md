@@ -4,52 +4,7 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 ## 📋 Scripts Disponíveis
 
-### 1. **generate_ddm.sh** ⚡ RÁPIDO
-**Detector**: DDM (Drift Detection Method)
-**Combinações**: 84
-**Tempo estimado**: ~15 minutos (229 ficheiros)
-**Prioridade**: 🔥 Alta - Melhor F3 na validação (0.5477)
-
-```bash
-./generate_ddm.sh
-```
-
-**Configuração**:
-- `ma_window`: [10, 30, 50, 100, 200, 300] (6 valores)
-- `min_gap_samples`: [500, 1000, 1500, 2000, 3000, 4000, 5000] (7 valores)
-- `use_derivative`: [True, False] (2 valores)
-
-**Características**:
-- Usa conversão binária (z-score > 2.0)
-- Sem parâmetros tunable do detector
-- Detecção rápida (EDD: 1.65s na validação)
-
----
-
-### 2. **generate_eddm.sh** ⚡ RÁPIDO
-**Detector**: EDDM (Early Drift Detection Method)
-**Combinações**: 84
-**Tempo estimado**: ~15 minutos (229 ficheiros)
-**Prioridade**: 🔥 Alta - Único NAB positivo (+0.27)
-
-```bash
-./generate_eddm.sh
-```
-
-**Configuração**:
-- `ma_window`: [10, 30, 50, 100, 200, 300] (6 valores)
-- `min_gap_samples`: [500, 1000, 1500, 2000, 3000, 4000, 5000] (7 valores)
-- `use_derivative`: [True, False] (2 valores)
-
-**Características**:
-- Usa conversão binária (z-score > 2.0)
-- Projetado para drift gradual
-- 100% Recall@10s na validação
-- Melhor resultado NAB Low FN
-
----
-
-### 3. **generate_page_hinkley.sh** 📊 MÉDIO
+### 1. **generate_page_hinkley.sh** 📊 MÉDIO
 **Detector**: Page-Hinkley (Cumulative Sum Test)
 **Combinações**: 384 (grid moderado)
 **Tempo estimado**: ~29 minutos (229 ficheiros)
@@ -73,7 +28,7 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 ---
 
-### 4. **generate_kswin.sh** 📊 MÉDIO-LENTO
+### 2. **generate_kswin.sh** 📊 MÉDIO-LENTO
 **Detector**: KSWIN (Kolmogorov-Smirnov Windowing)
 **Combinações**: 1,280
 **Tempo estimado**: ~90 minutos / 1.5 horas (229 ficheiros)
@@ -97,7 +52,7 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 ---
 
-### 5. **generate_hddm_a.sh** 📊 MÉDIO
+### 3. **generate_hddm_a.sh** 📊 MÉDIO
 **Detector**: HDDM_A (Hoeffding Drift Detection - Average)
 **Combinações**: 640
 **Tempo estimado**: ~60 minutos / 1 hora (229 ficheiros)
@@ -121,7 +76,7 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 ---
 
-### 6. **generate_hddm_w.sh** 🐌 LENTO
+### 4. **generate_hddm_w.sh** 🐌 LENTO
 **Detector**: HDDM_W (Hoeffding Drift Detection - Weighted)
 **Combinações**: 2,560
 **Tempo estimado**: ~180 minutos / 3 horas (229 ficheiros)
@@ -147,7 +102,7 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 ---
 
-### 7. **extend_min_gap_grid.sh** 🔧 ESPECÍFICO ADWIN
+### 5. **extend_min_gap_grid.sh** 🔧 ESPECÍFICO ADWIN
 **Detector**: ADWIN (extensão)
 **Combinações**: 594 (novas)
 **Tempo estimado**: ~53 minutos (229 ficheiros)
@@ -169,36 +124,34 @@ Este diretório contém scripts automatizados para executar grid search completo
 
 | Script | Detector | Combinações | Tempo | F3 (validação) | Recall@10s | Prioridade |
 |--------|----------|-------------|-------|----------------|------------|------------|
-| `generate_ddm.sh` | DDM | 84 | ~15 min | **0.5477** 🏆 | 93.33% | 🔥 Alta |
-| `generate_eddm.sh` | EDDM | 84 | ~15 min | 0.5122 | **100%** 🏆 | 🔥 Alta |
-| `generate_hddm_w.sh` | HDDM_W | 2,560 | ~180 min | 0.5342 ⭐ | 74.29% | 🔥 Alta |
+| `generate_hddm_w.sh` | HDDM_W | 2,560 | ~180 min | 0.5342 🏆 | 74.29% | 🔥 Alta |
+| `generate_kswin.sh` | KSWIN | 1,280 | ~90 min | 0.5035 | **100%** 🏆 | 🔥 Alta |
 | `generate_page_hinkley.sh` | Page-Hinkley | 384 | ~29 min | 0.1629 | 32.76% | ⭐ Média |
-| `generate_kswin.sh` | KSWIN | 1,280 | ~90 min | 0.5035 | **100%** 🏆 | ⭐ Média |
 | `generate_hddm_a.sh` | HDDM_A | 640 | ~60 min | 0.2967 | 48.57% | 📊 Baixa |
 | `extend_min_gap_grid.sh` | ADWIN | 594 | ~53 min | - | - | ⏳ Rodando |
 
-**Tempo Total**: ~442 minutos (~7.4 horas)
+**Tempo Total**: ~412 minutos (~6.9 horas)
+
+**Nota**: DDM e EDDM foram removidos por serem inadequados para análise de séries temporais (projetados para classificação binária).
 
 ---
 
 ## 🚀 Ordem Recomendada de Execução
 
-### Fase 1: Rápidos e Prioritários (~30 min)
+### Fase 1: Rápido (~29 min)
 ```bash
-./generate_ddm.sh      # 15 min - Melhor F3
-./generate_eddm.sh     # 15 min - Único NAB positivo
+./generate_page_hinkley.sh  # 29 min - Grid moderado, menos FP
 ```
 
-### Fase 2: Médios (~119 min)
+### Fase 2: Médios (~150 min)
 ```bash
-./generate_page_hinkley.sh  # 29 min - Grid moderado
 ./generate_kswin.sh         # 90 min - 100% Recall
+./generate_hddm_a.sh        # 60 min - Performance moderada
 ```
 
-### Fase 3: Lentos (~240 min)
+### Fase 3: Lento (~180 min)
 ```bash
-./generate_hddm_a.sh   # 60 min - Performance moderada
-./generate_hddm_w.sh   # 180 min - Segundo melhor F3
+./generate_hddm_w.sh   # 180 min - Melhor F3 (0.5342)
 ```
 
 ### Fase 4: ADWIN (aguardar término)
@@ -250,20 +203,16 @@ Todos os scripts usam:
 
 ## 🔍 Detalhes Técnicos
 
-### Conversão Binária (DDM/EDDM)
-Detectores DDM e EDDM requerem valores binários (0/1). O sistema converte automaticamente:
-- Janela de 250 samples (1 segundo @ 250 Hz)
-- Z-score calculado sobre janela móvel
-- Threshold: |z-score| > 2.0 → erro (1), caso contrário → correto (0)
+### Observação: DDM/EDDM removidos
+DDM e EDDM foram removidos do fluxo de trabalho por serem apropriados para concept drift em streams de labels (classificação binária) e não para análise de valores contínuos em séries temporais. Caso alguém entenda a sua utilidade no futuro, manter a conversão binária em um branch separado é uma opção.
 
 ### Parâmetros Comuns
 - **ma_window**: Suavização do sinal (média móvel)
 - **min_gap_samples**: Gap mínimo entre detecções consecutivas
-- **use_derivative**: Usar primeira derivada do sinal (DDM/EDDM)
+-- **use_derivative**: Usar primeira derivada do sinal (apenas para detectores que precisem explicitamente, atualmente não usado por DDM/EDDM no pipeline principal)
 
 ### Resultados da Validação (5 ficheiros)
-- **DDM**: F3=0.5477, EDD=1.65s, FP/min=7.45
-- **EDDM**: F3=0.5122, NAB Low FN=+0.27 ✨, Recall@10s=100%
+**Nota**: Os resultados de DDM/EDDM figuram no histórico do projeto, mas tais detectores foram removidos do fluxo ativo por serem inadequados para time series contínuas. Os detectores atualmente em uso são: ADWIN, Page-Hinkley, KSWIN, HDDM_A e HDDM_W.
 - **HDDM_W**: F3=0.5342, EDD=1.73s, FP/min=3.84
 - **KSWIN**: Recall@10s=100%, mas FP/min=10.65
 - **Page-Hinkley**: FP/min=3.08 (melhor), mas Recall@10s=32.76%

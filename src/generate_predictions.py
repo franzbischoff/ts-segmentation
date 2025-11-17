@@ -53,32 +53,6 @@ def create_param_grid_page_hinkley(custom_params: Dict[str, List[Any]] = None) -
     # Total: 4 × 4 × 2 × 3 × 4 = 384 combinations (moderado - reduzido de 9,408)
 
 
-def create_param_grid_ddm(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
-    """Create parameter grid for DDM detector."""
-    if custom_params:
-        return custom_params
-
-    return {
-        'ma_window': [10, 30, 50, 100, 200, 300],
-        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
-        'use_derivative': [True, False],  # DDM may need derivative
-    }
-    # Total: 6 × 7 × 2 = 84 combinations (DDM has no tunable params)
-
-
-def create_param_grid_eddm(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
-    """Create parameter grid for EDDM detector."""
-    if custom_params:
-        return custom_params
-
-    return {
-        'ma_window': [10, 30, 50, 100, 200, 300],
-        'min_gap_samples': [500, 1000, 1500, 2000, 3000, 4000, 5000],
-        'use_derivative': [True, False],  # EDDM may need derivative
-    }
-    # Total: 6 × 7 × 2 = 84 combinations (EDDM has no tunable params)
-
-
 def create_param_grid_kswin(custom_params: Dict[str, List[Any]] = None) -> Dict[str, List[Any]]:
     """Create parameter grid for KSWIN detector."""
     if custom_params:
@@ -133,10 +107,6 @@ def create_param_grid(detector_name: str, custom_params: Dict[str, List[Any]] = 
         return create_param_grid_adwin(custom_params)
     elif detector_lower in ['page_hinkley', 'ph']:
         return create_param_grid_page_hinkley(custom_params)
-    elif detector_lower == 'ddm':
-        return create_param_grid_ddm(custom_params)
-    elif detector_lower == 'eddm':
-        return create_param_grid_eddm(custom_params)
     elif detector_lower == 'kswin':
         return create_param_grid_kswin(custom_params)
     elif detector_lower in ['hddm_a', 'hddm-a']:
@@ -159,10 +129,6 @@ def extract_detector_params(detector_name: str, params: Dict[str, Any]) -> Dict[
             'delta': params['delta'],
             'alpha': params['alpha']
         }
-    elif detector_lower == 'ddm':
-        return {}  # DDM has no tunable parameters
-    elif detector_lower == 'eddm':
-        return {}  # EDDM has no tunable parameters
     elif detector_lower == 'kswin':
         return {
             'alpha': params['alpha'],
@@ -194,10 +160,6 @@ def get_result_columns(detector_name: str) -> List[str]:
         return ['delta', 'ma_window', 'min_gap_samples']
     elif detector_lower in ['page_hinkley', 'ph']:
         return ['lambda_', 'delta', 'alpha', 'ma_window', 'min_gap_samples']
-    elif detector_lower == 'ddm':
-        return ['ma_window', 'min_gap_samples', 'use_derivative']
-    elif detector_lower == 'eddm':
-        return ['ma_window', 'min_gap_samples', 'use_derivative']
     elif detector_lower == 'kswin':
         return ['alpha', 'window_size', 'stat_size', 'ma_window', 'min_gap_samples']
     elif detector_lower in ['hddm_a', 'hddm-a']:
@@ -237,9 +199,6 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
             # Configure detector parameters
             detector_params = extract_detector_params(detector_name, params)
 
-            # Get use_derivative if present (for DDM)
-            use_derivative = params.get('use_derivative', False)
-
             # Run detection
             events, metrics, actual_detector_name = run_stream_on_dataframe(
                 df=record_data,
@@ -248,7 +207,7 @@ def process_single_file_predictions(record_id: str, record_data: pd.DataFrame,
                 tolerance=500,  # Not used for evaluation here, just for compatibility
                 detector_params=detector_params,
                 ma_window=params['ma_window'],
-                use_derivative=use_derivative,
+                use_derivative=False,
                 min_gap_samples=params['min_gap_samples']
             )
 
@@ -349,7 +308,7 @@ def generate_predictions_dataset(data_path: str, output_path: str,
     Args:
         data_path: Path to tidy CSV with id column
         output_path: Output CSV path for predictions
-        detector_name: Name of detector ('adwin', 'page_hinkley', 'ddm')
+        detector_name: Name of detector ('adwin', 'page_hinkley', 'kswin', 'hddm_a', 'hddm_w')
         sample_rate: Sampling rate
         n_jobs: Number of parallel jobs (-1 for all cores)
         max_files: Limit number of files (for testing)
@@ -500,7 +459,7 @@ Examples:
         """
     )
     parser.add_argument('--detector', required=True,
-                       choices=['adwin', 'page_hinkley', 'ddm', 'eddm', 'kswin', 'hddm_a', 'hddm_w'],
+                       choices=['adwin', 'page_hinkley', 'kswin', 'hddm_a', 'hddm_w'],
                        help='Detector type to use')
     parser.add_argument('--data', required=True, help='Path to tidy CSV with id column')
     parser.add_argument('--output', required=True, help='Output CSV path for predictions')
@@ -531,10 +490,6 @@ Examples:
     parser.add_argument('--alpha', type=float, nargs='+', default=None,
                        help='Alpha (forgetting factor) values to test (Page-Hinkley/KSWIN) (overrides default)')
 
-    # DDM/EDDM specific
-    parser.add_argument('--use-derivative', action='store_true',
-                       help='Use derivative of signal (DDM/EDDM) (overrides default)')
-
     # KSWIN specific
     parser.add_argument('--ks-alpha', type=float, nargs='+', default=None,
                        help='Alpha (significance level) values for KSWIN (overrides default)')
@@ -561,7 +516,7 @@ Examples:
 
     # Check if any custom params specified
     has_custom = (args.ma_window or args.min_gap or args.delta or
-                  args.lambda_ or args.ph_delta or args.alpha or args.use_derivative)
+                  args.lambda_ or args.ph_delta or args.alpha)
 
     if has_custom:
         # Load defaults for this detector
@@ -580,20 +535,6 @@ Examples:
                 'alpha': args.alpha if args.alpha else default_grid['alpha'],
                 'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
                 'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples']
-            }
-        elif detector_lower == 'ddm':
-            use_deriv_values = [True, False] if args.use_derivative else default_grid['use_derivative']
-            custom_param_grid = {
-                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
-                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples'],
-                'use_derivative': use_deriv_values
-            }
-        elif detector_lower == 'eddm':
-            use_deriv_values = [True, False] if args.use_derivative else default_grid['use_derivative']
-            custom_param_grid = {
-                'ma_window': args.ma_window if args.ma_window else default_grid['ma_window'],
-                'min_gap_samples': args.min_gap if args.min_gap else default_grid['min_gap_samples'],
-                'use_derivative': use_deriv_values
             }
         elif detector_lower == 'kswin':
             custom_param_grid = {

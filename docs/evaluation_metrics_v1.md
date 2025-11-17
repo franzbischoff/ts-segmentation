@@ -8,7 +8,7 @@ Este documento descreve em detalhe os critérios utilizados para avaliar a quali
 
 **Importante**: Estamos a calcular **manualmente** o Precision, Recall e F1-Score.
 
-- A biblioteca **scikit-multiflow** fornece apenas os detectores (ADWIN, PageHinkley, DDM)
+- A biblioteca **scikit-multiflow** fornece vários detectores (ADWIN, PageHinkley, DDM, EDDM, KSWIN, HDDM_A, HDDM_W). Neste projeto, DDM e EDDM foram removidos do pipeline por serem projetados para concept drift em classificação binária — optamos por detectar mudanças em valores contínuos com detectores específicos para séries temporais.
 - As métricas de avaliação são **totalmente implementadas** em `src/evaluation.py`
 - O F1-Score é calculado explicitamente como média harmónica em `src/exhaustive_grid_search.py`
 

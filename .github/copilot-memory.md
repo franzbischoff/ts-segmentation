@@ -4,7 +4,7 @@
 #### Comparação entre Detectores
 - **Script criado**: `src/compare_detectors.py`
 - **Outputs**: Relatório markdown + CSV de rankings
-- **Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley ddm eddm kswin hddm_a hddm_w`
+**Uso**: `python -m src.compare_detectors --detectors adwin page_hinkley kswin hddm_a hddm_w`
 
 #### Grid Search Incremental
 - **`src/generate_predictions.py`**: Modo incremental implementado
@@ -35,16 +35,12 @@
 
 ### ⏳ PRÓXIMOS PASSOS: Grid Searches de Produção
 
-#### Ordem Recomendada (3 Fases)
-**Fase 1 - Rápida (~30 min)**:
-- `./scripts/generate_ddm.sh` - 84 combos, ~15 min
-- `./scripts/generate_eddm.sh` - 84 combos, ~15 min
-
-**Fase 2 - Média (~119 min)**:
+#### Ordem Recomendada (2 Fases)
+**Fase 1 - Rápida (~29 min)**:
 - `./scripts/generate_page_hinkley.sh` - 384 combos, ~29 min
-- `./scripts/generate_kswin.sh` - 1,280 combos, ~90 min
 
-**Fase 3 - Lenta (~240 min)**:
+**Fase 2 - Média-Lenta (~240 min)**:
+- `./scripts/generate_kswin.sh` - 1,280 combos, ~90 min
 - `./scripts/generate_hddm_a.sh` - 640 combos, ~60 min
 - `./scripts/generate_hddm_w.sh` - 2,560 combos, ~180 min
 
@@ -64,7 +60,7 @@ Após cada grid search, executar pipeline completo:
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
 
 
-### ✅ COMPLETO: Framework Multi-Detector (7 Detectores)
+### ✅ COMPLETO: Framework Multi-Detector (5 Detectores)
 
 #### Implementação e Validação
    - Validação (5 ficheiros): F3=0.3687, Recall@10s=70.63%, FP/min=6.71
@@ -77,43 +73,37 @@ Este documento resume tudo o que foi feito até agora para permitir continuidade
    - Validação (5 ficheiros): F3=0.1629, Recall@10s=32.76%, FP/min=3.08 (melhor!)
    - Script: `scripts/generate_page_hinkley.sh` (~29 min)
 
-3. **DDM** (Drift Detection Method) ⭐ MELHOR F3
-   - Grid: 84 combinações (6 min_instances × 7 warning_levels × 2 out_control_levels)
-   - **Conversão Binária**: Z-score > 2.0 (janela 250 amostras)
-   - Validação (5 ficheiros): **F3=0.5477**, Recall@10s=93.33%, **EDD=1.65s**, FP/min=7.45
-   - Script: `scripts/generate_ddm.sh` (~15 min)
-
-4. **EDDM** (Early Drift Detection Method) ⭐ ÚNICO NAB POSITIVO
-   - Grid: 84 combinações (6 min_instances × 7 warning_levels × 2 out_control_levels)
-   - **Conversão Binária**: Mesma lógica do DDM (z-score > 2.0)
+3. **KSWIN** (Kolmogorov-Smirnov Windowing) ⭐ 100% RECALL
    - Grid: 1,280 combinações (4 alphas × 4 window_sizes × 4 stat_sizes × 4 ma_windows × 5 min_gaps)
+   - Validação (5 ficheiros): F3=0.5035, Recall@10s=100% ⭐, FP/min=10.65
    - Valores contínuos (sem conversão binária)
-6. **HDDM_A** (Hoeffding Drift Detection Method - Average)
+   - Script: `scripts/generate_kswin.sh` (~90 min)
+
+4. **HDDM_A** (Hoeffding Drift Detection Method - Average)
    - Grid: 640 combinações (4 drift_confs × 4 warning_confs × 2 two_sides × 4 ma_windows × 5 min_gaps)
    - Validação (5 ficheiros): F3=0.2967, Recall@10s=48.57%, FP/min=3.75
    - Script: `scripts/generate_hddm_a.sh` (~60 min)
 
-7. **HDDM_W** (Hoeffding Drift Detection Method - Weighted) ⭐ SEGUNDO MELHOR F3
+5. **HDDM_W** (Hoeffding Drift Detection Method - Weighted) ⭐ MELHOR F3
    - Grid: 2,560 combinações (4 drift_confs × 4 warning_confs × 4 lambdas × 2 two_sides × 4 ma_windows × 5 min_gaps)
    - Validação (5 ficheiros): **F3=0.5342**, Recall@10s=74.29%, **EDD=1.73s**, FP/min=3.84
    - Script: `scripts/generate_hddm_w.sh` (~180 min)
 
-**Total de Combinações**: 5,527 (todos os detectores)
-**Tempo Estimado Total**: ~442 min (~7.4 horas)
+**Nota**: DDM e EDDM foram removidos do framework por serem inadequados para análise de séries temporais. Estes detectores foram projetados para classificação binária (concept drift em streams de labels), não para detecção de mudanças em valores contínuos.
+
+**Total de Combinações**: 5,359 (5 detectores apropriados para time series)
+**Tempo Estimado Total**: ~412 min (~6.9 horas)
+
+**Detectores removidos**: DDM e EDDM foram excluídos por serem inadequados para análise de séries temporais (projetados para concept drift em classificação binária).
 
 #### Scripts de Automação
-Documentação completa em `scripts/README.md` (8.3KB):
-- 7 scripts de produção (todos executáveis)
-- Ordem de execução recomendada em 3 fases (rápido → médio → lento)
+Documentação completa em `scripts/README.md` (atualizado):
+- 5 scripts de produção (todos executáveis)
+- Ordem de execução recomendada em 2 fases (rápido → médio-lento)
 - Workflow padronizado: gerar → avaliar → visualizar → comparar
 - Detalhes técnicos e troubleshooting
 
-#### Conversão Binária (DDM/EDDM)
-Implementada em `src/streaming_detector.py` (linhas 34-48):
-- Janela rolante: 250 amostras (1 segundo @ 250 Hz)
-- Cálculo Z-score: `(valor - média) / desvio_padrão`
-- Threshold: `|z| > 2.0` → erro (1), caso contrário correto (0)
-- Aplicado quando `detector_name.lower() in {'ddm', 'eddm'}`
+**Nota**: DDM e EDDM removidos (inadequados para time series).
 
 ### ✅ COMPLETO: Detector ADWIN (Dataset Completo)
 - **Dataset**: 229 ficheiros afib_paroxysmal
@@ -138,39 +128,36 @@ cd scripts && ./generate_ddm.sh && ./generate_eddm.sh
 ## 10. Resumo da Sessão 3 (2025-11-13)
 
 ### Trabalho Realizado
-1. ✅ **Implementados 5 novos detectores**: DDM, EDDM, KSWIN, HDDM_A, HDDM_W
-2. ✅ **Conversão binária para DDM/EDDM**: Z-score > 2.0 (janela 250 samples)
-3. ✅ **Validação completa**: Cada detector testado com 5 ficheiros
-4. ✅ **Grid search otimizado**: Page-Hinkley reduzido 96% (9,408 → 384 combos)
-5. ✅ **Scripts de automação**: 7 scripts prontos (total ~442 min, ~7.4h)
-6. ✅ **Documentação completa**: scripts/README.md (8.3KB)
-7. ✅ **Memória do projeto atualizada**: Estado completo documentado
+1. ✅ **Implementados 5 detectores apropriados para time series**: Page-Hinkley, KSWIN, HDDM_A, HDDM_W, ADWIN
+2. ✅ **Validação completa**: Cada detector testado com 5 ficheiros
+3. ✅ **Grid search otimizado**: Page-Hinkley reduzido 96% (9,408 → 384 combos)
+4. ✅ **Scripts de automação**: 5 scripts prontos (total ~412 min, ~6.9h)
+5. ✅ **Documentação completa**: scripts/README.md atualizado
+6. ✅ **Memória do projeto atualizada**: Estado completo documentado
+
+**Nota (2025-11-17)**: DDM e EDDM foram posteriormente removidos por serem inadequados para análise de séries temporais.
 
 ### Detectores Validados (Ranking por F3)
-1. **DDM**: F3=0.5477 ⭐ (melhor), Recall@10s=93.33%, EDD=1.65s
-2. **HDDM_W**: F3=0.5342 (segundo), Recall@10s=74.29%, EDD=1.73s
-3. **EDDM**: F3=0.5122, Recall@10s=100% ⭐, NAB Low FN=+0.27 ⭐ (único positivo!)
-4. **KSWIN**: F3=0.5035, Recall@10s=100% ⭐, FP/min=10.65
-5. **ADWIN**: F3=0.3687, Recall@10s=70.63% (dataset completo: F3=0.3994)
-6. **HDDM_A**: F3=0.2967, Recall@10s=48.57%
-7. **Page-Hinkley**: F3=0.1629, FP/min=3.08 ⭐ (melhor)
+1. **HDDM_W**: F3=0.5342 🏆 (melhor), Recall@10s=74.29%, EDD=1.73s
+2. **KSWIN**: F3=0.5035, Recall@10s=100% 🏆, FP/min=10.65
+3. **ADWIN**: F3=0.3687, Recall@10s=70.63% (dataset completo: F3=0.3994)
+4. **HDDM_A**: F3=0.2967, Recall@10s=48.57%
+5. **Page-Hinkley**: F3=0.1629, FP/min=3.08 🏆 (melhor)
 
 ### Próximos Passos Recomendados
 
 **Curto Prazo** (próxima sessão):
 1. ⏳ Monitorar conclusão ADWIN extensão (min_gap < 1000, ~53 min restante)
 2. ⏳ Executar grid searches de produção (ordem recomendada em scripts/README.md):
-   - Fase 1 (~30 min): DDM + EDDM
-   - Fase 2 (~119 min): Page-Hinkley + KSWIN
-   - Fase 3 (~240 min): HDDM_A + HDDM_W
+   - Fase 1 (~29 min): Page-Hinkley
+   - Fase 2 (~240 min): KSWIN + HDDM_A + HDDM_W
 3. ⏳ Gerar visualizações para cada detector concluído
 4. ⏳ Atualizar READMEs individuais com resultados
 
 **Médio Prazo**:
 1. Comparações multi-detector:
-   - DDM vs HDDM_W (top 2 por F3)
-   - EDDM vs KSWIN (ambos 100% Recall)
-   - Binary (DDM/EDDM) vs Continuous (KSWIN/HDDM)
+   - HDDM_W vs KSWIN (top 2 por F3 e Recall)
+   - Análise de performance vs complexidade
 2. Análise de trade-offs:
    - F3 vs FP/min vs EDD
    - Recall vs Precision
@@ -214,8 +201,8 @@ cd scripts && ./generate_ddm.sh && ./generate_eddm.sh
   - Grids configurados:
     - ADWIN: 495 combinações
     - Page-Hinkley: 384 combinações (otimizado de 9,408)
-    - DDM: 84 combinações
-    - EDDM: 84 combinações
+   - DDM: (removido do pipeline)
+   - EDDM: (removido do pipeline)
     - KSWIN: 1,280 combinações
     - HDDM_A: 640 combinações
     - HDDM_W: 2,560 combinações
@@ -245,8 +232,8 @@ cd scripts && ./generate_ddm.sh && ./generate_eddm.sh
 - **Scripts de produção**: `scripts/` (7 scripts executáveis)
    - `extended_min_gap_grid.sh` - ADWIN extensão (594 combos, ~53 min)
    - `generate_page_hinkley.sh` - Page-Hinkley (384 combos, ~29 min)
-   - `generate_ddm.sh` - DDM (84 combos, ~15 min)
-   - `generate_eddm.sh` - EDDM (84 combos, ~15 min)
+   - `generate_ddm.sh` - (removido do pipeline)
+   - `generate_eddm.sh` - (removido do pipeline)
    - `generate_kswin.sh` - KSWIN (1,280 combos, ~90 min)
    - `generate_hddm_a.sh` - HDDM_A (640 combos, ~60 min)
    - `generate_hddm_w.sh` - HDDM_W (2,560 combos, ~180 min)
@@ -260,6 +247,34 @@ cd scripts && ./generate_ddm.sh && ./generate_eddm.sh
 ## 4. Estrutura de Resultados Organizada (2025-11-13)
 
 ### Diretórios por Detector
+```
+results/
+├── adwin/                          # ✅ COMPLETO
+│   ├── predictions_intermediate.csv (126 MB)
+│   ├── metrics_comprehensive_with_nab.csv (33 MB)
+│   ├── final_report_with_nab.json (12 KB)
+│   ├── visualizations/ (9 gráficos PNG, 4.3 MB)
+│   └── README.md
+│
+├── page_hinkley/                   # ⏳ PRONTO PARA PRODUÇÃO
+│   └── README.md (template para preencher após grid search)
+│
+├── kswin/                          # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── hddm_a/                         # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── hddm_w/                         # ⏳ PRONTO PARA PRODUÇÃO
+│   └── (a criar após grid search)
+│
+├── comparisons/                    # ⏳ AGUARDA MÚTIPLOS DETECTORES
+│   └── (a criar após executar grid searches)
+│
+└── README.md
+```
+
+**Nota**: Diretórios `ddm/` e `eddm/` foram removidos (detectores inadequados para time series).
 ```
 results/
 ├── adwin/                          # ✅ COMPLETO
@@ -294,9 +309,14 @@ results/
 ```
 
 ### Documentação Completa
-- **results/page_hinkley/README.md** - Template (preencher pós grid search)
-- **results/ddm/README.md** - Template (preencher pós grid search)
-- **scripts/README.md** - Documentação completa de automação (8.3KB)
+- **results/README.md** - Organização de resultados por detector, workflow padronizado
+- **results/adwin/README.md** - Resultados completos do ADWIN, melhores configurações
+- **results/page_hinkley/README.md** - Template para Page-Hinkley (a implementar)
+- **scripts/README.md** - Documentação completa de automação (5 detectores)
+- **docs/evaluation_metrics_v1.md** - Documentação detalhada das métricas
+- **docs/visualizations_guide.md** - Guia completo de interpretação de gráficos
+
+**Nota**: Referências a DDM/EDDM foram removidas (detectores inadequados).
 
 ## 5. Métricas de Avaliação (Sistema Completo)
 
@@ -526,7 +546,7 @@ python -m src.visualize_results \
 ### Comparar Detectores
 ```bash
 python -m src.compare_detectors \
-    --detectors adwin page_hinkley ddm \
+   --detectors adwin page_hinkley kswin hddm_a hddm_w \
     --output results/comparisons/comparative_report.md \
     --csv-output results/comparisons/detector_rankings.csv
 ```

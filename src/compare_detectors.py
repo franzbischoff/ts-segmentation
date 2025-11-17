@@ -245,7 +245,7 @@ def main():
         '--detectors',
         nargs='+',
         required=True,
-        help='List of detector names to compare (e.g., adwin page_hinkley ddm)'
+        help='List of detector names to compare (e.g., adwin page_hinkley kswin hddm_a hddm_w)'
     )
     parser.add_argument(
         '--results-dir',

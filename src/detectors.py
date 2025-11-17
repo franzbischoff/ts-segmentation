@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any
 
-from skmultiflow.drift_detection import PageHinkley, ADWIN, DDM, EDDM, KSWIN, HDDM_A, HDDM_W
+from skmultiflow.drift_detection import PageHinkley, ADWIN, KSWIN, HDDM_A, HDDM_W
 
 
 class DriftDetectorWrapper:
@@ -34,12 +34,6 @@ def build_detector(name: str, **kwargs) -> DriftDetectorWrapper:
         delta = kwargs.get('delta', 0.002)
         detector = ADWIN(delta=delta)
         return DriftDetectorWrapper(detector, 'adwin')
-    if name_lower in {"ddm"}:
-        detector = DDM()
-        return DriftDetectorWrapper(detector, 'ddm')
-    if name_lower in {"eddm"}:
-        detector = EDDM()
-        return DriftDetectorWrapper(detector, 'eddm')
     if name_lower in {"kswin"}:
         alpha = kwargs.get('alpha', 0.005)
         window_size = kwargs.get('window_size', 100)

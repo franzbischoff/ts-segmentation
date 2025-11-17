@@ -79,17 +79,6 @@ sample_index,ecg,regime_change
 2,0.09,1
 3,0.45,0
 4,0.47,0
-```
-
-## Como funciona a detecção
-Para cada nova amostra (ou pequeno batch) alimentamos o detector. Quando o detector sinaliza mudança, registramos:
-- `sample_index`
-- `time_seconds = sample_index / 250.0`
-- `detector` (nome)
-
----
-
-## 1. Visão Geral da Implementação
 
 Pipeline (arquivo `src/streaming_detector.py`):
 1. Carregamento / geração do dataset (`data_loader.load_dataset`).
@@ -120,11 +109,7 @@ Detecção streaming verdadeira: nenhuma amostra futura é usada; pré-processam
 |-----------------|-------------------------------------|-------------------------------------------|-------------|
 | Page Hinkley    | Mudança de média (cumulativa)       | `lambda_`, `delta`, `alpha`               | Sensível ao escalonamento; requer shifts claros |
 | ADWIN           | Média adaptativa / janelas dinâmicas| `delta`                                   | Auto-ajusta janela; pode gerar muitos FP se `delta` pequeno |
-| DDM             | Desempenho de erro (classificação)  | (sem expostos aqui)                       | Menos adequado sem rótulos de erro de classificação |
-| EDDM            | Detecção precoce de drift gradual   | (sem expostos aqui)                       | Menos adequado sem rótulos de erro de classificação |
-
 **Atenção:** DDM e EDDM foram projetados para fluxos binários de acertos/erros (ex: classificadores). Para uso em sinais contínuos como ECG, é necessário converter o sinal em uma sequência binária de erros (z-score > 2.0). Essa adaptação pode perder nuances importantes do sinal e limitar a sensibilidade a mudanças sutis. Por isso, **não recomendamos o uso de DDM e EDDM no comparativo final** para dados de ECG streaming. Prefira detectores como ADWIN, Page-Hinkley, KSWIN e HDDM para dados contínuos.
-
 ---
 
 ## 3. Uso do CLI

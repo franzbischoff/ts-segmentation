@@ -1,4 +1,6 @@
-Este repositório implementa um baseline de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), incluindo: geração sintética, detectores (PageHinkley, ADWIN, DDM), avaliação de atraso/precisão, grid search simples, logging estruturado, integração com dataset real (afib_regimes via scripts convertidos de R) e preprocessamento (`ecg_preprocess.py`) com opção de limitar ficheiros e selecionar classe (paroxysmal/persistent/non_afib). Diretrizes: manter processamento estritamente streaming (sem lookahead), preservar reprodutibilidade (pinned deps), priorizar clareza e modularidade, adicionar melhorias incrementais validadas por execuções rápidas, documentar novos parâmetros no README e evitar adicionar dados grandes ao versionamento (usar `data/` ignorado).
+Este repositório implementa um baseline de detecção de mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz), incluindo: geração sintética, detectores apropriados para time series (PageHinkley, ADWIN, KSWIN, HDDM_A, HDDM_W), avaliação de atraso/precisão, grid search, logging estruturado, integração com dataset real (afib_regimes via scripts convertidos de R) e preprocessamento (`ecg_preprocess.py`) com opção de limitar ficheiros e selecionar classe (paroxysmal/persistent/non_afib). Diretrizes: manter processamento estritamente streaming (sem lookahead), preservar reprodutibilidade (pinned deps), priorizar clareza e modularidade, adicionar melhorias incrementais validadas por execuções rápidas, documentar novos parâmetros no README e evitar adicionar dados grandes ao versionamento (usar `data/` ignorado).
+
+**Nota Importante**: DDM e EDDM foram removidos do projeto por serem inadequados para análise de séries temporais. Estes detectores foram projetados para concept drift em classificação binária (streams de labels), não para detecção de mudanças em valores contínuos.
 
 ## Estrutura de Resultados Organizada por Detector
 
@@ -16,8 +18,14 @@ results/
 ├── page_hinkley/                   # Detector Page-Hinkley (🔄 PREPARADO)
 │   └── README.md                   # Template e instruções
 │
-├── ddm/                            # Detector DDM (🔄 PREPARADO)
-│   └── README.md                   # Template e instruções
+├── kswin/                          # Detector KSWIN (🔄 PREPARADO)
+│   └── (a criar após grid search)
+│
+├── hddm_a/                         # Detector HDDM_A (🔄 PREPARADO)
+│   └── (a criar após grid search)
+│
+├── hddm_w/                         # Detector HDDM_W (🔄 PREPARADO)
+│   └── (a criar após grid search)
 │
 ├── comparisons/                    # Comparações entre detectores
 │   └── (aguardando implementação de outros detectores)
@@ -37,7 +45,7 @@ Cada detector segue o mesmo pipeline de 3 passos:
 
 Após implementar múltiplos detectores, use:
 ```bash
-python -m src.compare_detectors --detectors adwin page_hinkley ddm --output results/comparisons/comparative_report.md
+python -m src.compare_detectors --detectors adwin page_hinkley kswin hddm_a hddm_w --output results/comparisons/comparative_report.md
 ```
 
 ## Documentação Principal
@@ -46,8 +54,10 @@ python -m src.compare_detectors --detectors adwin page_hinkley ddm --output resu
 - **results/README.md** - Organização de resultados por detector, workflow padronizado
 - **results/adwin/README.md** - Resultados completos do ADWIN, melhores configurações
 - **results/page_hinkley/README.md** - Template para Page-Hinkley (a implementar)
-- **results/ddm/README.md** - Template para DDM (a implementar)
 - **docs/evaluation_metrics_v1.md** - Documentação detalhada das métricas (F1/F3, NAB, temporal)
+- **docs/visualizations_guide.md** - Guia completo de interpretação de gráficos
+- **docs/reorganization_summary.md** - Resumo da reorganização por detector
+- **docs/nab_comparison_report.md** - Análise comparativa de resultados NAB
 - **docs/visualizations_guide.md** - Guia completo de interpretação de gráficos
 - **docs/reorganization_summary.md** - Resumo da reorganização por detector
 - **docs/nab_comparison_report.md** - Análise comparativa de resultados NAB
