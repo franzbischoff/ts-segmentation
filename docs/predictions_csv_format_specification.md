@@ -11,6 +11,30 @@ O CSV deve ter:
 - **Index**: NÃO incluir coluna de índice (usar `index=False` em pandas)
 - **Aspas**: apenas quando necessário para listas ou strings com vírgulas
 
+## ⚠️ Colunas Opcionais vs Obrigatórias
+
+### ✅ Colunas OBRIGATÓRIAS (mínimo necessário):
+
+1. **Identificação**: `record_id`, `detector`
+2. **Parâmetros do detector**: variável por detector (ex: `delta`, `ma_window`, `min_gap_samples`)
+3. **Duração do sinal**: `duration_seconds` (usado no cálculo de FP/min)
+4. **Ground truth**: `gt_times` (tempos em segundos)
+5. **Deteções**: `det_times` (tempos em segundos)
+6. **Contagens**: `n_detections`, `n_ground_truth`
+
+### ⚠️ Colunas OPCIONAIS (úteis mas não essenciais):
+
+- `duration_samples` - Útil para metadados, mas pode ser recalculado (`duration_seconds * 250`)
+- `processing_time` - Apenas para estatísticas de desempenho de geração
+- `error` - Apenas para registar erros durante geração
+
+### ❌ Colunas REDUNDANTES (podem ser omitidas):
+
+- `gt_indices` - Redundante, já temos `gt_times` (conversão: `gt_times = gt_indices / 250`)
+- `det_indices` - Redundante, já temos `det_times` (conversão: `det_times = det_indices / 250`)
+
+**Nota**: As especificações abaixo mostram o formato COMPLETO usado pelo Python. No R, você pode omitir as colunas redundantes/opcionais.
+
 ## Formato por Detector
 
 ### ADWIN
@@ -86,19 +110,24 @@ record_id,detector,drift_confidence,warning_confidence,lambda_option,two_side_op
 
 ### Colunas Comuns a Todos os Detectores
 
-| Coluna | Tipo | Descrição | Exemplo |
-|--------|------|-----------|---------|
-| `record_id` | string | Identificador único do ficheiro/sinal | `data_101_1.par` |
-| `detector` | string | Nome do detector usado | `adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w` |
-| `duration_samples` | integer | Duração do sinal em número de amostras | `145971` |
-| `duration_seconds` | float | Duração do sinal em segundos | `583.884` |
-| `gt_indices` | lista de int | Índices das mudanças de regime verdadeiras (ground truth) | `[70599]` |
-| `gt_times` | lista de float | Tempos em segundos das mudanças verdadeiras | `[282.396]` |
-| `det_indices` | lista de int | Índices das deteções feitas pelo algoritmo | `[799, 2463, 3839, 5119]` |
-| `det_times` | lista de float | Tempos em segundos das deteções | `[3.196, 9.852, 15.356, 20.476]` |
-| `n_detections` | integer | Número total de deteções | `68` |
-| `n_ground_truth` | integer | Número total de mudanças verdadeiras | `1` |
-| `processing_time` | float | Tempo de processamento em segundos | `3.335204839706421` |
+| Coluna | Tipo | Obrigatória? | Descrição | Exemplo |
+|--------|------|--------------|-----------|---------|
+| `record_id` | string | ✅ SIM | Identificador único do ficheiro/sinal | `data_101_1.par` |
+| `detector` | string | ✅ SIM | Nome do detector usado | `adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w` |
+| `duration_samples` | integer | ⚠️ OPCIONAL | Duração do sinal em número de amostras (pode ser calculado: `duration_seconds * 250`) | `145971` |
+| `duration_seconds` | float | ✅ SIM | Duração do sinal em segundos (usado no cálculo de FP/min) | `583.884` |
+| `gt_indices` | lista de int | ❌ REDUNDANTE | Índices das mudanças verdadeiras (**pode omitir**, use `gt_times`) | `[70599]` |
+| `gt_times` | lista de float | ✅ SIM | Tempos em segundos das mudanças verdadeiras (calculado: `gt_indices / 250`) | `[282.396]` |
+| `det_indices` | lista de int | ❌ REDUNDANTE | Índices das deteções (**pode omitir**, use `det_times`) | `[799, 2463, 3839, 5119]` |
+| `det_times` | lista de float | ✅ SIM | Tempos em segundos das deteções (calculado: `det_indices / 250`) | `[3.196, 9.852, 15.356, 20.476]` |
+| `n_detections` | integer | ✅ SIM | Número total de deteções (deve ser = length(`det_times`)) | `68` |
+| `n_ground_truth` | integer | ✅ SIM | Número total de mudanças verdadeiras (deve ser = length(`gt_times`)) | `1` |
+| `processing_time` | float | ❌ OPCIONAL | Tempo de processamento em segundos (apenas para estatísticas) | `3.335204839706421` |
+
+**Conversão de Índices para Tempos:**
+- `gt_times` (segundos) = `gt_indices` (amostras) / 250 Hz
+- `det_times` (segundos) = `det_indices` (amostras) / 250 Hz
+- Exemplo: índice 70599 → 70599/250 = 282.396 segundos
 
 ### Colunas de Parâmetros Específicos
 
@@ -282,11 +311,55 @@ validate_predictions_csv <- function(df, detector_name) {
 
 ## Exemplo Completo de Conversão em R
 
+### Opção 1: Formato MÍNIMO (Recomendado)
+
 ```r
 library(tidyverse)
 library(jsonlite)
 
-# 1. Preparar dados no formato correto
+# 1. Preparar dados (apenas colunas essenciais)
+predictions_df <- tibble(
+  record_id = c("data_101_1.par", "data_102_1.par"),
+  detector = "adwin",
+  delta = c(0.005, 0.005),
+  ma_window = c(10, 10),
+  min_gap_samples = c(1000, 2000),
+  duration_seconds = c(583.884, 600.0),
+  # Apenas gt_times e det_times (SEM índices!)
+  gt_times = list(c(282.396), c(300.0)),
+  det_times = list(c(3.196, 9.852, 15.356), c(3.2, 10.0)),
+  n_detections = c(3, 2),
+  n_ground_truth = c(1, 1)
+)
+
+# 2. Converter listas para formato Python string
+predictions_df <- predictions_df %>%
+  mutate(
+    gt_times = map_chr(gt_times, ~ toJSON(.x, auto_unbox = FALSE)),
+    det_times = map_chr(det_times, ~ toJSON(.x, auto_unbox = FALSE))
+  )
+
+# 3. Garantir ordem correta das colunas
+column_order <- c(
+  "record_id", "detector", "delta", "ma_window", "min_gap_samples",
+  "duration_seconds", "gt_times", "det_times",
+  "n_detections", "n_ground_truth"
+)
+
+predictions_df <- predictions_df %>%
+  select(all_of(column_order))
+
+# 4. Salvar como CSV
+write_csv(predictions_df, "predictions_intermediate.csv")
+```
+
+### Opção 2: Formato COMPLETO (compatível com Python)
+
+```r
+library(tidyverse)
+library(jsonlite)
+
+# 1. Preparar dados no formato completo
 predictions_df <- tibble(
   record_id = c("data_101_1.par", "data_102_1.par"),
   detector = "adwin",
@@ -296,9 +369,9 @@ predictions_df <- tibble(
   duration_samples = c(145971, 150000),
   duration_seconds = c(583.884, 600.0),
   gt_indices = list(c(70599), c(75000)),
-  gt_times = list(c(282.396), c(300.0)),
+  gt_times = list(c(282.396), c(300.0)),  # gt_indices / 250
   det_indices = list(c(799, 2463, 3839), c(800, 2500)),
-  det_times = list(c(3.196, 9.852, 15.356), c(3.2, 10.0)),
+  det_times = list(c(3.196, 9.852, 15.356), c(3.2, 10.0)),  # det_indices / 250
   n_detections = c(3, 2),
   n_ground_truth = c(1, 1),
   processing_time = c(3.335, 3.4)
@@ -328,27 +401,56 @@ predictions_df <- predictions_df %>%
 write_csv(predictions_df, "predictions_intermediate.csv")
 ```
 
+### Função Helper: Conversão de Índices para Tempos
+
+```r
+# Converter índices de amostras para tempos em segundos
+convert_indices_to_times <- function(indices, sample_rate = 250) {
+  indices / sample_rate
+}
+
+# Exemplo de uso:
+gt_indices <- c(70599, 150000)
+gt_times <- convert_indices_to_times(gt_indices)
+# Resultado: [282.396, 600.0]
+```
+
 ---
 
 ## Notas Importantes para o Agente R
 
 1. **Sample Rate**: Os dados de ECG usam 250 Hz (250 amostras/segundo)
    - `duration_seconds = duration_samples / 250.0`
-   - `time_seconds = sample_index / 250.0`
+   - `gt_times = gt_indices / 250.0` (conversão de índices para segundos)
+   - `det_times = det_indices / 250.0` (conversão de índices para segundos)
 
-2. **Ordem das Colunas**: A ordem EXATA das colunas é crítica. Usar `select(all_of(column_order))` para garantir.
+2. **Colunas Mínimas Obrigatórias** (para R):
+   ```r
+   # Apenas estas colunas são ESSENCIAIS:
+   c("record_id", "detector",
+     "delta", "ma_window", "min_gap_samples",  # parâmetros (variam por detector)
+     "duration_seconds",                        # duração do sinal
+     "gt_times", "det_times",                   # tempos em segundos (NÃO índices!)
+     "n_detections", "n_ground_truth")          # contagens
 
-3. **Conversão de Listas**: Usar `jsonlite::toJSON()` com `auto_unbox = FALSE` para converter vetores R em listas Python.
+   # Pode OMITIR:
+   # - gt_indices, det_indices (redundantes)
+   # - duration_samples (calculável)
+   # - processing_time (opcional)
+   # - error (opcional)
+   ```
 
-4. **Tipos de Dados**:
+3. **Ordem das Colunas**: A ordem EXATA das colunas é crítica se usar formato completo. Usar `select(all_of(column_order))` para garantir.
+
+4. **Conversão de Listas**: Usar `jsonlite::toJSON()` com `auto_unbox = FALSE` para converter vetores R em listas Python.
+
+5. **Tipos de Dados**:
    - Booleanos: `True`/`False` (Python), não `TRUE`/`FALSE` (R)
    - Converter com: `ifelse(boolean_col, "True", "False")`
 
-5. **Valores Faltantes**: Se não houver deteções ou ground truth, usar listas vazias `[]`, não `NA`.
+6. **Valores Faltantes**: Se não houver deteções ou ground truth, usar listas vazias `[]`, não `NA`.
 
-6. **Coluna `error`**: Apenas KSWIN tem esta coluna. Deixar vazia se não houver erro.
-
-7. **Precisão Numérica**: Manter alta precisão em `processing_time` (não arredondar).
+7. **Coluna `error`**: Apenas KSWIN tem esta coluna no formato completo. Pode omitir completamente.
 
 8. **Encoding**: Sempre salvar como UTF-8.
 

@@ -43,9 +43,10 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
     else:
         # Load from CSV
         predictions_df = pd.read_csv(predictions_path)
-        # Convert string representations back to lists
+        # Convert string representations back to lists (only if columns exist)
         for col in ['gt_indices', 'gt_times', 'det_indices', 'det_times']:
-            predictions_df[col] = predictions_df[col].apply(eval)
+            if col in predictions_df.columns:
+                predictions_df[col] = predictions_df[col].apply(eval)
 
     print(f"Loaded {len(predictions_df)} predictions from {predictions_df['record_id'].nunique()} files")
 
@@ -85,12 +86,11 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
                     result[col] = row[col]
 
             # Add metadata
-            result.update({
-                'duration_samples': row['duration_samples'],
-                'duration_seconds': row['duration_seconds'],
-                'n_ground_truth': row['n_ground_truth'],
-                'n_detections': row['n_detections'],
-            })
+            if 'duration_samples' in row:
+                result['duration_samples'] = row['duration_samples']
+            result['duration_seconds'] = row['duration_seconds']
+            result['n_ground_truth'] = row['n_ground_truth']
+            result['n_detections'] = row['n_detections']
 
             # Add all comprehensive metrics
             result.update(metrics)
@@ -109,13 +109,12 @@ def evaluate_predictions_dataset(predictions_path: str, metrics_output_path: str
                 if col in row:
                     result[col] = row[col]
 
-            result.update({
-                'duration_samples': row['duration_samples'],
-                'duration_seconds': row['duration_seconds'],
-                'n_ground_truth': row['n_ground_truth'],
-                'n_detections': row['n_detections'],
-                'error': str(e)
-            })
+            if 'duration_samples' in row:
+                result['duration_samples'] = row['duration_samples']
+            result['duration_seconds'] = row['duration_seconds']
+            result['n_ground_truth'] = row['n_ground_truth']
+            result['n_detections'] = row['n_detections']
+            result['error'] = str(e)
             metrics_results.append(result)
 
     elapsed_time = time.time() - start_time
