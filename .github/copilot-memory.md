@@ -1,4 +1,163 @@
-# Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistent- **Predições geradas**: `results/adwin/predi2. **Avaliar Métricas**: `python -m src.evaluate_predictions --predictions results/<detector>/predictions_intermediate.csv`
+# Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
+
+**Última Atualização**: 2025-11-17 (Sessão 4 - Integração R-Python e Detector FLOSS)
+**Status**: Framework completo com 5 detectores Python + FLOSS (R), integração R→Python validada, comparações multi-detector funcionais
+
+Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
+
+---
+
+## RESUMO EXECUTIVO DA SESSÃO 4 (2025-11-17)
+
+### ✅ Trabalho Realizado
+
+#### 1. Integração R-Python (FLOSS Detector)
+- ✅ **Correção do `evaluate_predictions.py`**: Agora aceita CSVs com formato mínimo (apenas colunas obrigatórias)
+  - Colunas opcionais (`gt_indices`, `det_indices`, `duration_samples`) tornadas realmente opcionais
+  - Código robusto para lidar com diferentes formatos de CSV
+- ✅ **Avaliação completa do FLOSS**: 989,280 avaliações (229 ficheiros × 4,320 configurações)
+- ✅ **Documentação completa**: `results/floss/README.md` refletindo dados corretos
+- ✅ **Especificação CSV**: `docs/predictions_csv_format_specification.md` completamente validada
+
+#### 2. Sistema de Visualizações Melhorado
+- ✅ **Correção de heatmaps**: Detecta automaticamente parâmetros com variação suficiente
+- ✅ **Suporte a novos parâmetros**: `regime_threshold`, `regime_landmark` (FLOSS)
+- ✅ **Filtros automáticos**: Remove parâmetros constantes (ex: `min_gap_samples=200`)
+- ✅ **9 visualizações geradas** para FLOSS com sucesso
+
+#### 3. Comparação Multi-Detector
+- ✅ **Script de comparação visual**: `src/visualize_comparison.py` criado
+- ✅ **Gráficos comparativos gerados**:
+  - Radar chart (6 dimensões de performance)
+  - Bar charts (7 métricas chave)
+  - Violin plots (distribuições de métricas)
+- ✅ **Relatório comparativo**: `results/comparisons/floss_vs_kswin.md` com análise executiva
+- ✅ **Correção de bugs**: JSON structure handling para `best_parameters['f3_weighted']`
+
+### 📊 Resultados Principais
+
+#### FLOSS Performance (Dataset Completo: 229 ficheiros)
+**Melhor Configuração (F3 Weighted)**:
+```
+window_size: 25
+regime_threshold: 0.85
+regime_landmark: 3.0
+min_gap_samples: 200
+```
+
+**Métricas**:
+- F3* = 0.3582 (± 0.2276)
+- Recall@10s = 59.21%
+- Precision@10s = 20.98%
+- FP/min = 2.32
+- EDD median = 2.66s
+- NAB Standard = -3.11 (± 6.11)
+
+#### Comparação FLOSS vs KSWIN
+
+| Métrica | FLOSS | KSWIN | Vencedor |
+|---------|-------|-------|----------|
+| **F3*** | 0.3582 | **0.4135** | KSWIN (+15.4%) |
+| **Recall@10s** | 59.21% | **99.44%** | KSWIN (+67.9%) |
+| **Precision@10s** | **20.98%** | 10.74% | FLOSS (+95.4%) |
+| **FP/min** | **2.32** | 9.43 | FLOSS (4.1× menos) |
+| **NAB Standard** | **-3.11** | -5.26 | FLOSS (+41.6%) |
+| **EDD median** | **2.66s** | 2.89s | FLOSS (8% mais rápido) |
+
+**Recomendações**:
+- **KSWIN**: Aplicações clínicas (não pode perder eventos)
+- **FLOSS**: Sistemas de alerta (minimizar falsos alarmes)
+
+### 🐛 Bugs Corrigidos
+
+1. **`evaluate_predictions.py`** (Linhas 47-49, 89-93, 113-117):
+   - Problema: Esperava colunas opcionais (`gt_indices`, `det_indices`, `duration_samples`)
+   - Solução: Verificação `if col in predictions_df.columns` antes de processar
+
+2. **`visualize_results.py`** (Linhas 46-48, 268-285):
+   - Problema: Não reconhecia parâmetros do FLOSS, não filtrava parâmetros constantes
+   - Solução: Adicionados `regime_threshold`, `regime_landmark` à lista; filtro `df[col].nunique() > 1`
+
+3. **`visualize_comparison.py`** (Linhas 54-56, 224-226):
+   - Problema: Tentava acessar `best_parameters` diretamente (é um dict de dicts)
+   - Solução: Extrai especificamente `best_parameters['f3_weighted']`
+
+### 📁 Ficheiros Criados/Modificados
+
+**Criados**:
+- `src/visualize_comparison.py` (246 linhas) - Comparação visual entre detectores
+- `results/floss/README.md` (refazer completo com dados corretos)
+- `results/comparisons/floss_vs_kswin.md` - Relatório executivo
+- `results/comparisons/floss_vs_kswin_radar.png` - Gráfico radar
+- `results/comparisons/floss_vs_kswin_bars.png` - Barras comparativas
+- `results/comparisons/floss_vs_kswin_distributions.png` - Distribuições
+
+**Modificados**:
+- `src/evaluate_predictions.py` - Colunas opcionais tornadas realmente opcionais
+- `src/visualize_results.py` - Suporte a FLOSS + filtro de parâmetros constantes
+- `docs/predictions_csv_format_specification.md` - Validação completa
+
+### 🔧 Melhorias Técnicas
+
+1. **Robustez da integração R→Python**:
+   - CSV mínimo (11 colunas) validado
+   - Compatibilidade com múltiplos formatos
+   - Documentação clara de colunas obrigatórias vs opcionais
+
+2. **Visualizações adaptativas**:
+   - Detecção automática de parâmetros variáveis
+   - Heatmaps funcionam com qualquer número de parâmetros
+   - Mensagens informativas quando há poucos parâmetros
+
+3. **Sistema de comparação**:
+   - Radar chart com 6 dimensões normalizadas
+   - Métricas invertidas corretamente (NAB, EDD, FP/min)
+   - Código reutilizável para qualquer par de detectores
+
+---
+
+## 1. Visão Geral do Projeto
+
+### Objetivo
+Detectar mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz) com processamento estritamente streaming (sem lookahead).
+
+### Dataset Principal
+**afib_regimes** (Zenodo 6879233):
+- **229 ficheiros** processados (dataset completo)
+- **3 classes**: paroxysmal_afib, persistent_afib, non_afib
+- **1,301 eventos ground truth** totais (média 5.68 por ficheiro)
+- Taxa de amostragem: 250 Hz (constante)
+- Preprocessamento: `src/ecg_preprocess.py`
+
+### Detectores Implementados
+
+#### Python (5 detectores via scikit-multiflow)
+1. **ADWIN** - Adaptive Windowing ✅
+2. **Page-Hinkley** - Cumulative Sum Test ✅
+3. **KSWIN** - Kolmogorov-Smirnov Windowing ✅
+4. **HDDM_A** - Hoeffding Drift Detection (Average) ✅
+5. **HDDM_W** - Hoeffding Drift Detection (Weighted) ✅
+
+**Nota**: DDM e EDDM foram removidos (inadequados para séries temporais contínuas).
+
+#### R (1 detector integrado)
+6. **FLOSS** - Fast Low-rank Online Subspace Tracking ✅
+   - Implementado em R (pacote `false.alarm`)
+   - Integração R→Python validada
+   - 989,280 avaliações completas
+
+### Organização dos Resultados
+Cada detector tem estrutura padronizada:
+```
+results/<detector>/
+├── predictions_intermediate.csv
+├── metrics_comprehensive_with_nab.csv
+├── final_report_with_nab.json
+├── visualizations/ (9 gráficos PNG)
+└── README.md
+```
+
+## 2. Pipeline de Avaliação (3 Passos)- **Predições geradas**: `results/adwin/predi2. **Avaliar Métricas**: `python -m src.evaluate_predictions --predictions results/<detector>/predictions_intermediate.csv`
 3. **Visualizar**: `python -m src.visualize_results --metrics results/<detector>/metrics_comprehensive_with_nab.csv`
 
 #### Comparação entre Detectores

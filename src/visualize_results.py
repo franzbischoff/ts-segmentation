@@ -44,7 +44,7 @@ def load_metrics(metrics_path):
                    'drift_confidence', 'warning_confidence', 'two_side_option',
                    'lambda_option', 'ks_alpha', 'window_size', 'stat_size',
                    'min_instances', 'warning_level', 'out_control_level',
-                   'use_derivative']:
+                   'use_derivative', 'regime_threshold', 'regime_landmark']:
             param_cols.append(col)
 
     if not param_cols:
@@ -271,21 +271,25 @@ def plot_parameter_heatmaps(df, output_dir):
     # Identify parameter columns
     param_cols = [col for col in df.columns if col.replace('_mean', '').replace('_std', '') in
                   ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
-                   'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size']]
+                   'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size',
+                   'regime_threshold', 'regime_landmark']]
 
     # Filter to just the base parameter names (without _mean/_std)
     param_cols = [col for col in param_cols if not col.endswith('_mean') and not col.endswith('_std')]
 
+    # Filter out parameters with only 1 unique value (no variation)
+    param_cols = [col for col in param_cols if df[col].nunique() > 1]
+
     if len(param_cols) < 2:
-        print(f"Warning: Need at least 2 parameters for heatmaps, found {len(param_cols)}. Skipping heatmaps.")
+        print(f"Warning: Need at least 2 parameters with variation for heatmaps, found {len(param_cols)}. Skipping heatmaps.")
         return
 
-    # Try to find a grouping parameter (prefer min_gap_samples, then others)
+    # Try to find a grouping parameter (prefer min_gap_samples if it has variation, then others)
     group_param = None
-    if 'min_gap_samples' in param_cols:
+    if 'min_gap_samples' in param_cols and df['min_gap_samples'].nunique() > 1:
         group_param = 'min_gap_samples'
     elif len(param_cols) > 2:
-        # Use the parameter with fewest unique values for grouping
+        # Use the parameter with fewest unique values for grouping (but more than 1)
         group_param = min(param_cols, key=lambda p: df[p].nunique())
 
     # Get top values for grouping parameter
