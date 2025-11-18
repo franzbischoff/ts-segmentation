@@ -113,6 +113,11 @@ O FLOSS é um detector de mudanças de regime baseado em:
 
 4. **`min_gap_samples`**: Intervalo mínimo entre detecções (em amostras)
    - Valor ótimo: 200 (0.8s @ 250 Hz)
+
+> Nota: `min_gap_samples` é um filtro aplicado pela pipeline (veja `src/streaming_detector.py`)
+> e não um parâmetro intrínseco do algoritmo FLOSS. O script que gera as predições cria
+> as detecções brutas, e o `min_gap_samples` é usado para suprimir detecções muito
+> próximas durante a avaliação/relatório.
    - Evita detecções redundantes próximas
 
 ### Pontos Fortes
@@ -196,7 +201,8 @@ record_id,detector,window_size,regime_threshold,regime_landmark,min_gap_samples,
 
 ## 📝 Notas Técnicas
 
-- **Dataset completo**: 229 ficheiros de ECG com regimes de fibrilação atrial
+- **Dataset completo**: 229 ficheiros de ECG com regimes de fibrilação atrial (classe paroxysmal_afib)
+- **Lead/Derivação**: Lead II (derivação II padrão para análise de ritmo cardíaco)
 - **Grid search**: 4,320 combinações de parâmetros testadas (16 window_size × 18 regime_threshold × 15 regime_landmark × 1 min_gap)
 - **Total de avaliações**: 989,280 (229 ficheiros × 4,320 configs)
 - **Taxa de amostragem**: 250 Hz (constante)

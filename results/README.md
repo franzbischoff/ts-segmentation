@@ -80,6 +80,11 @@ python -m src.generate_predictions \
 
 **Output**: `predictions_intermediate.csv` com todas as detecções brutas
 
+> Nota: `min_gap_samples` é um filtro aplicado pela pipeline após as detecções serem
+> geradas; não faz parte dos detectores subjacentes. O `predictions_intermediate.csv`
+> contém as detecções "brutas" para cada combinação de parâmetros — o gap é depois
+> usado para suprimir eventos redundantes durante a avaliação.
+
 ### 2️⃣ Avaliação de Métricas
 ```bash
 python -m src.evaluate_predictions \

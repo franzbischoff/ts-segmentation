@@ -1,9 +1,121 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
-**Última Atualização**: 2025-11-17 (Sessão 4 - Integração R-Python e Detector FLOSS)
-**Status**: Framework completo com 5 detectores Python + FLOSS (R), integração R→Python validada, comparações multi-detector funcionais
+**Última Atualização**: 2025-11-18 (Sessão 5 - Scripts FLOSS, Documentação min_gap_samples)
+**Status**: Framework completo com 5 detectores Python + FLOSS (R), integração R→Python validada, comparações multi-detector funcionais, documentação técnica completa sobre pós-processamento
 
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
+
+---
+
+## RESUMO EXECUTIVO DA SESSÃO 5 (2025-11-18)
+
+### ✅ Trabalho Realizado
+
+#### 1. Scripts de Automação para FLOSS
+- ✅ **`scripts/evaluate_floss.sh`**: Script completo de avaliação de métricas
+  - Verifica existência do `predictions_intermediate.csv`
+  - Executa `evaluate_predictions.py` com todos os parâmetros
+  - Gera outputs (CSV, JSONL, JSON report e summary)
+  - Mensagens coloridas e informativas
+- ✅ **`scripts/visualize_floss.sh`**: Script completo de geração de visualizações
+  - Verifica existência do `metrics_comprehensive_with_nab.csv`
+  - Executa `visualize_results.py` para gerar 9 gráficos
+  - Lista ficheiros PNG gerados com tamanhos
+  - Sugere comandos para visualização
+- ✅ **Ambos scripts tornados executáveis** (`chmod +x`)
+
+#### 2. Documentação Completa sobre `min_gap_samples`
+- ✅ **Clarificação técnica**: `min_gap_samples` é um **filtro de pós-processamento** aplicado pela pipeline, **não é um parâmetro dos detectores** do scikit-multiflow
+- ✅ **Documentos centrais atualizados**:
+  - `src/streaming_detector.py`: Docstring e help text do CLI explicam que é pós-processamento
+  - `docs/evaluation_metrics_v1.md`: Nota explícita sobre aplicação pós-detecção
+  - `scripts/README.md`: Observação clara dissociando de parâmetros de detector
+  - `results/README.md`: Esclarece que `predictions_intermediate.csv` contém detecções brutas
+  - `README.md` (raiz): Pipeline menciona passo de pós-processamento
+
+- ✅ **Documentação por detector atualizada**:
+  - `results/adwin/README.md`: Nota sobre min_gap sendo pipeline post-processing
+  - `results/floss/README.md`: Nota sobre filtro aplicado após detecções brutas
+  - `results/page_hinkley/README.md`: Nota no bloco de grid explicando pós-processamento
+
+- ✅ **Código fonte documentado**:
+  - `src/generate_predictions.py`: Docstring do módulo + comentários em todas as funções `create_param_grid_*`
+  - Comentários explicam que `min_gap_samples` testa filtro de supressão temporal
+
+#### 3. Análise Técnica Detalhada
+- ✅ **Explicação completa do funcionamento**: Quando detector emite detecção, pipeline verifica se passaram `min_gap_samples` desde última detecção aceite
+- ✅ **Exemplo prático**: min_gap=1000 (4s @ 250Hz) → após aceitar detecção, próximas dentro de 1000 samples são ignoradas
+- ✅ **Propósito documentado**:
+  - Evitar detecções espúrias (detector dispara múltiplas vezes na mesma mudança)
+  - Reduzir falsos positivos (detector instável)
+  - Respeitar constraints do domínio (mudanças de regime não acontecem em milissegundos)
+
+### 📊 Estado Atual do Projeto
+
+#### Detectores Completos
+1. **ADWIN** - 113,355 avaliações (495 configs × 229 ficheiros) ✅
+2. **FLOSS** - 989,280 avaliações (4,320 configs × 229 ficheiros) ✅
+3. **Page-Hinkley** - Scripts prontos, aguarda execução 🔄
+4. **KSWIN** - Scripts prontos, aguarda execução 🔄
+5. **HDDM_A** - Scripts prontos, aguarda execução 🔄
+6. **HDDM_W** - Scripts prontos, aguarda execução 🔄
+
+#### Comparações Multi-Detector
+- **FLOSS vs KSWIN** - Completo ✅
+  - Radar chart, bar charts, violin plots
+  - Relatório executivo em `results/comparisons/`
+  - KSWIN superior em recall (99.44% vs 59.21%)
+  - FLOSS superior em precision (20.98% vs 10.74%)
+
+#### Scripts de Automação
+**Geração de predições** (6 scripts):
+- `generate_adwin.sh`, `generate_page_hinkley.sh`, `generate_kswin.sh`
+- `generate_hddm_a.sh`, `generate_hddm_w.sh`, `extend_min_gap_grid.sh`
+
+**Avaliação de métricas** (6 scripts):
+- `evaluate_adwin.sh`, `evaluate_page_hinkley.sh`, `evaluate_kswin.sh`
+- `evaluate_hddm_a.sh`, `evaluate_hddm_w.sh`, `evaluate_floss.sh` ✨ NOVO
+
+**Visualização** (6 scripts):
+- `visualize_adwin.sh`, `visualize_page_hinkley.sh`, `visualize_kswin.sh`
+- `visualize_hddm_a.sh`, `visualize_hddm_w.sh`, `visualize_floss.sh` ✨ NOVO
+
+### 📁 Ficheiros Criados/Modificados (Sessão 5)
+
+**Criados**:
+- `scripts/evaluate_floss.sh` (75 linhas) - Pipeline de avaliação FLOSS
+- `scripts/visualize_floss.sh` (90 linhas) - Pipeline de visualização FLOSS
+
+**Modificados (Documentação min_gap_samples)**:
+- `src/streaming_detector.py` - Docstring + help text CLI
+- `src/generate_predictions.py` - Docstring módulo + 5 comentários em grids
+- `docs/evaluation_metrics_v1.md` - Nota técnica sobre pós-processamento
+- `scripts/README.md` - Observação explícita
+- `results/README.md` - Esclarece detecções brutas
+- `results/adwin/README.md` - Nota sobre filtro pipeline
+- `results/floss/README.md` - Nota sobre pós-processamento
+- `results/page_hinkley/README.md` - Nota em bloco de grid
+- `.github/copilot-memory.md` - Esta atualização
+
+### 🔧 Melhorias de Usabilidade
+
+1. **Scripts FLOSS padronizados**:
+   - Mesma estrutura que outros detectores
+   - Mensagens coloridas (verde/azul/amarelo)
+   - Verificações de pré-requisitos
+   - Output informativo com tamanhos de ficheiros
+   - Sugestões de próximos passos
+
+2. **Documentação técnica clara**:
+   - 9 ficheiros atualizados para explicar min_gap_samples
+   - Código fonte comentado para futuros desenvolvedores
+   - Exemplos práticos de uso
+   - Dissociação clara entre parâmetros de detector vs pipeline
+
+3. **Consistência**:
+   - Todos os detectores agora têm 3 scripts (generate/evaluate/visualize)
+   - Documentação uniforme em todos os `results/*/README.md`
+   - Mensagens de erro/sucesso padronizadas
 
 ---
 
@@ -123,11 +235,12 @@ Detectar mudanças de regime (concept drift / change points) em sinais de ECG em
 
 ### Dataset Principal
 **afib_regimes** (Zenodo 6879233):
-- **229 ficheiros** processados (dataset completo)
-- **3 classes**: paroxysmal_afib, persistent_afib, non_afib
+- **229 ficheiros** processados (classe paroxysmal_afib do dataset completo)
+- **3 classes disponíveis**: paroxysmal_afib (229), persistent_afib (475), non_afib (721) = 1,425 total
+- **Lead/Derivação**: Lead II (derivação II - padrão para análise de ritmo)
 - **1,301 eventos ground truth** totais (média 5.68 por ficheiro)
-- Taxa de amostragem: 250 Hz (constante)
-- Preprocessamento: `src/ecg_preprocess.py`
+- Taxa de amostragem: 250 Hz (constante após resample)
+- Preprocessamento: `src/ecg_preprocess.py` (padrão: `--lead II --resample-to 250`)
 
 ### Detectores Implementados
 

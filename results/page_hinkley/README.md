@@ -57,6 +57,11 @@ MIN_GAP_VALUES = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000]
 
 **Total**: 5 × 4 × 3 × 7 × 10 = 4,200 combinações
 
+> Nota: O valor `MIN_GAP_VALUES` corresponde ao parâmetro `min_gap_samples`, que é
+> aplicado como filtro de pós-processamento pela pipeline (`src/streaming_detector.py`)
+> e não faz parte do detector Page-Hinkley. Use estes valores para a avaliação onde
+> as detecções brutas são suprimidas se estiverem demasiado próximas.
+
 ## Características Esperadas
 
 ### Vantagens do Page-Hinkley

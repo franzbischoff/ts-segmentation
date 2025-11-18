@@ -585,8 +585,8 @@ Parâmetros principais:
 - `--root`: diretório onde estão os `.hea` (ex.: `data/zenodo_6879233/extracted/afib_regimes`).
 - `--classes`: lista de classes (ou `all`). Ex.: `paroxysmal_afib`.
 - `--limit-per-class`: mini‑teste rápido limitando Nº de ficheiros por classe.
-- `--lead`: canal/derivação a extrair (fallback para a primeira coluna se ausente).
-- `--resample-to`: frequência alvo (mantém se igual à original).
+- `--lead`: canal/derivação a extrair (padrão: **'II'** - derivação II, fallback para a primeira coluna se ausente).
+- `--resample-to`: frequência alvo (padrão: 250 Hz, mantém se igual à original).
 - `--output`: caminho do CSV final.
 
 ### Exemplo (mini‑teste com 10 ficheiros paroxysmal_afib)

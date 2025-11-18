@@ -208,7 +208,12 @@ DDM e EDDM foram removidos do fluxo de trabalho por serem apropriados para conce
 
 ### Parâmetros Comuns
 - **ma_window**: Suavização do sinal (média móvel)
-- **min_gap_samples**: Gap mínimo entre detecções consecutivas
++ **min_gap_samples**: Gap mínimo entre detecções consecutivas
++
++> Observação: `min_gap_samples` é um filtro de pós-processamento aplicado pela pipeline
++> (em `src/streaming_detector.py`) — não é um parâmetro dos detectores do scikit-multiflow.
++> Isto significa que os detectores podem emitir múltiplas detecções consecutivas; o
++> `min_gap_samples` suprime deteções subsequentes se estiverem demasiado próximas.
 -- **use_derivative**: Usar primeira derivada do sinal (apenas para detectores que precisem explicitamente, atualmente não usado por DDM/EDDM no pipeline principal)
 
 ### Resultados da Validação (5 ficheiros)

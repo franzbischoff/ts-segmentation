@@ -13,6 +13,11 @@ Esta pasta contém todos os resultados da avaliação do detector **ADWIN** (Ada
 - `ma_window`: Janela de média móvel para pré-processamento
 - `min_gap_samples`: Espaçamento mínimo entre detecções consecutivas
 
+> Nota: `min_gap_samples` é um filtro de pós-processamento aplicado pela pipeline
+> (em `src/streaming_detector.py`), não um parâmetro do detector ADWIN. As detecções
+> geradas por ADWIN são "brutas" e o `min_gap_samples` suprime detecções redundantes
+> depois de serem emitidas.
+
 ## Ficheiros Principais
 
 ### 1. Predições Brutas
@@ -173,6 +178,14 @@ python -m src.visualize_results \
 - ADWIN: Bifet & Gavaldà (2007) "Learning from Time-Changing Data with Adaptive Windowing"
 - NAB: Ahmad et al. (2017) "Unsupervised real-time anomaly detection for streaming data"
 - Dataset: Moody & Mark (2001) "The impact of the MIT-BIH Arrhythmia Database"
+
+## 📝 Notas Técnicas
+
+- **Dataset**: 229 ficheiros paroxysmal afib (classe paroxysmal_afib)
+- **Lead/Derivação**: Lead II (derivação II padrão para análise de ritmo cardíaco)
+- **Grid search**: 495 combinações de parâmetros
+- **Taxa de amostragem**: 250 Hz (constante)
+- **Todas as métricas** calculadas em **segundos** (não em amostras)
 
 ---
 

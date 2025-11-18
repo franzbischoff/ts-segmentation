@@ -15,7 +15,17 @@ import numpy as np
 def run_stream_on_dataframe(df, detector_name: str, sample_rate: int, tolerance: int = 50,
                             detector_params: dict | None = None, ma_window: int | None = None,
                             use_derivative: bool = False, min_gap_samples: int | None = None):
-    """Core logic operating on an already loaded dataframe."""
+        """Core logic operating on an already loaded dataframe.
+
+        Notes:
+        - `min_gap_samples` is a post-processing filter applied by the pipeline. It is NOT a
+            parameter of the detector implementations (scikit-multiflow). Detectors output the
+            raw change events, then `min_gap_samples` suppresses consecutive detections that
+            occur within the provided number of samples.
+
+        - Example: if `min_gap_samples=1000` (4s @ 250 Hz), when one detection is accepted,
+            any subsequent detection within the next 1000 samples is ignored.
+        """
     detector = build_detector(detector_name, **(detector_params or {}))
 
     events: List[DetectionEvent] = []
@@ -127,7 +137,7 @@ def parse_args():
     ap.add_argument('--param', action='append', default=[], help='Parâmetro do detector no formato chave=valor (ex: --param lambda_=80 --param delta=0.01)')
     ap.add_argument('--ma-window', type=int, default=None, help='Tamanho janela média móvel para suavizar')
     ap.add_argument('--derivative', action='store_true', help='Usar derivada primeira do sinal (diferença)')
-    ap.add_argument('--min-gap-samples', type=int, default=None, help='Número mínimo de samples entre detecções consecutivas (pós-processamento)')
+    ap.add_argument('--min-gap-samples', type=int, default=None, help='Número mínimo de samples entre detecções consecutivas (filtro de pós-processamento aplicado após o detector)')
     ap.add_argument('--log-json-dir', type=str, default='results', help='Diretório para salvar logs JSON')
     ap.add_argument('--no-json-log', action='store_true', help='Desativa logging JSON')
     return ap.parse_args()

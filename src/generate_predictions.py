@@ -3,6 +3,12 @@
 Generate intermediate predictions dataset.
 Creates a dataset with all parameter combinations and their detections for each file.
 This allows reusing predictions when expanding parameter grids.
+
+Note:
+- `min_gap_samples` is a post-processing filter applied by the pipeline (see
+    `src/streaming_detector.py`) and **is not** a parameter of the underlying
+    scikit-multiflow detectors. The grids below only enumerate values to test the
+    post-processing supression of close detections during evaluation.
 """
 
 import argparse
@@ -33,6 +39,9 @@ def create_param_grid_adwin(custom_params: Dict[str, List[Any]] = None) -> Dict[
     return {
         'delta': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1],
         'ma_window': [10, 25, 50, 75, 100, 150, 200, 250, 300],
+        # NOTE: this is a post-processing filter (see src/streaming_detector.py)
+        # The detectors themselves do not support min_gap_samples — we use it to
+        # suppress consecutive detections within the given number of samples.
         'min_gap_samples': list(range(1000, 6000, 1000)),
     }
     # Total: 11 × 9 × 5 = 495 combinations
@@ -48,6 +57,9 @@ def create_param_grid_page_hinkley(custom_params: Dict[str, List[Any]] = None) -
         'delta': [0.005, 0.01, 0.02, 0.04],  # Permissiveness (4 valores)
         'alpha': [0.9999, 0.99],  # Forgetting factor (2 valores - 0.9999 melhor na validação)
         'ma_window': [10, 50, 200],  # Moving average (3 valores)
+        # NOTE: `min_gap_samples` is applied in the pipeline's post-processing
+        # step. It is not an intrinsic detector parameter — we include it so we
+        # can evaluate how different temporal suppression windows affect metrics.
         'min_gap_samples': [500, 1000, 2000, 4000],  # Gap samples (4 valores)
     }
     # Total: 4 × 4 × 2 × 3 × 4 = 384 combinations (moderado - reduzido de 9,408)
@@ -63,6 +75,8 @@ def create_param_grid_kswin(custom_params: Dict[str, List[Any]] = None) -> Dict[
         'window_size': [50, 100, 200, 500],  # Reference window size
         'stat_size': [20, 30, 50, 100],  # Statistical window size
         'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        # NOTE: `min_gap_samples` is a pipeline post-processing option used
+        # to reduce multiple detections that occur in quick succession.
         'min_gap_samples': [500, 1000, 2000, 3000, 5000],
     }
     # Total: 4 × 4 × 4 × 4 × 5 = 1,280 combinations
@@ -78,6 +92,8 @@ def create_param_grid_hddm_a(custom_params: Dict[str, List[Any]] = None) -> Dict
         'warning_confidence': [0.001, 0.005, 0.01, 0.05],  # Warning confidence level
         'two_side_option': [True, False],  # Two-sided or one-sided test
         'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        # NOTE: `min_gap_samples` is a pipeline post-processing option used
+        # to reduce multiple detections that occur in quick succession.
         'min_gap_samples': [500, 1000, 2000, 3000, 5000],
     }
     # Total: 4 × 4 × 2 × 4 × 5 = 640 combinations
@@ -94,6 +110,8 @@ def create_param_grid_hddm_w(custom_params: Dict[str, List[Any]] = None) -> Dict
         'lambda_option': [0.01, 0.05, 0.1, 0.2],  # Weighting factor
         'two_side_option': [True, False],  # Two-sided or one-sided test
         'ma_window': [1, 10, 50, 100],  # Moving average (1 = no smoothing)
+        # NOTE: `min_gap_samples` is a pipeline post-processing option used
+        # to reduce multiple detections that occur in quick succession.
         'min_gap_samples': [500, 1000, 2000, 3000, 5000],
     }
     # Total: 4 × 4 × 4 × 2 × 4 × 5 = 2,560 combinations

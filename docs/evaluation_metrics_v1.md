@@ -297,6 +297,12 @@ As detecções são avaliadas **APÓS** aplicação de:
 
 1. **Média móvel** (`ma_window`): Suaviza o sinal
 2. **Min-gap** (`min_gap_samples`): Suprime detecções muito próximas
+
+> Nota importante: `min_gap_samples` é aplicado como um filtro de pós-processamento na
+> pipeline de deteção (veja `src/streaming_detector.py`). Não faz parte dos parâmetros dos
+> detectores subjacentes (PageHinkley, ADWIN, KSWIN, HDDM_*) usados pela biblioteca.
+> Ou seja, o detector pode emitir as detecções "brutas" e depois o `min_gap_samples`
+> remove eventos redundantes dentro do limite definido.
 3. **Derivada** (opcional): Detecta mudanças de gradiente
 
 Estes filtros afetam **quando** as detecções ocorrem, impactando o delay e consequentemente as métricas.
