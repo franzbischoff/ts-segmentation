@@ -18,6 +18,11 @@ Esta pasta contém todos os resultados da avaliação do detector **ADWIN** (Ada
 > geradas por ADWIN são "brutas" e o `min_gap_samples` suprime detecções redundantes
 > depois de serem emitidas.
 
+> Organização atual: os resultados do detector são agora armazenados em
+> `results/<dataset>/adwin/` — por exemplo, `results/afib_paroxysmal/adwin/`.
+> Isto mantém os resultados separados por dataset quando você rodar a mesma
+> pipeline para os outros conjuntos de dados.
+
 ## Ficheiros Principais
 
 ### 1. Predições Brutas
@@ -124,7 +129,7 @@ FP/min: 1.53
 python -m src.generate_predictions \
     --data data/afib_paroxysmal_tidy.csv \
     --detector adwin \
-    --output results/adwin/predictions_intermediate.csv \
+    --output results/<dataset>/adwin/predictions_intermediate.csv \
     --delta 0.005 0.01 0.015 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 \
     --ma-window 10 30 50 100 200 300 500 \
     --min-gap 500 1000 1500 2000 2500 3000 4000 5000 7500 10000
@@ -133,16 +138,16 @@ python -m src.generate_predictions \
 ### 2. Avaliar Métricas
 ```bash
 python -m src.evaluate_predictions \
-    --predictions results/adwin/predictions_intermediate.csv \
-    --metrics-output results/adwin/metrics_comprehensive_with_nab.csv \
-    --report-output results/adwin/final_report_with_nab.json
+    --predictions results/<dataset>/adwin/predictions_intermediate.csv \
+    --metrics-output results/<dataset>/adwin/metrics_comprehensive_with_nab.csv \
+    --report-output results/<dataset>/adwin/final_report_with_nab.json
 ```
 
 ### 3. Gerar Visualizações
 ```bash
 python -m src.visualize_results \
-    --metrics results/adwin/metrics_comprehensive_with_nab.csv \
-    --output-dir results/adwin/visualizations
+    --metrics results/<dataset>/adwin/metrics_comprehensive_with_nab.csv \
+    --output-dir results/<dataset>/adwin/visualizations
 ```
 
 ## Insights Principais

@@ -283,9 +283,16 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
         best_results['nab_low_fn'] = convert_numpy_types(best_nab_low_fn.to_dict())
 
     # Generate report
+    # Derive dataset name from path if possible: results/<dataset>/<detector>/metrics.csv
+    try:
+        dataset_name = Path(metrics_path).parent.parent.name
+    except Exception:
+        dataset_name = None
+
     report = {
         'evaluation_summary': {
             'total_files': int(valid_results['record_id'].nunique()),
+            'dataset': dataset_name,
             'total_param_combinations': len(global_perf),
             'total_evaluations': len(valid_results),
             'total_ground_truth_events': int(valid_results['n_ground_truth'].sum()),

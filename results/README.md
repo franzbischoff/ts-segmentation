@@ -25,18 +25,45 @@ results/
 │   └── ensemble_results/
 │
 └── README.md                  # Este ficheiro
+results/
+├── afib_paroxysmal/            # Results for the `afib_paroxysmal` dataset (229 files)
+│   ├── adwin/                   # Resultados do detector ADWIN
+├── page_hinkley/              # Resultados do detector Page-Hinkley (a implementar)
+  ├── page_hinkley/
+  └── ...
+
+├── malignantventricular/      # Results for `malignantventricular` dataset
+│   ├── adwin/
+│   └── ...
+
+├── vtachyarrythmias/          # Results for `vtachyarrythmias` dataset
+│   ├── adwin/
+│   └── ...
+
+├── page_hinkley/              # Resultados do detector Page-Hinkley (a implementar)
+## Detectores Implementados
+## Detectors and Dataset-aware Structure
+
+Each dataset will have its own subfolder under `results/` to keep outputs
+isolated and comparable. For example:
+
+```
+results/afib_paroxysmal/adwin/
+results/malignantventricular/adwin/
+results/vtachyarrythmias/adwin/
 ```
 
-## Detectores Implementados
-
-### ✅ ADWIN (Adaptive Windowing)
-**Status**: Completo
-**Pasta**: `results/adwin/`
+This allows running the same pipeline for different datasets without
+mixing predictions or metrics.
+**Pasta**: `results/<dataset>/adwin/`
+**Dataset**: afib_paroxysmal (229 ficheiros) — you may also run this on other datasets by passing a different path to the scripts.
+    --data data/afib_paroxysmal_tidy.csv \
 **Dataset**: afib_paroxysmal (229 ficheiros)
-**Grid Search**: 495 combinações de parâmetros
-**Avaliações**: 113,355
-
-**Melhor F3-weighted**: 0.3994 (delta=0.005, ma_window=300, min_gap=1000)
+    --output results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
+python -m src.compare_detectors \
+    --detectors <detector1> <detector2> <detector3> \
+    --results-dir results/<dataset> \
+    --output results/comparisons/<nome_comparacao>.md
 **Recall@10s**: 97.77%
 **FP/min**: 10.00
 
@@ -72,7 +99,7 @@ Cada detector segue o mesmo pipeline padronizado:
 python -m src.generate_predictions \
     --data data/afib_paroxysmal_tidy.csv \
     --detector <DETECTOR_NAME> \
-    --output results/<DETECTOR_NAME>/predictions_intermediate.csv \
+    --output results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
     --delta <VALUES> \
     --ma-window <VALUES> \
     --min-gap <VALUES>
@@ -88,9 +115,9 @@ python -m src.generate_predictions \
 ### 2️⃣ Avaliação de Métricas
 ```bash
 python -m src.evaluate_predictions \
-    --predictions results/<DETECTOR_NAME>/predictions_intermediate.csv \
-    --metrics-output results/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
-    --report-output results/<DETECTOR_NAME>/final_report_with_nab.json
+    --predictions results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
+    --metrics-output results/<dataset>/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
+    --report-output results/<dataset>/<DETECTOR_NAME>/final_report_with_nab.json
 ```
 
 **Output**:
@@ -100,53 +127,23 @@ python -m src.evaluate_predictions \
 ### 3️⃣ Visualizações
 ```bash
 python -m src.visualize_results \
-    --metrics results/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
-    --output-dir results/<DETECTOR_NAME>/visualizations
+    --metrics results/<dataset>/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
+    --output-dir results/<dataset>/<DETECTOR_NAME>/visualizations
 ```
 
 **Output**: 9 gráficos PNG para análise visual
 
-## Métricas Comuns
+## Estrutura de Pastas
 
-Todos os detectores são avaliados com as mesmas métricas:
-
-### Métricas Clássicas
-- F1-classic, F3-classic
-- Precision, Recall
-
-### Métricas Temporais
-- F1-weighted, F3-weighted (métrica primária)
-- Recall@4s, Recall@10s
-- Precision@4s, Precision@10s
-- EDD (Expected Detection Delay)
-- FP/min (False Positives per minute)
-
-### NAB Scores
-- NAB Standard (balanceado)
-- NAB Low FP (penalizar falsos positivos)
-- NAB Low FN (penalizar falsos negativos)
-
-[Ver documentação completa das métricas →](../README.md#6-métricas-de-avaliação)
-
-## Comparação entre Detectores
-
-A pasta `comparisons/` conterá análises comparativas:
-
-### Comparative Report
-Documento markdown comparando:
-- Melhores configurações de cada detector
-- Trade-offs Precision vs Recall
-- Velocidade de detecção (EDD)
-- Robustez (variância entre ficheiros)
-- Custo computacional
-
-### Ranking Consolidado
-Tabela CSV com rankings por métrica:
-```csv
-metric,rank1,rank2,rank3,...
-f3_weighted,adwin,page_hinkley,kswin,hddm_w,...
-nab_standard,page_hinkley,adwin,kswin,...
-recall_10s,adwin,hddm,page_hinkley,...
+```
+results/
+├── <dataset>/                   # Results for each dataset (e.g. afib_paroxysmal)
+│   ├── adwin/
+│   ├── page_hinkley/
+│   ├── kswin/
+│   └── ...
+├── comparisons/                 # Comparações entre detectors (aggregate across datasets)
+└── README.md
 fp_per_min,page_hinkley,adwin,kswin,hddm_w,...
 ```
 
@@ -160,25 +157,25 @@ Combinar detectores via:
 
 1. **Criar pasta dedicada**:
    ```bash
-   mkdir -p results/<detector_name>
+    mkdir -p results/<dataset>/<detector_name>
    ```
 
 2. **Executar pipeline completo**:
    ```bash
    # Gerar predições
    python -m src.generate_predictions --detector <detector_name> \
-       --output results/<detector_name>/predictions_intermediate.csv ...
+    --output results/<dataset>/<detector_name>/predictions_intermediate.csv ...
 
    # Avaliar métricas
    python -m src.evaluate_predictions \
-       --predictions results/<detector_name>/predictions_intermediate.csv \
-       --metrics-output results/<detector_name>/metrics_comprehensive_with_nab.csv \
-       --report-output results/<detector_name>/final_report_with_nab.json
+    --predictions results/<dataset>/<detector_name>/predictions_intermediate.csv \
+    --metrics-output results/<dataset>/<detector_name>/metrics_comprehensive_with_nab.csv \
+    --report-output results/<dataset>/<detector_name>/final_report_with_nab.json
 
    # Gerar visualizações
    python -m src.visualize_results \
-       --metrics results/<detector_name>/metrics_comprehensive_with_nab.csv \
-       --output-dir results/<detector_name>/visualizations
+    --metrics results/<dataset>/<detector_name>/metrics_comprehensive_with_nab.csv \
+    --output-dir results/<dataset>/<detector_name>/visualizations
    ```
 
 3. **Criar README específico** (template em `results/adwin/README.md`)

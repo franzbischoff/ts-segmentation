@@ -612,6 +612,21 @@ python -m src.streaming_detector \
 	--sample-rate 250
 ```
 
+### Running the pipeline with other datasets
+
+To run the same generate → evaluate → visualize pipeline against other datasets, pass the dataset CSV path to the scripts and use the `results/<dataset>/` output folder. Example:
+
+```bash
+# Generate predictions for malignantventricular dataset
+./scripts/generate_kswin.sh data/malignantventricular_full.csv
+
+# Evaluate and visualize for the same dataset
+./scripts/evaluate_kswin.sh data/malignantventricular_full.csv
+./scripts/visualize_kswin.sh data/malignantventricular_full.csv
+```
+
+Outputs will be written to `results/malignantventricular/kswin/` so you can compare separate datasets independently.
+
 ### Interpretação inicial
 Em um subset de 10 ficheiros foram observados (exemplo) ~46 eventos de verdade e alta taxa de falsos positivos (ADWIN padrão). Isso é esperado porque:
 1. Registos diferentes são concatenados — mudanças de baseline entre pacientes podem induzir falsos alarmes.

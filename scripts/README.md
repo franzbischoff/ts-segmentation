@@ -35,7 +35,11 @@ Este diretório contém scripts automatizados para executar grid search completo
 **Prioridade**: ⭐ Média - 100% Recall@10s
 
 ```bash
+# Default (afib_paroxysmal)
 ./generate_kswin.sh
+
+# Use a different dataset (e.g., malignantventricular)
+./generate_kswin.sh data/malignantventricular_full.csv
 ```
 
 **Configuração**:

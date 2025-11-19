@@ -436,7 +436,14 @@ def generate_predictions_dataset(data_path: str, output_path: str,
     print(f"JSONL format saved to: {jsonl_path}")
 
     # Save summary statistics
+    # Derive dataset name for metadata
+    try:
+        dataset_name = Path(data_path).stem
+    except Exception:
+        dataset_name = data_path
+
     summary = {
+        'dataset': dataset_name,
         'total_files': len(unique_ids),
         'new_param_combinations': len(param_combinations),
         'new_predictions': len(all_results),
@@ -461,11 +468,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate with default grid for ADWIN
-  python -m src.generate_predictions --detector adwin --data data.csv --output results/adwin/predictions.csv
+    # Generate with default grid for ADWIN (dataset-aware results directory)
+    python -m src.generate_predictions --detector adwin --data data.csv --output results/<dataset>/adwin/predictions.csv
 
-  # Generate for Page-Hinkley
-  python -m src.generate_predictions --detector page_hinkley --data data.csv --output results/page_hinkley/predictions.csv
+    # Generate for Page-Hinkley
+    python -m src.generate_predictions --detector page_hinkley --data data.csv --output results/<dataset>/page_hinkley/predictions.csv
 
   # Append new min_gap values to existing predictions
   python -m src.generate_predictions --detector adwin --data data.csv --output results/adwin/predictions.csv \\

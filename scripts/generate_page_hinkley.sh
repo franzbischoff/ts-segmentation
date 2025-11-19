@@ -11,7 +11,13 @@ echo ""
 
 # Define paths
 DATA_PATH="data/afib_paroxysmal_full.csv"
-OUTPUT_PATH="results/page_hinkley/predictions_intermediate.csv"
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+DETECTOR="page_hinkley"
+OUTPUT_DIR="results/${DATASET_NAME}/${DETECTOR}"
+OUTPUT_PATH="${OUTPUT_DIR}/predictions_intermediate.csv"
 
 # Check if data file exists
 if [ ! -f "$DATA_PATH" ]; then
@@ -20,11 +26,12 @@ if [ ! -f "$DATA_PATH" ]; then
 fi
 
 echo "Data file: $DATA_PATH"
+echo "Dataset name: $DATASET_NAME"
 echo "Output file: $OUTPUT_PATH"
 echo ""
 
 # Create output directory
-mkdir -p results/page_hinkley
+mkdir -p "${OUTPUT_DIR}"
 
 echo "Grid Search Configuration (MODERADO):"
 echo "  lambda_: [10, 30, 50, 80]  (4 values)"
@@ -58,15 +65,15 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "1. Evaluate predictions:"
-echo "   python -m src.evaluate_predictions \\"
-echo "       --predictions $OUTPUT_PATH \\"
-echo "       --metrics-output results/page_hinkley/metrics_comprehensive_with_nab.csv \\"
-echo "       --report-output results/page_hinkley/final_report_with_nab.json"
+echo "   python -m src.evaluate_predictions \\
+    --predictions $OUTPUT_PATH \\
+    --metrics-output ${OUTPUT_DIR}/metrics_comprehensive_with_nab.csv \\
+    --report-output ${OUTPUT_DIR}/final_report_with_nab.json"
 echo ""
 echo "2. Generate visualizations:"
-echo "   python -m src.visualize_results \\"
-echo "       --metrics results/page_hinkley/metrics_comprehensive_with_nab.csv \\"
-echo "       --output-dir results/page_hinkley/visualizations"
+echo "   python -m src.visualize_results \\
+    --metrics ${OUTPUT_DIR}/metrics_comprehensive_with_nab.csv \\
+    --output-dir ${OUTPUT_DIR}/visualizations"
 echo ""
 echo "3. Compare with ADWIN:"
 echo "   python -m src.compare_detectors \\"

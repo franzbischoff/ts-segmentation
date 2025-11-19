@@ -21,9 +21,15 @@ set -e  # Exit on error
 
 # Configuration
 DETECTOR="floss"
-PREDICTIONS_PATH="results/${DETECTOR}/predictions_intermediate.csv"
-METRICS_OUTPUT="results/${DETECTOR}/metrics_comprehensive_with_nab.csv"
-REPORT_OUTPUT="results/${DETECTOR}/final_report_with_nab.json"
+DATA_PATH="data/afib_paroxysmal_full.csv"
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+PREDICTIONS_PATH="${RESULTS_DIR}/predictions_intermediate.csv"
+METRICS_OUTPUT="${RESULTS_DIR}/metrics_comprehensive_with_nab.csv"
+REPORT_OUTPUT="${RESULTS_DIR}/final_report_with_nab.json"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -72,8 +78,8 @@ if [ $? -eq 0 ]; then
     echo "Output files:"
     echo "  - Metrics CSV: $METRICS_OUTPUT"
     echo "  - Report JSON: $REPORT_OUTPUT"
-    echo "  - Metrics JSONL: results/${DETECTOR}/metrics_comprehensive_with_nab.jsonl"
-    echo "  - Summary JSON: results/${DETECTOR}/metrics_comprehensive_with_nab_summary.json"
+    echo "  - Metrics JSONL: ${RESULTS_DIR}/metrics_comprehensive_with_nab.jsonl"
+    echo "  - Summary JSON: ${RESULTS_DIR}/metrics_comprehensive_with_nab_summary.json"
     echo ""
     echo "Next step: Run visualizations with ./scripts/visualize_floss.sh"
 else

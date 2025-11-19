@@ -2,8 +2,15 @@
 # Script para gerar visualizações dos resultados do detector ADWIN
 set -e
 
-METRICS_PATH="results/adwin/metrics_comprehensive_with_nab.csv"
-OUTDIR="results/adwin/visualizations"
+DATA_PATH="data/afib_paroxysmal_full.csv"
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+DETECTOR="adwin"
+RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+METRICS_PATH="${RESULTS_DIR}/metrics_comprehensive_with_nab.csv"
+OUTDIR="${RESULTS_DIR}/visualizations"
 
 if [ ! -f "$METRICS_PATH" ]; then
     echo "Arquivo de métricas não encontrado: $METRICS_PATH"

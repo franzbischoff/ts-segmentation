@@ -11,7 +11,18 @@ echo ""
 
 # Define paths
 DATA_PATH="data/afib_paroxysmal_full.csv"
-OUTPUT_PATH="results/kswin/predictions_intermediate.csv"
+# Allow passing a custom data file as first argument
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+
+# Derive a short dataset name from the file (strip _full / _tidy suffixes)
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+DETECTOR="kswin"
+
+# Output paths are now dataset-aware: results/<dataset>/<detector>/...
+OUTPUT_DIR="results/${DATASET_NAME}/${DETECTOR}"
+OUTPUT_PATH="${OUTPUT_DIR}/predictions_intermediate.csv"
 
 # Check if data file exists
 if [ ! -f "$DATA_PATH" ]; then
@@ -20,11 +31,12 @@ if [ ! -f "$DATA_PATH" ]; then
 fi
 
 echo "Data file: $DATA_PATH"
+echo "Dataset name: $DATASET_NAME"
 echo "Output file: $OUTPUT_PATH"
 echo ""
 
 # Create output directory
-mkdir -p results/kswin
+mkdir -p "${OUTPUT_DIR}"
 
 echo "Grid Search Configuration:"
 echo "  alpha: [0.001, 0.005, 0.01, 0.05]  (4 values - significance level)"
@@ -56,15 +68,15 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "1. Evaluate predictions:"
-echo "   python -m src.evaluate_predictions \\"
-echo "       --predictions $OUTPUT_PATH \\"
-echo "       --metrics-output results/kswin/metrics_comprehensive_with_nab.csv \\"
-echo "       --report-output results/kswin/final_report_with_nab.json"
+echo "   python -m src.evaluate_predictions \\
+    --predictions $OUTPUT_PATH \\
+    --metrics-output ${OUTPUT_DIR}/metrics_comprehensive_with_nab.csv \\
+    --report-output ${OUTPUT_DIR}/final_report_with_nab.json"
 echo ""
 echo "2. Generate visualizations:"
-echo "   python -m src.visualize_results \\"
-echo "       --metrics results/kswin/metrics_comprehensive_with_nab.csv \\"
-echo "       --output-dir results/kswin/visualizations"
+echo "   python -m src.visualize_results \\
+    --metrics ${OUTPUT_DIR}/metrics_comprehensive_with_nab.csv \\
+    --output-dir ${OUTPUT_DIR}/visualizations"
 echo ""
 echo "3. Compare with other detectors:"
 echo "   python -m src.compare_detectors \\"

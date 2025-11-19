@@ -401,15 +401,53 @@ def plot_score_distributions(df, output_dir):
     ax4 = axes[1, 1]
     ax4_twin = ax4.twinx()
 
-    bp1 = ax4.boxplot([df['fp_per_min_mean']], positions=[1], widths=0.6,
-                       patch_artist=True, boxprops=dict(facecolor='lightblue'))
-    bp2 = ax4_twin.boxplot([df['edd_median_s_mean']], positions=[2], widths=0.6,
-                            patch_artist=True, boxprops=dict(facecolor='lightcoral'))
+    # FP/min plot always present (if exists)
+    if 'fp_per_min_mean' in df.columns and not df['fp_per_min_mean'].isna().all():
+        bp1 = ax4.boxplot([df['fp_per_min_mean']], positions=[1], widths=0.6,
+                           patch_artist=True, boxprops=dict(facecolor='lightblue'))
+    else:
+        ax4.text(0.5, 0.5, 'FP/min not available', ha='center', va='center')
+
+    # EDD might not be available (e.g., if all EDD values are NaN). Handle gracefully
+    if 'edd_median_s_mean' in df.columns and not df['edd_median_s_mean'].isna().all():
+        edd_vals = df['edd_median_s_mean'].dropna()
+        bp2 = ax4_twin.boxplot([edd_vals], positions=[2], widths=0.6,
+                                patch_artist=True, boxprops=dict(facecolor='lightcoral'))
+        # Make sure twin axis y-limits are well scaled so the box is visible
+        try:
+            ymin, ymax = edd_vals.min(), edd_vals.max()
+            margin = (ymax - ymin) * 0.1 if (ymax - ymin) > 0 else 1.0
+            ax4_twin.set_ylim(max(0, ymin - margin), ymax + margin)
+        except Exception:
+            pass
+        # Annotate with median value
+        med = float(edd_vals.median())
+        ax4_twin.text(2.05, med, f"median: {med:.2f}s", color='red', va='center')
+    else:
+        # No EDD data available: show placeholder
+        ax4_twin.text(0.5, 0.5, 'EDD not available', ha='center', va='center', color='red')
 
     ax4.set_ylabel('FP per minute', fontsize=11, color='blue')
     ax4_twin.set_ylabel('EDD (seconds)', fontsize=11, color='red')
-    ax4.set_xticks([1, 2])
-    ax4.set_xticklabels(['FP/min', 'EDD'])
+    # Only show ticks for available measures
+    xticks = []
+    xlabels = []
+    if 'fp_per_min_mean' in df.columns and not df['fp_per_min_mean'].isna().all():
+        xticks.append(1)
+        xlabels.append('FP/min')
+    else:
+        xticks.append(1)
+        xlabels.append('FP/min (n/a)')
+
+    if 'edd_median_s_mean' in df.columns and not df['edd_median_s_mean'].isna().all():
+        xticks.append(2)
+        xlabels.append('EDD')
+    else:
+        xticks.append(2)
+        xlabels.append('EDD (n/a)')
+
+    ax4.set_xticks(xticks)
+    ax4.set_xticklabels(xlabels)
     ax4.set_title('False Positive Rate and Detection Delay', fontsize=12, fontweight='bold')
     ax4.grid(True, alpha=0.3, axis='y')
     ax4.tick_params(axis='y', labelcolor='blue')
@@ -432,38 +470,61 @@ def plot_3d_tradeoff(df, output_dir):
 
     x = df['recall_10s_mean'].values
     y = df['fp_per_min_mean'].values
-    z = df['edd_median_s_mean'].values
+    # Use EDD only if available
+    if 'edd_median_s_mean' in df.columns and not df['edd_median_s_mean'].isna().all():
+        z = df['edd_median_s_mean'].values
+    else:
+        z = None
     colors = df['f3_weighted_mean'].values
 
-    scatter = ax.scatter(
-        x, y, z,
+    if z is None:
+        # Fallback: plot 2D scatter recall vs FP colored by F3
+        scatter = ax.scatter(
+            x, y,
+            c=colors,
+            s=50,
+            alpha=0.6,
+            cmap='viridis',
+            edgecolors='black',
+            linewidth=0.5
+        )
+    else:
+        scatter = ax.scatter(
+            x, y, z,
         c=colors,
         s=50,
         alpha=0.6,
         cmap='viridis',
         edgecolors='black',
         linewidth=0.5
-    )
+        )
 
     ax.set_xlabel('Recall @ 10s (↑)', fontsize=11, labelpad=10)
     ax.set_ylabel('FP per min (↓)', fontsize=11, labelpad=10)
-    ax.set_zlabel('EDD median (↓)', fontsize=11, labelpad=10)
+    if z is not None:
+        ax.set_zlabel('EDD median (↓)', fontsize=11, labelpad=10)
+    else:
+        # No EDD: set z label to N/A and adjust view
+        ax.set_zlabel('EDD median (n/a)', fontsize=11, labelpad=10)
     ax.set_title('3D Trade-off Surface: Recall vs FP vs Delay', fontsize=14, fontweight='bold', pad=20)
 
     cbar = plt.colorbar(scatter, ax=ax, pad=0.1, shrink=0.8)
     cbar.set_label('F3-weighted Score', fontsize=10)
 
-    # Mark best point
-    best_idx = df['f3_weighted_mean'].idxmax()
-    ax.scatter(
-        [x[best_idx]], [y[best_idx]], [z[best_idx]],
-        s=300,
-        marker='*',
-        c='red',
-        edgecolors='black',
-        linewidth=2,
-        label='Best F3'
-    )
+    # Mark best point (if exists)
+    try:
+        best_idx = df['f3_weighted_mean'].idxmax()
+    except Exception:
+        best_idx = None
+    if best_idx is not None and (z is None or not np.isnan(z[best_idx])):
+        if z is None:
+            ax.scatter([x[best_idx]], [y[best_idx]],
+                       s=300, marker='*', c='red', edgecolors='black', linewidth=2, label='Best F3')
+        else:
+            ax.scatter(
+                [x[best_idx]], [y[best_idx]], [z[best_idx]],
+                s=300, marker='*', c='red', edgecolors='black', linewidth=2, label='Best F3'
+            )
     ax.legend()
 
     plt.tight_layout()
@@ -478,10 +539,11 @@ def plot_parameter_sensitivity(df, output_dir):
     Line plots showing how each parameter affects key metrics.
     """
     # Auto-detect parameters
-    param_cols = [col for col in df.columns if col in
-                  ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
-                   'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size',
-                   'stat_size', 'lambda_option']]
+    param_cols = [col for col in df.columns if col in (
+        ['delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
+         'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size',
+         'stat_size', 'lambda_option', 'regime_threshold', 'regime_landmark']
+    )]
 
     if not param_cols:
         print("Warning: No parameters found for sensitivity analysis. Skipping.")
@@ -530,8 +592,9 @@ def plot_parameter_sensitivity(df, output_dir):
             ax.set_title(f'{metric_name} vs {param_label}', fontsize=11, fontweight='bold')
             ax.grid(True, alpha=0.3)
 
-            # Log scale for certain parameters
-            if param in ['ma_window', 'window_size', 'stat_size']:
+            # Log scale for certain parameters: keep ma_window and stat_size log-scaled
+            # but use linear scale for `window_size` to preserve absolute spacing
+            if param in ['ma_window', 'stat_size']:
                 ax.set_xscale('log')
 
     # Hide unused subplots

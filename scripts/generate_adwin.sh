@@ -10,7 +10,13 @@ echo "========================================="
 echo ""
 
 DATA_PATH="data/afib_paroxysmal_full.csv"
-OUTPUT_PATH="results/adwin/predictions_intermediate.csv"
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+DETECTOR="adwin"
+OUTPUT_DIR="results/${DATASET_NAME}/${DETECTOR}"
+OUTPUT_PATH="${OUTPUT_DIR}/predictions_intermediate.csv"
 
 if [ ! -f "$DATA_PATH" ]; then
     echo "Error: Data file not found: $DATA_PATH"
@@ -18,10 +24,11 @@ if [ ! -f "$DATA_PATH" ]; then
 fi
 
 echo "Data file: $DATA_PATH"
+echo "Dataset name: $DATASET_NAME"
 echo "Output file: $OUTPUT_PATH"
 echo ""
 
-mkdir -p results/adwin
+mkdir -p "${OUTPUT_DIR}"
 
 echo "Grid Search Configuration:"
 echo "  delta: [0.005, 0.01, 0.02, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.15]  (11 values)"

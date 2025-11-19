@@ -23,8 +23,14 @@ set -e  # Exit on error
 
 # Configuration
 DETECTOR="floss"
-METRICS_PATH="results/${DETECTOR}/metrics_comprehensive_with_nab.csv"
-OUTPUT_DIR="results/${DETECTOR}/visualizations"
+DATA_PATH="data/afib_paroxysmal_full.csv"
+if [ -n "$1" ]; then
+    DATA_PATH="$1"
+fi
+DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+METRICS_PATH="${RESULTS_DIR}/metrics_comprehensive_with_nab.csv"
+OUTPUT_DIR="${RESULTS_DIR}/visualizations"
 
 # Colors for output
 GREEN='\033[0;32m'
