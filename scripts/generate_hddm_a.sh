@@ -12,11 +12,20 @@ echo ""
 # Define paths
 DATA_PATH="data/afib_paroxysmal_full.csv"
 if [ -n "$1" ]; then
-    DATA_PATH="$1"
+    ARG="$1"
+    if [[ "$ARG" == *.csv ]] || [[ "$ARG" == */* ]]; then
+        DATA_PATH="$ARG"
+        DATASET_NAME=$(basename "$DATA_PATH" .csv)
+    else
+        DATASET_NAME="$ARG"
+        DATA_PATH="data/${DATASET_NAME}.csv"
+    fi
+else
+    DATASET_NAME=$(basename "$DATA_PATH" .csv)
 fi
-DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
 DETECTOR="hddm_a"
-OUTPUT_DIR="results/${DATASET_NAME}/${DETECTOR}"
+CLEAN_NAME=$(echo "$DATASET_NAME" | sed -E 's/_full$//; s/_tidy.*$//')
+OUTPUT_DIR="results/${CLEAN_NAME}/${DETECTOR}"
 OUTPUT_PATH="${OUTPUT_DIR}/predictions_intermediate.csv"
 
 # Check if data file exists
@@ -26,12 +35,15 @@ if [ ! -f "$DATA_PATH" ]; then
 fi
 
 echo "Data file: $DATA_PATH"
-echo "Dataset name: $DATASET_NAME"
+echo "Dataset name: $DATASET_NAME (clean: $CLEAN_NAME)"
 echo "Output file: $OUTPUT_PATH"
 echo ""
 
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
+
+# Extra args (forward to python script: --max-files, --max-samples)
+EXTRA_ARGS="${@:2}"
 
 echo "Grid Search Configuration:"
 echo "  drift_confidence: [0.0001, 0.0005, 0.001, 0.005]  (4 values)"
@@ -55,6 +67,7 @@ python -m src.generate_predictions \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
     --n-jobs 20
+    $EXTRA_ARGS
 
 echo ""
 echo "========================================="

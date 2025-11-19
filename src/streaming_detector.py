@@ -12,20 +12,27 @@ from .evaluation import DetectionEvent, evaluate_detections, evaluate_detections
 import numpy as np
 
 
-def run_stream_on_dataframe(df, detector_name: str, sample_rate: int, tolerance: int = 50,
-                            detector_params: dict | None = None, ma_window: int | None = None,
-                            use_derivative: bool = False, min_gap_samples: int | None = None):
-        """Core logic operating on an already loaded dataframe.
+def run_stream_on_dataframe(
+        df,
+        detector_name: str,
+        sample_rate: int,
+        tolerance: int = 50,
+        detector_params: dict | None = None,
+        ma_window: int | None = None,
+        use_derivative: bool = False,
+        min_gap_samples: int | None = None,
+):
+    """Core logic operating on an already loaded dataframe.
 
-        Notes:
-        - `min_gap_samples` is a post-processing filter applied by the pipeline. It is NOT a
-            parameter of the detector implementations (scikit-multiflow). Detectors output the
-            raw change events, then `min_gap_samples` suppresses consecutive detections that
-            occur within the provided number of samples.
+    Notes:
+    - `min_gap_samples` is a post-processing filter applied by the pipeline. It is NOT a
+        parameter of the detector implementations (scikit-multiflow). Detectors output the
+        raw change events, then `min_gap_samples` suppresses consecutive detections that
+        occur within the provided number of samples.
 
-        - Example: if `min_gap_samples=1000` (4s @ 250 Hz), when one detection is accepted,
-            any subsequent detection within the next 1000 samples is ignored.
-        """
+    - Example: if `min_gap_samples=1000` (4s @ 250 Hz), when one detection is accepted,
+        any subsequent detection within the next 1000 samples is ignored.
+    """
     detector = build_detector(detector_name, **(detector_params or {}))
 
     events: List[DetectionEvent] = []

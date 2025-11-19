@@ -6,9 +6,16 @@ DATA_PATH="data/afib_paroxysmal_full.csv"
 if [ -n "$1" ]; then
     DATA_PATH="$1"
 fi
-DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
+DATASET_NAME=$(basename "$DATA_PATH" .csv)
 DETECTOR="adwin"
-RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+CLEAN_NAME=$(echo "$DATASET_NAME" | sed -E 's/_full$//; s/_tidy.*$//')
+RESULTS_DIR="results/${CLEAN_NAME}/${DETECTOR}"
+if [ ! -d "$RESULTS_DIR" ]; then
+    if [ -d "results/${DATASET_NAME}/${DETECTOR}" ]; then
+        RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+        echo "Using legacy results directory (contains suffix): $RESULTS_DIR"
+    fi
+fi
 METRICS_PATH="${RESULTS_DIR}/metrics_comprehensive_with_nab.csv"
 OUTDIR="${RESULTS_DIR}/visualizations"
 

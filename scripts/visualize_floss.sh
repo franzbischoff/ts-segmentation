@@ -25,10 +25,25 @@ set -e  # Exit on error
 DETECTOR="floss"
 DATA_PATH="data/afib_paroxysmal_full.csv"
 if [ -n "$1" ]; then
-    DATA_PATH="$1"
+    ARG="$1"
+    if [[ "$ARG" == *.csv ]] || [[ "$ARG" == */* ]]; then
+        DATA_PATH="$ARG"
+        DATASET_NAME=$(basename "$DATA_PATH" .csv)
+    else
+        DATASET_NAME="$ARG"
+        DATA_PATH="data/${DATASET_NAME}.csv"
+    fi
+else
+    DATASET_NAME=$(basename "$DATA_PATH" .csv)
 fi
-DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
 RESULTS_DIR="results/${DATASET_NAME}/${DETECTOR}"
+CLEAN_NAME=$(echo "$DATASET_NAME" | sed -E 's/_full$//; s/_tidy.*$//')
+if [ -d "results/${CLEAN_NAME}/${DETECTOR}" ]; then
+    RESULTS_DIR="results/${CLEAN_NAME}/${DETECTOR}"
+    echo "Using sanitized results directory: $RESULTS_DIR"
+elif [ -d "results/${DATASET_NAME}/${DETECTOR}" ]; then
+    echo "Using legacy results directory (contains suffix): $RESULTS_DIR"
+fi
 METRICS_PATH="${RESULTS_DIR}/metrics_comprehensive_with_nab.csv"
 OUTPUT_DIR="${RESULTS_DIR}/visualizations"
 

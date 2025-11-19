@@ -11,17 +11,24 @@ echo ""
 
 # Define paths
 DATA_PATH="data/afib_paroxysmal_full.csv"
-# Allow passing a custom data file as first argument
+# Allow passing a dataset name (e.g. afib_paroxysmal_full) or a custom data file as first argument
 if [ -n "$1" ]; then
-    DATA_PATH="$1"
+    ARG="$1"
+    if [[ "$ARG" == *.csv ]] || [[ "$ARG" == */* ]]; then
+        DATA_PATH="$ARG"
+        DATASET_NAME=$(basename "$DATA_PATH" .csv)
+    else
+        DATASET_NAME="$ARG"
+        DATA_PATH="data/${DATASET_NAME}.csv"
+    fi
+else
+    DATASET_NAME=$(basename "$DATA_PATH" .csv)
 fi
-
-# Derive a short dataset name from the file (strip _full / _tidy suffixes)
-DATASET_NAME=$(basename "$DATA_PATH" .csv | sed -E 's/_full$//; s/_tidy.*$//')
 DETECTOR="kswin"
 
 # Output paths are now dataset-aware: results/<dataset>/<detector>/...
-OUTPUT_DIR="results/${DATASET_NAME}/${DETECTOR}"
+CLEAN_NAME=$(echo "$DATASET_NAME" | sed -E 's/_full$//; s/_tidy.*$//')
+OUTPUT_DIR="results/${CLEAN_NAME}/${DETECTOR}"
 OUTPUT_PATH="${OUTPUT_DIR}/predictions_intermediate.csv"
 
 # Check if data file exists
@@ -31,7 +38,7 @@ if [ ! -f "$DATA_PATH" ]; then
 fi
 
 echo "Data file: $DATA_PATH"
-echo "Dataset name: $DATASET_NAME"
+echo "Dataset name: $DATASET_NAME (clean: $CLEAN_NAME)"
 echo "Output file: $OUTPUT_PATH"
 echo ""
 
@@ -60,6 +67,7 @@ python -m src.generate_predictions \
     --data "$DATA_PATH" \
     --output "$OUTPUT_PATH" \
     --n-jobs 20
+    ${@:2}
 
 echo ""
 echo "========================================="
