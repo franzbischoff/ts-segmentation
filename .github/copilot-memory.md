@@ -995,3 +995,28 @@ python -m src.streaming_detector \
 
 ---
 (Atualizado em: 2025-09-28)
+
+## RESUMO EXECUTIVO DA SESSÃO 6 (2025-11-20)
+
+### ✅ Trabalho Realizado
+
+- ✅ Corrigido IndentationError em `src/streaming_detector.py` que impedia a geração de predições.
+- ✅ Atualizados os scripts `scripts/generate_*.sh`, `scripts/evaluate_*.sh` e `scripts/visualize_*.sh` para:
+   - aceitar `--max-files` e outros argumentos pass-through para testes rápidos
+   - preferir `results/<dataset>` sem sufixos `_full`/_`tidy` (com fallback para compatibilidade)
+- ✅ Melhorias em `visualize_results.py` para lidar com NaN em EDD e incluir `regime_threshold`/`regime_landmark` em `parameter_sensitivity.png`.
+- ✅ Melhoria do `src/compare_detectors.py`:
+   - `--dataset` argumento (default: `afib_paroxysmal`), saída organizada em `comparisons/<dataset>/`
+   - Exporta `detector_summary.csv`, `robustness.csv`, e `constraint_tradeoffs.csv`
+   - Suporta `--robust-top-n` e `--robust-top-percent` para análises de robustez
+- ✅ Removidos flags não usados (`--stat-top-percent`) e simplificado o fluxo de estatísticas
+- ✅ Adicionados testes unitários: `tests/test_compare_detectors.py` cobrindo `aggregate_metrics_by_params()` e `generate_robustness_analysis()`
+
+### 🔧 Notas Técnicas / Próximos Passos
+
+- Validar o `compare_detectors.py` em `comparisons/afib_paroxysmal/` e revisar `comparative_report.md` para garantir que a explicação sobre Top-N/Top-% está clara.
+- Opcional: adicionar testes adicionais para `aggregate_metrics_by_params()` para cobrir booleans e single-parameter cases.
+- Atualizar `results/README.md` com a sintaxe `--dataset` para garantir clareza na nova estrutura de pasta.
+
+### ✅ Fecho do dia
+- Status: PRONTO — todas tarefas do dia concluídas; ambiente `.venv` inicializado, testes rodaram e passaram.

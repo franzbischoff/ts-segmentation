@@ -61,9 +61,15 @@ def generate_best_configs_table(metrics_dfs: Dict[str, pd.DataFrame]) -> pd.Data
         "delta": "δ",
         "ma_window": "ma",
         "min_gap_samples": "gap",
+        "window_size": "win",
+        "stat_size": "stat",
         "threshold": "th",
         "alpha": "α",
         "lambda": "λ",
+        "lambda_": "λ",
+        "lambda_option": "λ",
+        "regime_threshold": "reg_th",
+        "regime_landmark": "reg_lm",
         "forgetting_factor": "ff",
     }
 
@@ -245,7 +251,7 @@ def aggregate_metrics_by_params(df: pd.DataFrame) -> pd.DataFrame:
     return aggregated
 
 
-def generate_robustness_analysis(metrics_dfs: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+def generate_robustness_analysis(metrics_dfs: Dict[str, pd.DataFrame], top_n: int = 10, top_percent: float = 0.0) -> pd.DataFrame:
     """
     Analyze peak performance and parameter robustness.
 
@@ -290,7 +296,12 @@ def generate_robustness_analysis(metrics_dfs: Dict[str, pd.DataFrame]) -> pd.Dat
             # Determine best value and threshold
             if direction == "maximize":
                 best_val = values.max()
-                top_10 = values.nlargest(10).mean()
+                # Top-N average (configurable) or top-X percent
+                if top_percent and top_percent > 0:
+                    cutoff = int(len(values) * (top_percent / 100.0)) or 1
+                    top_10 = values.nlargest(cutoff).mean()
+                else:
+                    top_10 = values.nlargest(top_n).mean()
                 if best_val > 0:
                     threshold = best_val * 0.9
                 else:
@@ -299,7 +310,11 @@ def generate_robustness_analysis(metrics_dfs: Dict[str, pd.DataFrame]) -> pd.Dat
                 good_mask = values >= threshold
             else:
                 best_val = values.min()
-                top_10 = values.nsmallest(10).mean()
+                if top_percent and top_percent > 0:
+                    cutoff = int(len(values) * (top_percent / 100.0)) or 1
+                    top_10 = values.nsmallest(cutoff).mean()
+                else:
+                    top_10 = values.nsmallest(top_n).mean()
                 threshold = best_val + 0.1 * abs(best_val)
                 good_mask = values <= threshold
 
@@ -496,6 +511,13 @@ def generate_markdown_report(
         if not robustness.empty:
             f.write("## 3. Performance & Robustness Analysis\n\n")
             f.write("Analysis of peak performance and parameter sensitivity.\n")
+            f.write("\n")
+            f.write(
+                "**Note**: Robustness and Top-N summaries are computed using the best-performing parameter configurations only\n"
+                "(by default the top 10 configurations), rather than averaging across the full grid. This avoids bias from\n"
+                "large grids that include many poor parameter choices. You can change the Top-N or use a top-percent selection\n"
+                "when running the script (see --robust-top-n / --robust-top-percent).\n\n"
+            )
             f.write("- **Best**: The single highest score achieved.\n")
             f.write(
                 "- **Top-10 Mean**: Average of the top 10 configurations (indicates stability of the peak).\n"
@@ -581,15 +603,16 @@ def main():
         help="Output path for a table with summarized metrics per detector (default: comparisons/<dataset>/detector_summary.csv)",
     )
     parser.add_argument(
-        "--stat-top-percent",
-        type=float,
-        default=10.0,
-        help="When computing statistical comparisons, restrict to the top X percent of parameter combinations by `--stat-metric`. Set 0 to use all combinations (default: 10)",
+        "--robust-top-n",
+        type=int,
+        default=10,
+        help="Number of top configurations to average for the Robustness Top-N mean (default: 10)",
     )
     parser.add_argument(
-        "--stat-metric",
-        default="f3_weighted",
-        help="Metric to use for selecting top performing parameter combinations when --stat-top-percent > 0 (default: f3_weighted)",
+        "--robust-top-percent",
+        type=float,
+        default=0.0,
+        help="Alternative to --robust-top-n: select top X percent of combos for Robustness computation (default: 0 = disabled)",
     )
     parser.add_argument(
         "--output",
@@ -679,8 +702,9 @@ def main():
     print("Generating comparisons...")
     best_configs = generate_best_configs_table(metrics_dfs)
     rankings = generate_metric_rankings(reports)
-    # stats = generate_statistical_comparison(metrics_dfs, top_percent=args.stat_top_percent, stat_metric=args.stat_metric)
-    robustness = generate_robustness_analysis(metrics_dfs)
+    # Note: statistical comparisons are performed via robustness/trade-offs: we select the top
+    # configurations for each detector when computing peak stability and parameter tolerance.
+    robustness = generate_robustness_analysis(metrics_dfs, top_n=args.robust_top_n, top_percent=args.robust_top_percent)
     tradeoffs = generate_constrained_analysis(metrics_dfs)
 
     # Save rankings CSV
@@ -718,6 +742,16 @@ def main():
     summary_table = summarize_metrics_per_detector(metrics_dfs)
     summary_table.to_csv(table_output_path, index=False)
     print(f"  ✓ Summary table saved: {table_output_path}")
+
+    # Save robustness & tradeoffs for further analysis
+    robust_path = base_output_dir / "robustness.csv"
+    tradeoffs_path = base_output_dir / "constraint_tradeoffs.csv"
+    if not robustness.empty:
+        robustness.to_csv(robust_path, index=False)
+        print(f"  ✓ Robustness saved: {robust_path}")
+    if not tradeoffs.empty:
+        tradeoffs.to_csv(tradeoffs_path, index=False)
+        print(f"  ✓ Trade-off results saved: {tradeoffs_path}")
 
     # Generate markdown report
     generate_markdown_report(

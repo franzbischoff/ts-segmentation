@@ -1,0 +1,19 @@
+Scenario,Target,Detector,Score
+High Recall (>0.8),Max Precision,adwin,0.0572
+High Recall (>0.8),Max Precision,page_hinkley,0.0452
+High Recall (>0.8),Max Precision,kswin,0.0611
+High Recall (>0.8),Max Precision,hddm_a,0.0516
+High Recall (>0.8),Max Precision,hddm_w,N/A (No config found)
+High Recall (>0.8),Max Precision,floss,0.0727
+High Precision (>0.8),Max Recall,adwin,N/A (No config found)
+High Precision (>0.8),Max Recall,page_hinkley,N/A (No config found)
+High Precision (>0.8),Max Recall,kswin,N/A (No config found)
+High Precision (>0.8),Max Recall,hddm_a,N/A (No config found)
+High Precision (>0.8),Max Recall,hddm_w,N/A (No config found)
+High Precision (>0.8),Max Recall,floss,N/A (No config found)
+High F1 (>0.8),Min Delay (s),adwin,N/A
+High F1 (>0.8),Min Delay (s),page_hinkley,N/A
+High F1 (>0.8),Min Delay (s),kswin,N/A
+High F1 (>0.8),Min Delay (s),hddm_a,N/A
+High F1 (>0.8),Min Delay (s),hddm_w,N/A
+High F1 (>0.8),Min Delay (s),floss,N/A

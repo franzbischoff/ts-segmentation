@@ -1,0 +1,55 @@
+Metric,Detector,Best,Top-10 Mean,Param Tolerance (%),Total Configs
+F3-Weighted,adwin,0.2641,0.2606,63.0%,495
+F3-Weighted,page_hinkley,0.2559,0.2556,77.8%,384
+F3-Weighted,kswin,0.2699,0.2682,74.0%,1280
+F3-Weighted,hddm_a,0.2574,0.2558,68.7%,640
+F3-Weighted,hddm_w,0.0560,0.0560,2.5%,2560
+F3-Weighted,floss,0.2257,0.2172,20.5%,25920
+F1-Weighted,adwin,0.0995,0.0978,100.0%,495
+F1-Weighted,page_hinkley,0.1002,0.0993,97.0%,384
+F1-Weighted,kswin,0.1010,0.0969,92.2%,1280
+F1-Weighted,hddm_a,0.0993,0.0973,3.1%,640
+F1-Weighted,hddm_w,0.0511,0.0510,64.4%,2560
+F1-Weighted,floss,0.1494,0.1394,0.1%,25920
+NAB Standard,adwin,-18.9256,-19.6085,60.0%,495
+NAB Standard,page_hinkley,-20.0441,-20.1818,89.4%,384
+NAB Standard,kswin,-19.7894,-20.1191,92.2%,1280
+NAB Standard,hddm_a,-20.6035,-20.6313,90.4%,640
+NAB Standard,hddm_w,-26.9091,-26.9091,100.0%,2560
+NAB Standard,floss,-19.3511,-19.6574,40.3%,25920
+NAB Low FP,adwin,-29.1142,-29.3556,90.9%,495
+NAB Low FP,page_hinkley,-30.5204,-30.5829,6.3%,384
+NAB Low FP,kswin,-26.9091,-26.9091,58.7%,1280
+NAB Low FP,hddm_a,-30.8173,-30.8970,81.6%,640
+NAB Low FP,hddm_w,-26.9091,-26.9091,100.0%,2560
+NAB Low FP,floss,-23.6296,-23.8751,65.9%,25920
+NAB Low FN,adwin,-21.5056,-21.8035,57.9%,495
+NAB Low FN,page_hinkley,-22.1834,-22.3242,77.8%,384
+NAB Low FN,kswin,-21.4315,-21.5384,74.0%,1280
+NAB Low FN,hddm_a,-21.4144,-21.5560,68.7%,640
+NAB Low FN,hddm_w,-53.5660,-53.5660,100.0%,2560
+NAB Low FN,floss,-29.1474,-30.0319,20.4%,25920
+Recall@10s,adwin,0.9723,0.9708,57.9%,495
+Recall@10s,page_hinkley,0.9896,0.9895,49.6%,384
+Recall@10s,kswin,0.9997,0.9997,80.3%,1280
+Recall@10s,hddm_a,0.9997,0.9997,76.0%,640
+Recall@10s,hddm_w,0.0852,0.0852,3.1%,2560
+Recall@10s,floss,0.6375,0.6172,1.8%,25920
+Precision@10s,adwin,0.1014,0.0989,61.5%,495
+Precision@10s,page_hinkley,0.0984,0.0982,6.3%,384
+Precision@10s,kswin,0.0966,0.0955,85.0%,1280
+Precision@10s,hddm_a,0.0897,0.0894,90.4%,640
+Precision@10s,hddm_w,0.1839,0.1839,4.7%,2560
+Precision@10s,floss,0.3182,0.3011,0.0%,25920
+FP/min,adwin,1.6065,1.7021,0.0%,495
+FP/min,page_hinkley,2.7052,2.7208,0.4%,384
+FP/min,kswin,0.0000,0.0000,58.7%,1280
+FP/min,hddm_a,2.4182,2.4216,2.7%,640
+FP/min,hddm_w,0.0104,0.0104,81.1%,2560
+FP/min,floss,0.0234,0.0238,1.6%,25920
+EDD Median,adwin,2.3254,2.4590,0.9%,495
+EDD Median,page_hinkley,1.1203,1.1295,0.4%,384
+EDD Median,kswin,0.8437,0.8745,5.1%,1040
+EDD Median,hddm_a,1.0633,1.0703,3.2%,640
+EDD Median,hddm_w,0.0040,0.0040,0.0%,1872
+EDD Median,floss,0.0360,0.0360,2.1%,22528
