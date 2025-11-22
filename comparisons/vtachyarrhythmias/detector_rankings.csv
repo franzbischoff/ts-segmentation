@@ -1,0 +1,7 @@
+metric,rank_1,rank_2,rank_3,rank_4,rank_5,rank_6
+F3-Weighted,floss (0.5440),kswin (0.2409),adwin (0.2367),page_hinkley (0.2295),hddm_a (0.2229),hddm_w (0.0204)
+NAB Standard,floss (0.1824),adwin (-1.8779),kswin (-2.2784),page_hinkley (-2.4641),hddm_a (-2.8088),hddm_w (-2.8529)
+Recall@10s,hddm_a (0.9902),kswin (0.9804),page_hinkley (0.9660),adwin (0.9575),floss (0.7971),hddm_w (0.0559)
+Precision@10s,floss (0.2608),kswin (0.0477),page_hinkley (0.0450),adwin (0.0444),hddm_a (0.0443),hddm_w (0.0043)
+FP/min,hddm_w (0.7282),floss (0.8634),kswin (6.3386),page_hinkley (6.6992),adwin (6.7720),hddm_a (7.0772)
+EDD Median,floss (2.8949),hddm_w (3.0527),adwin (3.4119),kswin (3.6699),page_hinkley (3.9130),hddm_a (4.3358)

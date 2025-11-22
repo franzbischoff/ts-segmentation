@@ -36,7 +36,7 @@ results/
 │   ├── adwin/
 │   └── ...
 
-├── vtachyarrythmias/          # Results for `vtachyarrythmias` dataset
+├── vtachyarrhythmias/          # Results for `vtachyarrhythmias` dataset
 │   ├── adwin/
 │   └── ...
 
@@ -50,7 +50,7 @@ isolated and comparable. For example:
 ```
 results/afib_paroxysmal/adwin/
 results/malignantventricular/adwin/
-results/vtachyarrythmias/adwin/
+results/vtachyarrhythmias/adwin/
 ```
 
 This allows running the same pipeline for different datasets without
