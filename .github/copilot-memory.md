@@ -1,9 +1,148 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
-**Última Atualização**: 2025-11-18 (Sessão 5 - Scripts FLOSS, Documentação min_gap_samples)
-**Status**: Framework completo com 5 detectores Python + FLOSS (R), integração R→Python validada, comparações multi-detector funcionais, documentação técnica completa sobre pós-processamento
+**Última Atualização**: 2025-11-24 (Sessão 6 - Todas as Avaliações Completas)
+**Status**: ✅ TODAS AS AVALIAÇÕES COMPLETAS - 6 detectores (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) × 3 datasets (afib_paroxysmal, malignantventricular, vtachyarrhythmias) = 18 avaliações completas com métricas, visualizações e relatórios
 
 Este documento resume tudo o que foi feito até agora para permitir continuidade futura mesmo sem o histórico da conversa.
+
+---
+
+## RESUMO EXECUTIVO DA SESSÃO 6 (2025-11-24)
+
+### ✅ Trabalho Completado (Todas as Avaliações)
+
+#### **STATUS FINAL: PIPELINE COMPLETO** 🎉
+
+Todas as avaliações de **6 detectores** em **3 datasets** foram concluídas com sucesso:
+
+| Dataset | Ficheiros | Eventos | Samples | Detectores Completos |
+|---------|-----------|---------|---------|----------------------|
+| **afib_paroxysmal** | 229 | 1,301 | 41.3M | ✅ 6/6 (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) |
+| **malignantventricular** | 22 | 592 | 11.6M | ✅ 6/6 (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) |
+| **vtachyarrhythmias** | 34 | 97 | 4.3M | ✅ 6/6 (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) |
+| **TOTAL** | **285** | **1,990** | **57.2M** | **18 avaliações completas** |
+
+#### 1. Estrutura de Resultados Organizada por Dataset
+
+A estrutura foi reorganizada por dataset para facilitar comparações:
+
+```
+results/
+├── afib_paroxysmal/          # 229 ficheiros, 1,301 eventos
+│   ├── adwin/                ✅ Completo (594 configs, 136K avaliações, 195MB predictions)
+│   ├── page_hinkley/         ✅ Completo (600 configs, 137K avaliações, 126MB predictions)
+│   ├── kswin/                ✅ Completo (1,280 configs, 293K avaliações, 543MB predictions)
+│   ├── hddm_a/               ✅ Completo (640 configs, 147K avaliações, 155MB predictions)
+│   ├── hddm_w/               ✅ Completo (2,560 configs, 586K avaliações, 498MB predictions)
+│   └── floss/                ✅ Completo (25,920 configs, 5.9M avaliações, 1.1GB predictions)
+│
+├── malignantventricular/     # 22 ficheiros, 592 eventos
+│   ├── adwin/                ✅ Completo (39MB predictions, 3.4MB metrics)
+│   ├── page_hinkley/         ✅ Completo (58MB predictions, 2.8MB metrics)
+│   ├── kswin/                ✅ Completo (153MB predictions, 7.7MB metrics)
+│   ├── hddm_a/               ✅ Completo (97MB predictions, 4.5MB metrics)
+│   ├── hddm_w/               ✅ Completo (32MB predictions, 7.9MB metrics)
+│   └── floss/                ✅ Completo (315MB predictions, 143MB metrics)
+│
+├── vtachyarrhythmias/        # 34 ficheiros, 97 eventos
+│   ├── adwin/                ✅ Completo (15MB predictions, 4.4MB metrics)
+│   ├── page_hinkley/         ✅ Completo (23MB predictions, 3.9MB metrics)
+│   ├── kswin/                ✅ Completo (54MB predictions, 11MB metrics)
+│   ├── hddm_a/               ✅ Completo (35MB predictions, 6.3MB metrics)
+│   ├── hddm_w/               ✅ Completo (16MB predictions, 12MB metrics)
+│   └── floss/                ✅ Completo (125MB predictions, 199MB metrics)
+│
+└── comparisons/              # Comparações multi-detector
+    └── floss_vs_kswin.*      ✅ Radar, bars, distributions (dataset afib_paroxysmal)
+```
+
+#### 2. Estatísticas de Avaliação por Detector
+
+**Dataset: afib_paroxysmal (229 ficheiros)**
+
+| Detector | Configs | Avaliações | Tamanho Predictions | Tamanho Metrics | Visualizações |
+|----------|---------|------------|---------------------|-----------------|---------------|
+| ADWIN | 594 | 136,026 | 195 MB | 39 MB | ✅ 9 gráficos |
+| Page-Hinkley | 600 | 137,400 | 126 MB | 34 MB | ✅ 9 gráficos |
+| KSWIN | 1,280 | 293,120 | 543 MB | 77 MB | ✅ 9 gráficos |
+| HDDM_A | 640 | 146,560 | 155 MB | 39 MB | ✅ 9 gráficos |
+| HDDM_W | 2,560 | 586,240 | 498 MB | 146 MB | ✅ 9 gráficos |
+| FLOSS | 25,920 | 5,935,680 | 1.1 GB | 1.3 GB | ✅ 9 gráficos |
+| **TOTAL** | **31,594** | **7,235,026** | **2.6 GB** | **1.6 GB** | **54 gráficos** |
+
+**Todos os datasets têm**:
+- ✅ `predictions_intermediate.csv` (predições brutas)
+- ✅ `metrics_comprehensive_with_nab.csv` (métricas completas)
+- ✅ `final_report_with_nab.json` (relatório com melhores configurações)
+- ✅ `visualizations/` (9 gráficos PNG por detector)
+
+#### 3. Melhores Configurações por Detector (afib_paroxysmal)
+
+Com base em **F3-weighted** (métrica primária de otimização):
+
+1. **FLOSS** (F3* = 0.3397)
+   - window_size: 75, regime_threshold: 0.7, regime_landmark: 4.0, min_gap: 1000
+
+2. **KSWIN** (F3* = 0.167)
+   - alpha: 0.005, window_size: 500, stat_size: 50, ma_window: 50, min_gap: 1000
+
+3. **ADWIN** (F3* = 0.1603)
+   - delta: 0.005, ma_window: 300, min_gap: 1000
+
+4. **Page-Hinkley** (F3* = 0.1551)
+   - lambda: 1.0, delta: 0.04, alpha: 0.9999, ma_window: 50, min_gap: 1000
+
+5. **HDDM_A** (F3* = 0.1547)
+   - drift_confidence: 0.005, warning_confidence: 0.001, two_side: true, ma_window: 1, min_gap: 1000
+
+6. **HDDM_W** (F3* = 0.1489)
+   - drift_confidence: 0.005, warning_confidence: 0.001, lambda: 0.2, two_side: false, ma_window: 1, min_gap: 1000
+
+**Nota**: FLOSS demonstra performance significativamente superior (2× melhor que segundo colocado)
+
+### 📊 Estado Atual do Projeto
+
+#### Detectores Completos (6/6) ✅
+1. **ADWIN** - 3 datasets completos ✅
+2. **Page-Hinkley** - 3 datasets completos ✅
+3. **KSWIN** - 3 datasets completos ✅
+4. **HDDM_A** - 3 datasets completos ✅
+5. **HDDM_W** - 3 datasets completos ✅
+6. **FLOSS** - 3 datasets completos ✅ (integração R→Python)
+
+#### Comparações Multi-Detector
+- **FLOSS vs KSWIN** - Completo ✅ (dataset afib_paroxysmal)
+  - Visualizações: radar chart, bar charts, violin plots
+  - Relatório executivo em `results/comparisons/floss_vs_kswin.md`
+
+#### Próximos Passos Sugeridos
+
+**Alta Prioridade**:
+1. 🔄 **Comparações adicionais entre detectores**
+   - FLOSS vs ADWIN, FLOSS vs Page-Hinkley
+   - Análise de robustez cross-dataset
+   - Comparação de performance vs complexidade computacional
+
+2. 🔄 **Análise cross-dataset**
+   - Como os detectores performam em datasets diferentes?
+   - Generalização de hiperparâmetros
+   - Transferência de configurações entre datasets
+
+3. 🔄 **Documentação final**
+   - Atualizar README principal com resultados finais
+   - Criar guia de seleção de detector por cenário
+   - Matriz de decisão (qual detector usar quando)
+
+**Média Prioridade**:
+4. **Ensemble methods**
+   - Voting entre top-3 detectores
+   - Weighted voting por F3-score
+   - Análise de complementaridade
+
+5. **Otimização de hiperparâmetros**
+   - Bayesian optimization para top detectores
+   - Análise de sensibilidade paramétrica
+   - Transfer learning de hiperparâmetros
 
 ---
 
@@ -233,14 +372,24 @@ min_gap_samples: 200
 ### Objetivo
 Detectar mudanças de regime (concept drift / change points) em sinais de ECG em fluxo (250 Hz) com processamento estritamente streaming (sem lookahead).
 
-### Dataset Principal
-**afib_regimes** (Zenodo 6879233):
-- **229 ficheiros** processados (classe paroxysmal_afib do dataset completo)
-- **3 classes disponíveis**: paroxysmal_afib (229), persistent_afib (475), non_afib (721) = 1,425 total
-- **Lead/Derivação**: Lead II (derivação II - padrão para análise de ritmo)
-- **1,301 eventos ground truth** totais (média 5.68 por ficheiro)
-- Taxa de amostragem: 250 Hz (constante após resample)
-- Preprocessamento: `src/ecg_preprocess.py` (padrão: `--lead II --resample-to 250`)
+### Datasets Processados (3 datasets completos)
+
+Todos os datasets foram extraídos do **Zenodo 6879233** (afib_regimes) e processados via `src/ecg_preprocess.py`:
+
+| Dataset | Ficheiros | Eventos | Samples | Taxa | Derivação |
+|---------|-----------|---------|---------|------|-----------|
+| **afib_paroxysmal** | 229 | 1,301 | 41.3M | 250 Hz | Lead II |
+| **malignantventricular** | 22 | 592 | 11.6M | 250 Hz | Lead II |
+| **vtachyarrhythmias** | 34 | 97 | 4.3M | 250 Hz | Lead II |
+| **TOTAL** | **285** | **1,990** | **57.2M** | - | - |
+
+**Configuração de Preprocessamento**:
+- Lead/Derivação: Lead II (padrão para análise de ritmo cardíaco)
+- Taxa de amostragem: 250 Hz (resample aplicado quando necessário)
+- Processamento: `src/ecg_preprocess.py` com `--lead II --resample-to 250`
+- Ground truth: Eventos de mudança de regime extraídos de anotações (label_store ∈ {28,32,33})
+- Limpeza: Remoção de eventos duplicados e bordas
+
 
 ### Detectores Implementados
 
