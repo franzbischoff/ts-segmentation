@@ -13,6 +13,7 @@ from typing import Dict, List, Any
 
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 from src.evaluation import calculate_comprehensive_metrics
 
@@ -313,6 +314,156 @@ def generate_best_parameters_report(metrics_path: str, report_output_path: str) 
     with open(report_output_path, 'w') as f:
         json.dump(report, f, indent=2)
     print(f"Final report saved to: {report_output_path}")
+
+    # Also save a human-friendly markdown copy of the report with timestamp
+    try:
+        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        # Place markdown next to JSON report, using a timestamp to avoid overwrites
+        report_p = Path(report_output_path)
+        md_name = report_p.stem + f"_{ts}.md"
+        md_path = report_p.with_name(md_name)
+
+        lines = []
+        lines.append("# Comparative Report — Temporary Snapshot")
+        lines.append(f"Generated: {datetime.utcnow().isoformat()} UTC")
+        if dataset_name:
+            lines.append(f"**Dataset**: {dataset_name}")
+        lines.append("---")
+
+        # Evaluation summary
+        lines.append("## Evaluation Summary")
+        for k, v in report.get('evaluation_summary', {}).items():
+            lines.append(f"- **{k.replace('_', ' ').title()}**: {v}")
+
+        # Best parameters (match CLI output)
+        lines.append("## Best Parameter Configurations")
+        # Output the main 'best' (F3 weighted primary) as the CLI does
+        bp = report.get('best_parameters', {})
+        primary = bp.get('f3_weighted') or next(iter(bp.values()), None)
+        if primary:
+            lines.append("### BEST GLOBAL PARAMETERS (F3 Weighted Primary Metric)")
+            # Print parameters first
+            for p in param_cols:
+                if p in primary:
+                    lines.append(f"- {p}: {primary[p]}")
+
+            # Collect numeric metrics and format mean±std when available
+            metric_pairs = []
+            for k, v in primary.items():
+                if k in param_cols:
+                    continue
+                # look for mean/std pairs
+                if k.endswith('_mean'):
+                    base = k[:-5]
+                    mean = v
+                    std = primary.get(f"{base}_std")
+                    if std is not None:
+                        metric_pairs.append((base, f"{mean:.4f} ± {std:.4f}"))
+                    else:
+                        metric_pairs.append((base, f"{mean:.4f}"))
+                elif not k.endswith('_std') and not k.endswith('_count'):
+                    # single metric (not mean/std pair)
+                    try:
+                        fv = float(v)
+                        metric_pairs.append((k, f"{fv:.4f}"))
+                    except Exception:
+                        metric_pairs.append((k, str(v)))
+
+            # Re-order some human-friendly metrics for presentation
+            order = ['f3_weighted', 'f3_classic', 'f1_weighted', 'f1_classic',
+                     'recall_4s', 'recall_10s', 'precision_4s', 'precision_10s',
+                     'edd_median_s', 'fp_per_min']
+
+            for name in order:
+                for m, val in metric_pairs:
+                    if m == name:
+                        # pretty label
+                        label = name.replace('_', ' ').upper() if 'nab' not in name else name
+                        lines.append(f"- {label}: {val}")
+            # any remaining metrics
+            for m, val in metric_pairs:
+                if m not in order:
+                    lines.append(f"- {m}: {val}")
+
+            # NAB scores grouped
+            nab_keys = [k for k in primary.keys() if k.startswith('nab_score_') and k.endswith('_mean')]
+            if nab_keys:
+                lines.append('- NAB Scores:')
+                for nk in nab_keys:
+                    base = nk.replace('_mean', '')
+                    mean = primary.get(nk)
+                    std = primary.get(f"{base}_std", 0)
+                    lines.append(f"  - {base}: {mean:.4f} ± {std:.4f}")
+
+            # separate sections with a single blank line
+            lines.append("")
+
+        # Comparison with other metrics (like CLI)
+        if bp:
+            lines.append('## Comparison With Other Metrics')
+            for metric_name, result in bp.items():
+                if metric_name == 'f3_weighted':
+                    continue
+                # parameter string
+                param_strs = []
+                for p in param_cols:
+                    if p in result:
+                        val = result[p]
+                        param_strs.append(f"{p}={val}")
+                params_line = ", ".join(param_strs)
+
+                # determine score
+                score_key = f"{metric_name}_mean"
+                score = None
+                if score_key in result:
+                    score = result[score_key]
+                elif metric_name in result:
+                    score = result[metric_name]
+
+                if score is not None:
+                    lines.append(f"- {metric_name.replace('_', ' ').title()} best: {params_line} (score={score:.4f})")
+                else:
+                    lines.append(f"- {metric_name.replace('_', ' ').title()} best: {params_line}")
+            # separate sections with a single blank line
+            lines.append("")
+
+        # Top-10 lists (if present)
+        if report.get('top_10_f3_weighted'):
+            lines.append("## Top 10 (F3-weighted)")
+            # convert to simple table
+            top10 = report['top_10_f3_weighted']
+            # Table header
+            header = [c for c in param_cols] + ['f3_weighted_mean']
+            lines.append("| " + " | ".join(header) + " |")
+            lines.append("|" + "---|" * len(header) + "")
+            for row in top10:
+                row_values = [str(row.get(c, '')) for c in header]
+                lines.append("| " + " | ".join(row_values) + " |")
+            # keep no extra blank line after table
+
+        # Top-10 NAB (if present)
+        if report.get('top_10_nab_standard'):
+            lines.append("## Top 10 (NAB Standard)")
+            topn = report['top_10_nab_standard']
+            header = [c for c in param_cols] + ['nab_score_standard_mean']
+            lines.append("| " + " | ".join(header) + " |")
+            lines.append("|" + "---|" * len(header) + "")
+            for row in topn:
+                row_values = [str(row.get(c, '')) for c in header]
+                lines.append("| " + " | ".join(row_values) + " |")
+            # keep no extra blank line after table
+
+        # Footer: temp note
+        lines.append("---")
+        lines.append("_This is a temporary snapshot created to avoid overwriting final reports. It includes the main summary and top configurations._")
+
+        md_text = "\n".join(lines)
+        with open(md_path, 'w') as f:
+            f.write(md_text)
+
+        print(f"Markdown snapshot saved to: {md_path}")
+    except Exception as e:
+        print(f"Warning: failed to write markdown snapshot: {e}")
 
     # Print summary to console
     print("\n" + "="*80)
