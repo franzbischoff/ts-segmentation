@@ -1,106 +1,68 @@
-# Análise Cross-Dataset: ADWIN - Resultados
+# Análise Cross-Dataset: ADWIN (2025-11-25)
 
-**Data**: 2025-11-24
-**Método**: Macro-Average (média simples entre datasets)
-**Datasets**: afib_paroxysmal, malignantventricular, vtachyarrhythmias
+**Datasets considerados**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`  
+**Modo principal**: True Macro-Average (cada dataset = 1/3 do peso) com requisito de cobertura em todos os 3 datasets.
 
 ---
 
-## 🏆 Melhor Configuração Cross-Dataset
+## 🏆 Configuração Mais Robusta (True Macro)
 
-Parâmetros que **generalizam melhor** através dos 3 datasets:
-
-```
-delta          = 0.015
-ma_window      = 250
-min_gap_samples = 1000
-
-F3-weighted macro-average = 0.3629 (±0.2145)
+```yaml
+delta:           0.05
+ma_window:       200
+min_gap_samples: 2000
+F3-weighted macro-average: 0.2835 ± 0.0745
 ```
 
-### Comparação: Cross-Dataset vs Dataset Individual
+- **Mudança chave**: a filtragem por cobertura removeu as “especialistas”. Só ficaram combinações que funcionam nos 3 datasets.
+- **Tendências**: valores de `delta` médios-altos (0.05–0.10) + `ma_window` largo (200–250) e `min_gap_samples=2000` reduziram falsos positivos sem colapsar o recall dos datasets menores.
 
-| Dataset | Melhor Config Individual | F3-score | Best Config Cross-Dataset | F3-score | Delta |
-|---------|--------------------------|----------|---------------------------|----------|-------|
-| **afib_paroxysmal** | delta=0.005, ma=300, gap=1000 | **0.3994** | delta=0.015, ma=250, gap=1000 | ~0.36 | -9% |
-| **malignantventricular** | delta=0.1, ma=150, gap=2000 | 0.2641 | delta=0.015, ma=250, gap=1000 | **~0.37** | +40% |
-| **vtachyarrhythmias** | delta=0.025, ma=250, gap=2000 | 0.2367 | delta=0.015, ma=250, gap=1000 | **~0.36** | +52% |
+### Top 5 (True Macro)
 
-**Observação**: A configuração cross-dataset sacrifica ~9% de performance no dataset maior (afib_paroxysmal), mas **ganha +40-50%** nos datasets menores, resultando em uma solução mais **robusta e generalizável**.
+| Rank | delta | ma_window | gap | Score | Std |
+|------|-------|-----------|-----|-------|-----|
+| 1 | 0.05 | 200 | 2000 | **0.2835** | 0.0745 |
+| 2 | 0.10 | 150 | 2000 | 0.2834 | 0.0665 |
+| 3 | 0.06 | 200 | 2000 | 0.2832 | 0.0727 |
+| 4 | 0.025 | 250 | 2000 | 0.2819 | 0.0623 |
+| 5 | 0.020 | 250 | 2000 | 0.2812 | 0.0679 |
 
----
-
-## 📊 Top 10 Configurações Rankeadas
-
-### Macro-Average Rankings
-
-1. **delta=0.015, ma_window=250, min_gap=1000** → 0.3629 (±0.2145)
-2. **delta=0.010, ma_window=300, min_gap=1000** → 0.3623 (±0.2128)
-3. **delta=0.040, ma_window=100, min_gap=1000** → 0.3620 (±0.2167)
-4. **delta=0.005, ma_window=300, min_gap=1000** → 0.3619 (±0.2158) ⭐ *melhor em afib_paroxysmal*
-5. **delta=0.050, ma_window=150, min_gap=1000** → 0.3610 (±0.2148)
-6. delta=0.005, ma_window=75, min_gap=1000 → 0.3610 (±0.2125)
-7. delta=0.015, ma_window=150, min_gap=1000 → 0.3610 (±0.2122)
-8. delta=0.020, ma_window=200, min_gap=1000 → 0.3610 (±0.2169)
-9. delta=0.015, ma_window=200, min_gap=1000 → 0.3610 (±0.2154)
-10. delta=0.005, ma_window=150, min_gap=1000 → 0.3608 (±0.2122)
-
-### Insights
-
-- **min_gap_samples=1000** aparece em TODAS as top-10 configs (robustez confirmada!)
-- **delta** varia (0.005 a 0.05), mas valores intermediários (0.01-0.025) dominam o top-5
-- **ma_window** entre 100-300 é ótimo para generalização
-- **std entre datasets** ~0.21 é consistente (indicador de robustez)
+**Insight**: todos os vencedores usam `min_gap_samples=2000` (≈8 s @ 250 Hz), confirmando que ADWIN precisa de supressão mais longa para manter estabilidade fora do afib.
 
 ---
 
-## 📈 Estatísticas Gerais
+## 📉 File-Weighted (Micro) para Referência
 
-- **Total de configurações**: 594 únicas
-- **Datasets analisados**: 3
-- **Total de linhas processadas**: 163,746
+O ranking ponderado por número de ficheiros continua dominado por `afib_paroxysmal`, portanto permanece útil apenas como “baseline histórico”.
 
-### Distribuição de Scores (Macro-Average)
-
-- **Máximo**: 0.3629 (top config)
-- **Mediana**: 0.2805
-- **Média**: 0.2766
-- **Mín std**: 0.1438 (config mais robusta)
-- **Máx std**: 0.2173
+- **Melhor combinação micro**: `delta=0.015`, `ma_window=250`, `gap=1000` → **0.3629 ± 0.2145**
+- **Gap macro vs micro**: -22% (0.2835 vs 0.3629). O ganho artificial vinha da dependência do dataset maior.
 
 ---
 
-## 💡 Recomendações
+## 🔍 Resumo Técnico
 
-### Para Aplicações em Produção
-
-Use a **configuração cross-dataset** (delta=0.015, ma=250, gap=1000) quando:
-- Não sabe qual tipo de arritmia vai encontrar
-- Precisa de performance consistente em múltiplos cenários
-- Quer evitar overfitting ao dataset de treino
-
-### Para Maximizar Performance em Dataset Específico
-
-Use configurações individuais otimizadas:
-- **afib_paroxysmal**: delta=0.005, ma=300, gap=1000 (+9% vs cross-dataset)
-- **malignantventricular**: delta=0.1, ma=150, gap=2000 (mas perde generalização)
-- **vtachyarrhythmias**: delta=0.025, ma=250, gap=2000 (dataset pequeno, menos confiável)
-
-### Trade-off Performance vs Robustez
-
-- **Alta robustez**: Top configs com **baixo std** (±0.21)
-- **Alta performance**: Config #4 (delta=0.005) tem score similar mas std ligeiramente maior
-- **Recomendação**: Config #1 (delta=0.015) - melhor equilíbrio
+1. **Cobertura total**: 495 configurações atendem `n_datasets=3` (antes 594 sem filtro).  
+2. **Distribuição**: média = 0.254, mediana = 0.250, min std = 0.053 (configurações mais estáveis).  
+3. **Perfil paramétrico**:
+   - `delta` entre 0.02 e 0.10 oferece o melhor compromisso recall × FP.
+   - `ma_window ≥ 200` suaviza ruído entre classes.
+   - `min_gap_samples=2000` torna-se padrão para uso cross-dataset.
 
 ---
 
-## 📁 Outputs Gerados
+## ✅ Recomendações
 
-- `macro_average_rankings.csv` - 594 configs rankeadas
-- `cross_dataset_report.json` - Relatório completo em JSON
+- **Produção multi-dataset**: usar a configuração macro (#1) → menos sensível, porém consistente.
+- **Afinar para um dataset específico**: consulte `file_weighted_rankings.csv`, mas valide manualmente fora do afib.
+- **Relatórios úteis**:
+  - `results/cross_dataset_analysis/adwin/true_macro_average_rankings.csv`
+  - `results/cross_dataset_analysis/adwin/true_macro_report.json`
+  - `results/cross_dataset_analysis/adwin/file_weighted_report.json`
 
-### Próximos Passos
+---
 
-1. ✅ Análise cross-dataset para **outros detectores** (FLOSS, KSWIN, Page-Hinkley, HDDM_A, HDDM_W)
-2. ⏳ Comparação de robustez entre detectores
-3. ⏳ Micro-average (ponderado por eventos) para confirmar resultados
+**Próximos passos sugeridos**:
+1. Validar ADWIN macro vs FLOSS/KSWIN no `src.compare_detectors` (modo `--dataset` por classe).  
+2. Explorar `min_gap_samples` > 2000 para cenários onde os datasets pequenos continuam ruidosos.  
+3. Adicionar visualizações cruzadas (heatmaps macro) destacando a região `delta∈[0.05,0.10]`.

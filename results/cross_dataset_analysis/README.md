@@ -1,85 +1,75 @@
-# Cross-Dataset Analysis: Final Report
+# Cross-Dataset Analysis Overview (2025-11-25)
 
-**Date**: 2025-11-24
-**Datasets**: `afib_paroxysmal` (229 files), `malignantventricular` (22 files), `vtachyarrhythmias` (34 files)
-**Detectors**: ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS
-
----
-
-## 🚨 Executive Summary: The "Specialist Loophole"
-
-Our analysis revealed a critical distinction between aggregation methods:
-
-1.  **File-Weighted (Micro-Average)**: Heavily biased towards the largest dataset (`afib_paroxysmal` = 80% weight).
-2.  **True Macro-Average**: Gives equal weight (1/3) to each dataset.
-
-**Critical Finding**: The current True Macro-Average calculation allows a **"Specialist Loophole"**.
-- Detectors like **ADWIN** and **Page-Hinkley** achieve high "Macro" scores by performing well on *one* dataset and failing (returning NaN) on the others.
-- **FLOSS** and **KSWIN** are **True Generalists** (100% coverage across all datasets).
+**Objetivo**: encontrar configurações de detectores de mudança que generalizem entre `afib_paroxysmal`, `malignantventricular` e `vtachyarrhythmias`.  
+**Ferramenta**: `src.cross_dataset_analysis.py` com o novo parâmetro `--min-datasets` (default = nº de datasets listados).
 
 ---
 
-## 🏆 Final Rankings
+## 🆕 O que mudou nesta atualização?
 
-### 1. True Generalists (Recommended)
-*Detectors that perform consistently across ALL datasets (100% coverage).*
-
-| Rank | Detector | Macro Score | File-Weighted | Robustness (Std) | Status |
-|------|----------|-------------|---------------|------------------|--------|
-| **1** 🥇 | **FLOSS** | **0.3958** | **0.4491** | 0.0972 | ✅ **Champion** |
-| **2** 🥈 | **KSWIN** | **0.2976** | 0.3773 | 0.1015 | ✅ Very Robust |
-| **3** 🥉 | **HDDM_A** | **0.2584** | 0.3273 | **0.0593** | ✅ Most Stable |
-| 4 | HDDM_W | 0.1252 | 0.2843 | 0.1552 | ❌ Poor Performance |
-
-### 2. Specialists (Use with Caution)
-*Detectors where top configurations appear in only 1 dataset (Specialist Loophole).*
-
-| Detector | Macro Score (n=1) | Real Generalist Score (n=3) | Drop |
-|----------|-------------------|-----------------------------|------|
-| **Page-Hinkley** | 0.3885 | 0.2625 | -32% |
-| **ADWIN** | 0.3408 | 0.2835 | -17% |
-
-> **Note**: While ADWIN and Page-Hinkley *can* generalize (they have configs with n=3), their performance drops significantly when forced to do so. Their "top" ranking in some metrics is an artifact of overfitting to the easiest dataset.
+1. **Cobertura obrigatória** (`n_datasets >= 3`) em todos os rankings CSV/JSON.
+2. **Novas recomendações macro** para cada detector, refletidas nas pastas `results/cross_dataset_analysis/<detector>/`.
+3. **Documentação atualizada** (`README.md` por detector + arquivos de síntese) para remover o “specialist loophole”.
 
 ---
 
-## 📊 Detailed Analysis by Detector
+## 📊 Resultados Principais (True Macro)
 
-### 🥇 FLOSS (The Universal Choice)
-- **Performance**: #1 in BOTH File-Weighted and True Macro rankings.
-- **Coverage**: 100% (25,920/25,920 configs work on all datasets).
-- **Best Config**: `window=125`, `thresh=0.55`, `landmark=5.0`, `gap=1000`.
-- **Recommendation**: **Use for Production**.
-
-### 🥈 KSWIN (The Reliable Alternative)
-- **Performance**: Solid #2 among generalists.
-- **Coverage**: 100% (1,280/1,280 configs).
-- **Best Config**: `alpha=0.01`, `window=500`, `stat=20`, `ma=100`.
-- **Recommendation**: Good alternative if FLOSS is too computationally expensive.
-
-### 🥉 HDDM_A (The Stability King)
-- **Performance**: Lower average score, but **lowest standard deviation** (0.059).
-- **Coverage**: 100%.
-- **Recommendation**: Use when consistency is more important than peak sensitivity.
-
-### ⚠️ ADWIN & Page-Hinkley (The Specialists)
-- **Behavior**: Top configurations are highly tuned to `afib_paroxysmal`.
-- **Risk**: High risk of failure on different data distributions (e.g., `vtachyarrhythmias`).
-- **Recommendation**: Avoid for general-purpose pipelines unless retrained/tuned per dataset.
+| Detector | Melhor Configuração (resumo) | Score | Std |
+|----------|------------------------------|-------|-----|
+| **FLOSS** | window=125, thr=0.55, landmark=5.0, gap=1000 | **0.3958** | 0.0972 |
+| **KSWIN** | α=0.01, win=500, stat=20, ma=100, gap=1000 | 0.2976 | 0.1015 |
+| ADWIN | delta=0.05, ma=200, gap=2000 | 0.2835 | **0.0745** |
+| Page-Hinkley | λ=10, δ=0.005, α=0.9999, ma=10, gap=1000 | 0.2625 | 0.0966 |
+| HDDM_A | drift=0.005, warn=0.05, two_side=True, ma=1, gap=2000 | 0.2584 | **0.0593** |
+| HDDM_W | drift=0.005, warn=0.001, λ=0.01, two_side=False, ma=1, gap=1000 | 0.1252 | 0.1552 |
 
 ---
 
-## 💡 Key Technical Insights
+## 📁 Estrutura Atualizada
 
-1.  **Universal Parameter**: `min_gap_samples = 1000` (4 seconds) is optimal for ALL detectors across ALL datasets.
-2.  **Aggregation Matters**: "File-Weighted" hides poor performance on small datasets. "True Macro" exposes it (if coverage is checked).
-3.  **Matrix Profile vs. Drift**: FLOSS (Matrix Profile) significantly outperforms traditional Drift Detection (ADWIN/PH/HDDM) on this ECG segmentation task.
+```
+results/cross_dataset_analysis/
+├── README.md                      # este ficheiro
+├── CROSS_DATASET_ANALYSIS_SUMMARY.md
+├── AGGREGATION_METHODS_COMPARISON.md
+├── <detector>/
+│   ├── README.md                  # análise específica (macro vs micro)
+│   ├── true_macro_average_rankings.csv
+│   ├── true_macro_report.json
+│   ├── file_weighted_rankings.csv
+│   └── file_weighted_report.json
+```
+
+Cada `README.md` individual descreve:
+- Configuração “macro” recomendada (com cobertura total).
+- Configuração “file-weighted” apenas para referência.
+- Principais insights paramétricos e próximos passos.
 
 ---
 
-## 📁 Directory Structure
+## 🔧 Como reproduzir
 
-- `file_weighted_rankings.csv`: Micro-average results (biased to afib).
-- `true_macro_average_rankings.csv`: Macro-average results (equal weight).
-- `ANALYSIS_RANKING_DISCREPANCIES.md`: Detailed report on the "Specialist Loophole".
-- `AGGREGATION_METHODS_COMPARISON.md`: Methodology comparison.
+```bash
+# Macro-average com cobertura total
+python -m src.cross_dataset_analysis \
+    --detector adwin \
+    --mode true_macro \
+    --min-datasets 3 \
+    --output results/cross_dataset_analysis/adwin
+
+# File-weighted para comparação histórica
+python -m src.cross_dataset_analysis \
+    --detector adwin \
+    --mode file_weighted \
+    --min-datasets 3 \
+    --output results/cross_dataset_analysis/adwin
+```
+
+---
+
+## ✅ Próximos Passos
+
+1. Rodar `src.compare_detectors` utilizando as novas configurações “macro” como baseline.
+2. Levar o parâmetro `--min-datasets` à documentação principal, para que outros membros também garantam cobertura mínima.
+3. Criar visualizações específicas destacando a região paramétrica macro-ótima de cada detector.

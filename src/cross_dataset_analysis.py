@@ -13,7 +13,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -217,6 +217,52 @@ def calculate_true_macro_average(
     return result
 
 
+def enforce_min_dataset_coverage(
+    rankings_df: pd.DataFrame,
+    min_datasets: int,
+    metric_col: str,
+    mode: str,
+) -> pd.DataFrame:
+    """
+    Filter rankings to keep only configurations that appear in at least `min_datasets`.
+
+    Args:
+        rankings_df: Ranked DataFrame with an `n_datasets` column
+        min_datasets: Minimum number of datasets a configuration must appear in
+        metric_col: Base metric name (e.g., f3_weighted)
+        mode: Aggregation mode ("file_weighted" or "true_macro")
+
+    Returns:
+        Filtered and re-ranked DataFrame
+    """
+    if min_datasets <= 1:
+        return rankings_df
+
+    coverage_mask = rankings_df["n_datasets"] >= min_datasets
+    filtered = rankings_df[coverage_mask].copy()
+
+    if filtered.empty:
+        logger.warning(
+            "No configurations meet the minimum coverage requirement (%s datasets). "
+            "Returning original rankings without filtering.",
+            min_datasets,
+        )
+        return rankings_df
+
+    removed = len(rankings_df) - len(filtered)
+    if removed > 0:
+        logger.info(
+            "Filtered out %s configurations that appeared in fewer than %s datasets",
+            removed,
+            min_datasets,
+        )
+
+    score_suffix = "file_weighted_avg" if mode == "file_weighted" else "macro_avg"
+    score_col = f"{metric_col}_{score_suffix}"
+    filtered = filtered.sort_values(score_col, ascending=False).reset_index(drop=True)
+    return filtered
+
+
 
 def generate_report(
     rankings_df: pd.DataFrame,
@@ -225,6 +271,7 @@ def generate_report(
     datasets: List[str],
     metric_col: str = "f3_weighted",
     mode: str = "true_macro",
+    min_datasets: Optional[int] = None,
 ) -> Dict:
     """
     Generate JSON report with top configurations.
@@ -271,6 +318,7 @@ def generate_report(
         "metric": metric_col,
         "aggregation_mode": mode,
         "aggregation_method": method_desc,
+        "min_datasets_required": min_datasets,
         "total_configurations": len(rankings_df),
         "best_configuration": best_config,
         "top_10_configurations": top_configs,
@@ -327,6 +375,13 @@ def main():
         default=None,
         help="Output directory (default: results/cross_dataset_analysis/<detector>)",
     )
+    parser.add_argument(
+        "--min-datasets",
+        type=int,
+        default=None,
+        help="Minimum number of datasets that must contain a configuration in order to "
+        "include it in the rankings. Defaults to the number of datasets provided.",
+    )
 
     args = parser.parse_args()
 
@@ -356,6 +411,22 @@ def main():
 
     logger.info(f"\nSuccessfully loaded {len(datasets_dfs)} datasets")
 
+    # Determine coverage requirement
+    min_datasets = args.min_datasets or len(datasets_dfs)
+    if min_datasets < 1:
+        raise ValueError("--min-datasets must be >= 1")
+    if min_datasets > len(datasets_dfs):
+        logger.warning(
+            "Requested min_datasets (%s) is greater than datasets loaded (%s). "
+            "Using %s instead.",
+            min_datasets,
+            len(datasets_dfs),
+            len(datasets_dfs),
+        )
+        min_datasets = len(datasets_dfs)
+
+    logger.info(f"Minimum dataset coverage required: {min_datasets}")
+
     # Identify parameter columns
     param_cols = identify_parameter_columns(datasets_dfs[0])
     logger.info(f"Detected parameter columns: {param_cols}")
@@ -372,6 +443,10 @@ def main():
         rankings_csv = output_dir / "true_macro_average_rankings.csv"
         avg_col_name = "macro_avg"
 
+    rankings_df = enforce_min_dataset_coverage(
+        rankings_df, min_datasets, args.metric, args.mode
+    )
+
     # Save rankings CSV
     rankings_df.to_csv(rankings_csv, index=False)
     logger.info(f"\n✅ Saved rankings to: {rankings_csv}")
@@ -379,7 +454,13 @@ def main():
 
     # Generate and save report
     report = generate_report(
-        rankings_df, param_cols, args.detector, args.datasets, args.metric, args.mode
+        rankings_df,
+        param_cols,
+        args.detector,
+        args.datasets,
+        args.metric,
+        args.mode,
+        min_datasets=min_datasets,
     )
     report_json = output_dir / f"{args.mode}_report.json"
     with open(report_json, "w") as f:
