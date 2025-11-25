@@ -4,52 +4,52 @@ F3-Weighted,page_hinkley,0.3885,0.3875,50.4%,600
 F3-Weighted,kswin,0.4135,0.4129,74.0%,1280
 F3-Weighted,hddm_a,0.3588,0.3502,2.1%,640
 F3-Weighted,hddm_w,0.3530,0.3529,46.6%,2560
-F3-Weighted,floss,0.3109,0.3033,11.2%,25920
+F3-Weighted,floss,0.4776,0.4763,50.4%,25920
 F1-Weighted,adwin,0.1682,0.1665,76.3%,594
 F1-Weighted,page_hinkley,0.1626,0.1601,69.1%,600
 F1-Weighted,kswin,0.1700,0.1687,74.0%,1280
 F1-Weighted,hddm_a,0.1593,0.1582,36.9%,640
 F1-Weighted,hddm_w,0.1771,0.1755,2.8%,2560
-F1-Weighted,floss,0.1934,0.1860,11.2%,25920
+F1-Weighted,floss,0.3757,0.3713,53.6%,25920
 NAB Standard,adwin,-4.2820,-4.3246,41.0%,594
 NAB Standard,page_hinkley,-5.2182,-5.2536,100.0%,600
 NAB Standard,kswin,-5.2573,-5.2844,100.0%,1280
 NAB Standard,hddm_a,-5.1989,-5.2102,90.4%,640
 NAB Standard,hddm_w,-4.4566,-4.4717,80.1%,2560
-NAB Standard,floss,-4.0775,-4.1813,12.7%,25920
+NAB Standard,floss,-1.4142,-1.5026,13.7%,25920
 NAB Low FP,adwin,-7.0183,-7.1097,51.7%,594
 NAB Low FP,page_hinkley,-5.7889,-5.8007,5.8%,600
 NAB Low FP,kswin,-5.6812,-5.6812,58.7%,1280
 NAB Low FP,hddm_a,-6.9956,-7.0470,79.7%,640
 NAB Low FP,hddm_w,-6.0791,-6.0984,93.6%,2560
-NAB Low FP,floss,-5.3072,-5.3883,100.0%,25920
+NAB Low FP,floss,-2.4230,-2.5024,31.1%,25920
 NAB Low FN,adwin,-3.3841,-3.4959,1.0%,594
 NAB Low FN,page_hinkley,-3.7376,-3.7934,0.3%,600
 NAB Low FN,kswin,-3.4979,-3.5436,6.3%,1280
 NAB Low FN,hddm_a,-4.3235,-4.5610,0.0%,640
 NAB Low FN,hddm_w,-4.1400,-4.1704,0.0%,2560
-NAB Low FN,floss,-5.8571,-6.0748,18.2%,25920
+NAB Low FN,floss,-3.0548,-3.1365,29.5%,25920
 Recall@10s,adwin,0.9952,0.9902,68.1%,594
 Recall@10s,page_hinkley,0.9995,0.9988,54.7%,600
 Recall@10s,kswin,1.0000,1.0000,80.3%,1280
 Recall@10s,hddm_a,0.9058,0.8913,0.1%,640
 Recall@10s,hddm_w,0.8254,0.8245,36.5%,2560
-Recall@10s,floss,0.7075,0.6944,20.7%,25920
+Recall@10s,floss,0.8584,0.8535,41.4%,25920
 Precision@10s,adwin,0.1636,0.1595,87.4%,594
 Precision@10s,page_hinkley,0.1614,0.1506,88.1%,600
 Precision@10s,kswin,0.1543,0.1514,92.2%,1280
 Precision@10s,hddm_a,0.1628,0.1620,2.9%,640
 Precision@10s,hddm_w,0.1763,0.1760,5.8%,2560
-Precision@10s,floss,0.2350,0.2282,1.4%,25920
+Precision@10s,floss,0.5562,0.5455,37.7%,25920
 FP/min,adwin,2.0089,2.0873,0.0%,594
 FP/min,page_hinkley,0.1211,0.1308,0.0%,600
 FP/min,kswin,0.0000,0.0000,58.7%,1280
 FP/min,hddm_a,1.2292,1.2647,1.7%,640
 FP/min,hddm_w,0.6305,0.6409,0.2%,2560
-FP/min,floss,0.2559,0.2564,100.0%,25920
+FP/min,floss,0.1873,0.1908,39.8%,25920
 EDD Median,adwin,1.2944,1.3338,0.9%,594
 EDD Median,page_hinkley,1.2617,1.2920,0.0%,600
 EDD Median,kswin,0.9525,0.9688,5.1%,1040
 EDD Median,hddm_a,2.0157,2.0708,0.1%,640
 EDD Median,hddm_w,1.6686,1.7089,0.0%,2560
-EDD Median,floss,0.0280,0.0280,50.9%,22494
+EDD Median,floss,1.1120,1.1668,1.6%,23016
