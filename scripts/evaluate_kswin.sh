@@ -37,4 +37,8 @@ fi
 python -m src.evaluate_predictions \
     --predictions "$PRED_PATH" \
     --metrics-output "$METRICS_PATH" \
-    --report-output "$REPORT_PATH"
+    --report-output "$REPORT_PATH" \
+    --two-fold-analysis \
+    --two-fold-seed 42 \
+    --two-fold-primary-metric f3_weighted \
+    --two-fold-suffix _twofold

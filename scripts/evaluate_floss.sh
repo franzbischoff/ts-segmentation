@@ -81,7 +81,11 @@ echo ""
 python -m src.evaluate_predictions \
     --predictions "$PREDICTIONS_PATH" \
     --metrics-output "$METRICS_OUTPUT" \
-    --report-output "$REPORT_OUTPUT"
+    --report-output "$REPORT_OUTPUT" \
+    --two-fold-analysis \
+    --two-fold-seed 42 \
+    --two-fold-primary-metric f3_weighted \
+    --two-fold-suffix _twofold
 
 # Check if evaluation succeeded
 if [ $? -eq 0 ]; then

@@ -124,6 +124,15 @@ python -m src.evaluate_predictions \
 - `metrics_comprehensive_with_nab.csv` - Métricas detalhadas
 - `final_report_with_nab.json` - Sumário executivo
 
+> Novo (robustez 2-fold): acrescente `--two-fold-analysis` para dividir os ficheiros do dataset
+> em duas metades reprodutíveis e comparar a generalização dos melhores parâmetros entre elas.
+> Opcionalmente ajuste `--two-fold-seed` (default 42), `--two-fold-primary-metric` (ex.: `nab_score_standard`)
+> e `--two-fold-suffix` para personalizar o nome dos artefactos.
+>
+> Outputs extras gerados por este modo:
+> - `results/<dataset>/fold_assignments_seed<seed>.json` – lista fixa dos ficheiros em cada metade
+> - `results/<dataset>/<DETECTOR_NAME>/final_report_with_nab_twofold_seed<seed>.json` – resumo das métricas intra-fold e cruzadas
+
 ### 3️⃣ Visualizações
 ```bash
 python -m src.visualize_results \

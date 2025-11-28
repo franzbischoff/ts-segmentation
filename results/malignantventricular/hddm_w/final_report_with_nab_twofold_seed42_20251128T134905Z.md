@@ -1,0 +1,112 @@
+# Two-Fold Robustness Snapshot
+Generated: 2025-11-28T13:49:05.180724 UTC
+Seed: 42
+Primary metric column: f3_weighted_mean
+Fold assignments file: results/malignantventricular/fold_assignments_seed42.json
+Fold sizes: {'fold_a': 11, 'fold_b': 11}
+---
+## FOLD_A
+- Records: 11
+- Unique files: 11
+- Best params: drift_confidence: 0.0005, warning_confidence: 0.001, lambda_option: 0.01, two_side_option: False, ma_window: 1, min_gap_samples: 1000
+- Primary metric in fold: 0.0618
+- Primary metric in opposite fold: 0.0503
+- Generalization gap: 0.011500000000000003
+- Cross-fold metrics (opposite fold):
+  - drift_confidence: 0.0005
+  - warning_confidence: 0.001
+  - lambda_option: 0.01
+  - two_side_option: False
+  - ma_window: 1
+  - min_gap_samples: 1000
+  - f1_classic_mean: 0.0609
+  - f1_classic_std: 0.0972
+  - f1_classic_count: 11
+  - f1_weighted_mean: 0.0594
+  - f1_weighted_std: 0.0968
+  - f1_weighted_count: 11
+  - f3_classic_mean: 0.0512
+  - f3_classic_std: 0.0985
+  - f3_classic_count: 11
+  - f3_weighted_mean: 0.0503
+  - f3_weighted_std: 0.0985
+  - f3_weighted_count: 11
+  - recall_4s_mean: 0.0357
+  - recall_4s_std: 0.1003
+  - recall_10s_mean: 0.0503
+  - recall_10s_std: 0.1008
+  - precision_4s_mean: 0.0485
+  - precision_4s_std: 0.1119
+  - precision_10s_mean: 0.2045
+  - precision_10s_std: 0.332
+  - edd_median_s_mean: 3.265
+  - fp_per_min_mean: 0.0182
+  - nab_score_standard_mean: -42.8182
+  - nab_score_standard_std: 45.1837
+  - nab_score_low_fp_mean: -42.8182
+  - nab_score_low_fp_std: 45.1837
+  - nab_score_low_fn_mean: -85.6364
+  - nab_score_low_fn_std: 90.3673
+  - n_ground_truth_sum: 471
+  - n_detections_sum: 16
+
+## FOLD_B
+- Records: 11
+- Unique files: 11
+- Best params: drift_confidence: 0.0001, warning_confidence: 0.001, lambda_option: 0.01, two_side_option: False, ma_window: 1, min_gap_samples: 1000
+- Primary metric in fold: 0.0503
+- Primary metric in opposite fold: 0.0617
+- Generalization gap: 0.0114
+- Cross-fold metrics (opposite fold):
+  - drift_confidence: 0.0001
+  - warning_confidence: 0.001
+  - lambda_option: 0.01
+  - two_side_option: False
+  - ma_window: 1
+  - min_gap_samples: 1000
+  - f1_classic_mean: 0.0452
+  - f1_classic_std: 0.0687
+  - f1_classic_count: 11
+  - f1_weighted_mean: 0.0427
+  - f1_weighted_std: 0.0658
+  - f1_weighted_count: 11
+  - f3_classic_mean: 0.0657
+  - f3_classic_std: 0.1153
+  - f3_classic_count: 11
+  - f3_weighted_mean: 0.0617
+  - f3_weighted_std: 0.1094
+  - f3_weighted_count: 11
+  - recall_4s_mean: 0.053
+  - recall_4s_std: 0.1503
+  - recall_10s_mean: 0.1201
+  - recall_10s_std: 0.234
+  - precision_4s_mean: 0.0472
+  - precision_4s_std: 0.1503
+  - precision_10s_mean: 0.1479
+  - precision_10s_std: 0.3194
+  - edd_median_s_mean: 3.1825
+  - fp_per_min_mean: 0.7844
+  - nab_score_standard_mean: -12.391
+  - nab_score_standard_std: 10.0768
+  - nab_score_low_fp_mean: -14.5865
+  - nab_score_low_fp_std: 15.0526
+  - nab_score_low_fn_mean: -21.8387
+  - nab_score_low_fn_std: 17.5607
+  - n_ground_truth_sum: 121
+  - n_detections_sum: 320
+
+## Selection Guidance
+- Highest Cross Primary Metric:
+  - fold: fold_b
+  - primary_metric_in_fold: 0.0503
+  - primary_metric_in_opposite_fold: 0.0617
+  - generalization_gap: 0.0114
+  - parameter_values: {'drift_confidence': 0.0001, 'warning_confidence': 0.001, 'lambda_option': 0.01, 'two_side_option': False, 'ma_window': 1, 'min_gap_samples': 1000}
+- Smallest Generalization Gap:
+  - fold: fold_b
+  - primary_metric_in_fold: 0.0503
+  - primary_metric_in_opposite_fold: 0.0617
+  - generalization_gap: 0.0114
+  - parameter_values: {'drift_confidence': 0.0001, 'warning_confidence': 0.001, 'lambda_option': 0.01, 'two_side_option': False, 'ma_window': 1, 'min_gap_samples': 1000}
+- Mean Cross Primary Metric:
+  - value: 0.055999999999999994

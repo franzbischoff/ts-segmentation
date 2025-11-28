@@ -1,0 +1,112 @@
+# Two-Fold Robustness Snapshot
+Generated: 2025-11-28T12:12:29.533390 UTC
+Seed: 42
+Primary metric column: f3_weighted_mean
+Fold assignments file: results/vtachyarrhythmias/fold_assignments_seed42.json
+Fold sizes: {'fold_a': 17, 'fold_b': 17}
+---
+## FOLD_A
+- Records: 17
+- Unique files: 17
+- Best params: drift_confidence: 0.0001, warning_confidence: 0.001, lambda_option: 0.01, two_side_option: False, ma_window: 10, min_gap_samples: 3000
+- Primary metric in fold: 0.0347
+- Primary metric in opposite fold: 0.006
+- Generalization gap: 0.028700000000000003
+- Cross-fold metrics (opposite fold):
+  - drift_confidence: 0.0001
+  - warning_confidence: 0.001
+  - lambda_option: 0.01
+  - two_side_option: False
+  - ma_window: 10
+  - min_gap_samples: 3000
+  - f1_classic_mean: 0.0032
+  - f1_classic_std: 0.0131
+  - f1_classic_count: 17
+  - f1_weighted_mean: 0.0017
+  - f1_weighted_std: 0.0071
+  - f1_weighted_count: 17
+  - f3_classic_mean: 0.0111
+  - f3_classic_std: 0.0458
+  - f3_classic_count: 17
+  - f3_weighted_mean: 0.006
+  - f3_weighted_std: 0.0249
+  - f3_weighted_count: 17
+  - recall_4s_mean: 0.0
+  - recall_4s_std: 0.0
+  - recall_10s_mean: 0.0294
+  - recall_10s_std: 0.1213
+  - precision_4s_mean: 0.0
+  - precision_4s_std: 0.0
+  - precision_10s_mean: 0.0017
+  - precision_10s_std: 0.0069
+  - edd_median_s_mean: 6.732
+  - fp_per_min_mean: 0.5271
+  - nab_score_standard_mean: -2.6634
+  - nab_score_standard_std: 2.4
+  - nab_score_low_fp_mean: -2.8963
+  - nab_score_low_fp_std: 2.5665
+  - nab_score_low_fn_mean: -5.0175
+  - nab_score_low_fn_std: 4.8223
+  - n_ground_truth_sum: 43
+  - n_detections_sum: 77
+
+## FOLD_B
+- Records: 17
+- Unique files: 17
+- Best params: drift_confidence: 0.0001, warning_confidence: 0.001, lambda_option: 0.01, two_side_option: False, ma_window: 1, min_gap_samples: 2000
+- Primary metric in fold: 0.0161
+- Primary metric in opposite fold: 0.0193
+- Generalization gap: 0.0032000000000000015
+- Cross-fold metrics (opposite fold):
+  - drift_confidence: 0.0001
+  - warning_confidence: 0.001
+  - lambda_option: 0.01
+  - two_side_option: False
+  - ma_window: 1
+  - min_gap_samples: 2000
+  - f1_classic_mean: 0.0158
+  - f1_classic_std: 0.0451
+  - f1_classic_count: 17
+  - f1_weighted_mean: 0.0108
+  - f1_weighted_std: 0.034
+  - f1_weighted_count: 17
+  - f3_classic_mean: 0.0318
+  - f3_classic_std: 0.0711
+  - f3_classic_count: 17
+  - f3_weighted_mean: 0.0193
+  - f3_weighted_std: 0.0448
+  - f3_weighted_count: 17
+  - recall_4s_mean: 0.0
+  - recall_4s_std: 0.0
+  - recall_10s_mean: 0.1
+  - recall_10s_std: 0.2646
+  - precision_4s_mean: 0.0
+  - precision_4s_std: 0.0
+  - precision_10s_mean: 0.0125
+  - precision_10s_std: 0.0404
+  - edd_median_s_mean: 6.4027
+  - fp_per_min_mean: 1.2414
+  - nab_score_standard_mean: -3.8097
+  - nab_score_standard_std: 2.522
+  - nab_score_low_fp_mean: -4.6379
+  - nab_score_low_fp_std: 3.1869
+  - nab_score_low_fn_mean: -6.4544
+  - nab_score_low_fn_std: 5.1952
+  - n_ground_truth_sum: 54
+  - n_detections_sum: 182
+
+## Selection Guidance
+- Highest Cross Primary Metric:
+  - fold: fold_b
+  - primary_metric_in_fold: 0.0161
+  - primary_metric_in_opposite_fold: 0.0193
+  - generalization_gap: 0.0032000000000000015
+  - parameter_values: {'drift_confidence': 0.0001, 'warning_confidence': 0.001, 'lambda_option': 0.01, 'two_side_option': False, 'ma_window': 1, 'min_gap_samples': 2000}
+- Smallest Generalization Gap:
+  - fold: fold_b
+  - primary_metric_in_fold: 0.0161
+  - primary_metric_in_opposite_fold: 0.0193
+  - generalization_gap: 0.0032000000000000015
+  - parameter_values: {'drift_confidence': 0.0001, 'warning_confidence': 0.001, 'lambda_option': 0.01, 'two_side_option': False, 'ma_window': 1, 'min_gap_samples': 2000}
+- Mean Cross Primary Metric:
+  - value: 0.012650000000000002
