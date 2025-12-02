@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Ensure flag is always defined to avoid unbound-variable errors when set -u is used
+SKIP_SCIMF=0
+
 echo "[post-create] Creating or updating virtualenv at $ROOT_DIR/.venv"
 # create venv (if it fails, surface the error)
 python -m venv .venv
