@@ -1,5 +1,34 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 10 (continuação) — 2025-12-14 (Opção 3 + Visualização única)
+
+### ✅ Entregas novas desta sessão
+- **Opção 3 concluída (Unified Robustness Score)**
+   - Script: `src/unified_robustness_score.py`
+   - Artefatos: `results/cross_dataset_analysis/unified_robustness_option3.{csv,md}`
+   - Fórmula: `score = 0.6×(1 - avg_2fold_gap) + 0.4×(1 - transfer_variance)`
+   - Ranking final: FLOSS 0.9763, ADWIN 0.9713, KSWIN 0.9690, HDDM_A 0.9509, HDDM_W 0.9426, Page-Hinkley 0.9049
+- **Visualização única (Opções 1, 2, 3)**
+   - Script: `src/visualize_option123.py`
+   - Saída: `results/cross_dataset_analysis/option123_summary.png`
+   - Eixos: X = ceiling F3 (Opção 1), Y = transferability média (Opção 2), cor/tamanho = score unificado (Opção 3)
+- **README consolidado (3 opções)**
+   - `results/cross_dataset_analysis/README.md` agora descreve Opções 1, 2 e 3, inclui comando da visualização e decisão por cenário
+
+### 🔑 Insights atualizados
+- FLOSS continua líder em ceiling e também lidera no score unificado, mas perde ~24% ao transferir; precisa de validação/tuning em produção.
+- ADWIN mantém a maior portabilidade (94.9%, CV 9.5%) e fica em 2º no score unificado; melhor escolha para produção imediata.
+- KSWIN permanece o melhor equilíbrio (2º em ceiling, 2º em portabilidade, 3º no score unificado), indicado para produção com validação rápida.
+- Page-Hinkley e HDDM_W apresentam alta instabilidade de parâmetros (CV ~73%); evitar em produção sem testes extensivos.
+
+### 📁 Artefatos principais da sessão
+- `results/cross_dataset_analysis/unified_robustness_option3.csv`
+- `results/cross_dataset_analysis/unified_robustness_option3.md`
+- `results/cross_dataset_analysis/option123_summary.png`
+- `results/cross_dataset_analysis/README.md` (atualizado para as 3 opções)
+
+---
+
 ## RESUMO EXECUTIVO DA SESSÃO 10 (2025-12-14)
 
 ### ✅ Trabalho de Hoje
