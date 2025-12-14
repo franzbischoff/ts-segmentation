@@ -3,52 +3,97 @@
 ## RESUMO EXECUTIVO DA SESSÃO 10 (2025-12-14)
 
 ### ✅ Trabalho de Hoje
-1. **Agregação two-fold cross-validation**
-   - `src/aggregate_twofold_analysis.py` (382 linhas) criado para processar todos os 18 relatórios two-fold (6 detectores × 3 datasets)
+
+#### 1. Agregação Two-Fold Cross-Validation
+   - `src/aggregate_twofold_analysis.py` (590 linhas) criado para processar todos os 18 relatórios two-fold (6 detectores × 3 datasets)
    - Implementada seleção robusta: para cada detector×dataset, escolhe o fold com **melhor cross-fold F3** (generalização), com tiebreaker por **menor gap**
    - Análise em 3 níveis: Robustness Ranking global, Per-Dataset Comparison, Generalization Gap Analysis
 
-2. **Artefatos Gerados**
-   - 📊 **twofold_analysis_summary.md** (2.5 KB): Resumo executivo com tabelas de robustez
-   - 📁 **3 CSVs de robustez** (um por dataset): Métricas por detector para análise posterior
-   - 📘 **TWOFOLD_ROBUSTNESS_README.md** (7 KB): Documentação completa com:
-     - Metodologia e seleção de configurações
-     - Rankings globais de robustez (FLOSS: 1º com 0.0211 avg gap)
-     - Per-dataset insights (FLOSS domina em afib_paroxysmal e vtachyarrhythmias)
-     - Perfis por detector (strengths/challenges/recommendations)
-     - Guia de produção (qual usar quando?)
+#### 2. Opção 1: Performance Ceiling com Tuning Local (Cross-Dataset Generalization)
+   - Adicionada função `generate_cross_dataset_generalization_report()` ao script de agregação
+   - **Pergunta respondida**: "Qual detector atinge melhor performance quando otimizado POR dataset?"
+   - Usa **cross-fold F3 scores** (mais realistas que intra-fold)
+   - **Resultado**: FLOSS domina com F3=0.4285 (±0.13, CV=31%), mas requer tuning por dataset
+   - Artefatos: `cross_dataset_generalization_option1.{md,csv}`
 
-3. **Insights-Chave**
-   - ✅ **FLOSS**: Melhor robustez geral (gap 0.0211 = 2.1% drop ao generalizar)
-   - ✅ **ADWIN**: Excelente em datasets pequenos (malignantventricular: 0.0046 gap)
-   - ✅ **KSWIN**: Bom equilíbrio performance/robustez
-   - ⚠️  **Page-Hinkley**: Maior sensibilidade paramétrica (0.0516 avg gap)
+#### 3. Opção 2: Leave-One-Dataset-Out Validation (Parameter Portability)
+   - `src/test_parameter_portability.py` (380 linhas) criado para testar transferibilidade de hiperparâmetros
+   - **Pergunta respondida**: "Posso usar params de um dataset NOUTRO sem re-tuning?"
+   - Para cada detector, transfere melhores params de fonte→alvo, mede F3, compara com local best
+   - **36 transfers testados** (6 detectores × 3 sources × 2 targets cada)
+   - Usa `metrics_comprehensive_with_nab.csv` (filtragem por params exatos)
+   - **Resultado SURPRESA**: ADWIN tem 94.90% transferability (melhor que FLOSS com 75.85%)!
+   - Artefatos: `parameter_portability_option2.{md,csv}`
+
+### 📊 Insights-Chave
+
+#### Trade-off Fundamental: Ceiling vs Portabilidade
+```
+Opção 1 (Ceiling):        Opção 2 (Transfer):
+1. FLOSS   → 0.4285       1. ADWIN  → 94.90%
+2. KSWIN   → 0.3176       2. KSWIN  → 87.84%
+3. Page-H  → 0.3132       3. FLOSS  → 75.85% ← PERDE 24%!
+4. HDDM_A  → 0.2997       4. HDDM_A → 65.17%
+5. ADWIN   → 0.2879       5. Page-H → 54.31%
+6. HDDM_W  → 0.1527       6. HDDM_W → 45.64%
+```
+
+**Revelação**: Melhor ceiling (FLOSS) ≠ Melhor portabilidade (ADWIN)
+
+#### KSWIN = Sweet Spot
+- Performance: 2º lugar (F3=0.3176)
+- Portabilidade: 2º lugar (88%)
+- **Melhor compromisso** entre potencial e robustez
+
+#### FLOSS Requer Tuning Obrigatório
+- Tunado: EXCELENTE (F3=0.4285)
+- Transferido: MEDÍOCRE (F3≈0.32, -24% performance)
+- **Não usar em produção sem validação/tuning**
+
+#### ADWIN para Quick-Deploy
+- Params de qualquer dataset funcionam noutros (95% retention)
+- Performance absoluta menor (F3=0.29), mas previsível
+- **Ideal quando labels para re-tuning não existem**
+
+### 📁 Artefatos Gerados (Sessão 10)
+
+```
+results/cross_dataset_analysis/
+├── twofold_analysis_summary.md                  (2.5 KB, resumo executivo)
+├── twofold_robustness_{afib,malign,vtachy}.csv (3 CSVs, métricas por dataset)
+├── TWOFOLD_ROBUSTNESS_README.md                 (7 KB, documentação completa)
+├── cross_dataset_generalization_option1.md      (Opção 1: ceiling analysis)
+├── cross_dataset_generalization_option1.csv     (rankings + stats)
+├── parameter_portability_option2.md             (Opção 2: 36 transfer tests)
+└── parameter_portability_option2.csv            (transferability ratios)
+```
+
+### 🎯 Recomendações Para Produção
+
+**Cenário 1: Novo dataset COM LABELS** (pode tunar)
+- Usar: FLOSS + grid search
+- Performance esperada: F3 ≈ 0.42
+- Tempo: ~horas
+
+**Cenário 2: Novo dataset SEM LABELS** (produção imediata)
+- Usar: ADWIN com params de afib_paroxysmal
+- Performance esperada: F3 ≈ 0.27 (95% do teto)
+- Tempo: ~minutos
+
+**Cenário 3: Equilíbrio performance/portabilidade**
+- Usar: KSWIN com params de afib_paroxysmal
+- Performance esperada: F3 ≈ 0.28 (88% do teto)
+- Tempo: ~minutos + validação
 
 ### 📌 Estado
-- Two-fold analysis completa e documentada. Scores de generalização calculados e rankings estabelecidos.
-- Recomendações para produção: usar FLOSS para novos dados (máxima portabilidade de hiperparâmetros).
+- Opções 1 e 2 completas e documentadas
+- 34 transfers testados com sucesso (2 falharam por params não presentes no grid)
+- Trade-off ceiling vs portabilidade quantificado
+- Guias de produção por cenário estabelecidos
 
-### 🔄 Próximos Passos (Backlog Identificado)
+### 🔄 Próximos Passos (Backlog Atualizado)
 
-#### **Análises Cross-Dataset com Two-Fold** (Extensão Natural)
-Discussão com utilizador identificou 3 abordagens complementares para combinar robustez intra-dataset (2-fold) com análise inter-dataset:
-
-**Opção 1: Cross-Dataset com Scores de Generalização** ⭐ (Recomendado, ~10-15 min)
-- Agregar **cross-fold F3 scores** (já calculados) across os 3 datasets
-- Métrica "duplamente robusta": generalização intra-dataset + consistência inter-dataset
-- Output: tabela com média/std/min/max dos cross-fold scores por detector
-- **Pergunta que responde**: "Qual detector generaliza melhor em AMBAS as dimensões (intra + inter dataset)?"
-- **Esforço**: Baixo (extensão direta do `aggregate_twofold_analysis.py`)
-
-**Opção 2: Leave-One-Dataset-Out Validation** 🔬 (Mais rigoroso, viável!)
-- Testar se hiperparâmetros de um dataset funcionam **noutros datasets**
-- Ex.: parâmetros de FLOSS de afib_paroxysmal (melhor fold) → aplicar em malignantventricular + vtachyarrhythmias
-- Fazer para cada combinação (3 datasets × 6 detectores = 18 testes)
-- **Pergunta que responde**: "Posso usar parâmetros de afib_paroxysmal em datasets completamente novos?"
-- **Esforço**: Médio (~20-30 min) - **NÃO requer re-execução**: os `predictions_intermediate.csv` já contêm grid search completo com TODAS as combinações de hiperparâmetros, basta filtrar e agregar
-- **Benefício**: Testa portabilidade real de hiperparâmetros entre datasets usando dados já calculados
-
-**Opção 3: Unified Robustness Score** 📈 (Mais completo, estatístico)
+#### **Opção 3: Unified Robustness Score** 📈 (Opcional, estatístico)
 - Combinar ambas dimensões numa métrica unificada:
   ```
   Robustness_Score = w1 × (1 - avg_2fold_gap) + w2 × (1 - cross_dataset_variance)
@@ -57,8 +102,6 @@ Discussão com utilizador identificou 3 abordagens complementares para combinar 
 - Detecta detectores que generalizam bem DENTRO de datasets E são consistentes ACROSS datasets
 - **Pergunta que responde**: "Qual detector é universalmente robusto em ambas as dimensões?"
 - **Esforço**: Médio (análise estatística + escolha de pesos)
-
-**Recomendação**: Começar por **Opção 1** (rápido, insight imediato), depois avaliar necessidade de Opção 2/3.
 
 #### **Outras Tarefas Pendentes**
 - Expandir comparações visuais FLOSS vs outros detectores (ponto 2 do backlog Sessão 6)
