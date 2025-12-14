@@ -1,5 +1,37 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 10 (2025-12-14)
+
+### ✅ Trabalho de Hoje
+1. **Agregação two-fold cross-validation**
+   - `src/aggregate_twofold_analysis.py` (382 linhas) criado para processar todos os 18 relatórios two-fold (6 detectores × 3 datasets)
+   - Implementada seleção robusta: para cada detector×dataset, escolhe o fold com **melhor cross-fold F3** (generalização), com tiebreaker por **menor gap**
+   - Análise em 3 níveis: Robustness Ranking global, Per-Dataset Comparison, Generalization Gap Analysis
+
+2. **Artefatos Gerados**
+   - 📊 **twofold_analysis_summary.md** (2.5 KB): Resumo executivo com tabelas de robustez
+   - 📁 **3 CSVs de robustez** (um por dataset): Métricas por detector para análise posterior
+   - 📘 **TWOFOLD_ROBUSTNESS_README.md** (7 KB): Documentação completa com:
+     - Metodologia e seleção de configurações
+     - Rankings globais de robustez (FLOSS: 1º com 0.0211 avg gap)
+     - Per-dataset insights (FLOSS domina em afib_paroxysmal e vtachyarrhythmias)
+     - Perfis por detector (strengths/challenges/recommendations)
+     - Guia de produção (qual usar quando?)
+
+3. **Insights-Chave**
+   - ✅ **FLOSS**: Melhor robustez geral (gap 0.0211 = 2.1% drop ao generalizar)
+   - ✅ **ADWIN**: Excelente em datasets pequenos (malignantventricular: 0.0046 gap)
+   - ✅ **KSWIN**: Bom equilíbrio performance/robustez
+   - ⚠️  **Page-Hinkley**: Maior sensibilidade paramétrica (0.0516 avg gap)
+
+### 📌 Estado
+- Two-fold analysis completa e documentada. Scores de generalização calculados e rankings estabelecidos.
+- Recomendações para produção: usar FLOSS para novos dados (máxima portabilidade de hiperparâmetros).
+
+### 🔄 Próximos Passos
+- Opcionalmente: expandir comparações FLOSS vs outros detectores (ponto 2 do backlog Sessão 6)
+- Opcionalmente: criar matriz de decisão visual (qual detector usar em qual cenário)
+
 ## RESUMO EXECUTIVO DA SESSÃO 9 (2025-11-28)
 
 ### ✅ Trabalho de Hoje
@@ -28,7 +60,7 @@
    - `results/README.md` descreve o novo modo 2-fold, parâmetros de CLI e artefatos extra.
 
 3. **Execução recomendada**
-   - Para rodar no dataset `vtachyarrhythmias`, ativar `.venv` e usar:  
+   - Para rodar no dataset `vtachyarrhythmias`, ativar `.venv` e usar:
      `python -m src.evaluate_predictions --predictions results/vtachyarrhythmias/<detector>/predictions_intermediate.csv --metrics-output .../metrics_comprehensive_with_nab.csv --report-output .../final_report_with_nab.json --two-fold-analysis --two-fold-seed 42 --two-fold-primary-metric f3_weighted`
 
 ### 📌 Status
@@ -42,25 +74,25 @@
 ## RESUMO EXECUTIVO DA SESSÃO 7 (2025-11-26)
 
 ### ✅ Trabalho de Hoje
-1. **Sincronização das instruções operacionais**  
-   - `.github/copilot-instructions.md` reescrito para refletir o estado atual (6 detectores completos × 3 datasets, comparações em `comparisons/<dataset>/`, análises macro/micro em `results/cross_dataset_analysis/`).  
+1. **Sincronização das instruções operacionais**
+   - `.github/copilot-instructions.md` reescrito para refletir o estado atual (6 detectores completos × 3 datasets, comparações em `comparisons/<dataset>/`, análises macro/micro em `results/cross_dataset_analysis/`).
    - Pipeline padronizado e comandos críticos atualizados (uso obrigatório de `--dataset` no `compare_detectors`, notas sobre `min_gap_samples` como pós-processamento, proibição de novos MD sem aval).
 
-2. **Verificação estrutural**  
-   - Confirmada a estrutura por dataset: `results/{afib_paroxysmal,malignantventricular,vtachyarrhythmias}/<detector>/` com CSVs, JSON/JSONL, summaries e 9 visualizações por detector.  
+2. **Verificação estrutural**
+   - Confirmada a estrutura por dataset: `results/{afib_paroxysmal,malignantventricular,vtachyarrhythmias}/<detector>/` com CSVs, JSON/JSONL, summaries e 9 visualizações por detector.
    - Validados diretórios de comparação (`comparisons/<dataset>/...`) contendo `comparative_report.md`, `detector_rankings.csv`, `detector_summary.csv`, `constraint_tradeoffs.csv`, `robustness.csv`.
 
 ### 📌 Estado Atual (inalterado desde Sessão 6)
-- 6 detectores (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) concluídos em 3 datasets, totalizando 18 avaliações completas com métricas/visualizações/relatórios.  
-- Cross-dataset analysis por detector em `results/cross_dataset_analysis/<detector>/` (macro & micro averages + READMEs).  
+- 6 detectores (ADWIN, Page-Hinkley, KSWIN, HDDM_A, HDDM_W, FLOSS) concluídos em 3 datasets, totalizando 18 avaliações completas com métricas/visualizações/relatórios.
+- Cross-dataset analysis por detector em `results/cross_dataset_analysis/<detector>/` (macro & micro averages + READMEs).
 - Scripts `generate/evaluate/visualize` suportam `--max-files/--max-samples` e repassam argumentos extras.
 
 ### 🔄 Próximos Passos Relevantes
-- Executar novas comparações multi-detector quando necessário via `python -m src.compare_detectors --dataset <dataset> ...` para manter `comparisons/<dataset>/` atualizados.  
+- Executar novas comparações multi-detector quando necessário via `python -m src.compare_detectors --dataset <dataset> ...` para manter `comparisons/<dataset>/` atualizados.
 - Expandir comparações FLOSS vs outros detectores e análises cross-dataset, conforme backlog da Sessão 6.
 
 ### 📝 Observações
-- Sem alterações no código-fonte além da atualização de `.github/copilot-instructions.md`.  
+- Sem alterações no código-fonte além da atualização de `.github/copilot-instructions.md`.
 - Nenhum novo dataset ou resultado pesado versionado.
 
 **Última Atualização**: 2025-11-26 (Sessão 7 - Instruções sincronizadas, estado verificado)
