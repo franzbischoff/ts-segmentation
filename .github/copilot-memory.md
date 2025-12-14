@@ -28,9 +28,41 @@
 - Two-fold analysis completa e documentada. Scores de generalização calculados e rankings estabelecidos.
 - Recomendações para produção: usar FLOSS para novos dados (máxima portabilidade de hiperparâmetros).
 
-### 🔄 Próximos Passos
-- Opcionalmente: expandir comparações FLOSS vs outros detectores (ponto 2 do backlog Sessão 6)
-- Opcionalmente: criar matriz de decisão visual (qual detector usar em qual cenário)
+### 🔄 Próximos Passos (Backlog Identificado)
+
+#### **Análises Cross-Dataset com Two-Fold** (Extensão Natural)
+Discussão com utilizador identificou 3 abordagens complementares para combinar robustez intra-dataset (2-fold) com análise inter-dataset:
+
+**Opção 1: Cross-Dataset com Scores de Generalização** ⭐ (Recomendado, ~10-15 min)
+- Agregar **cross-fold F3 scores** (já calculados) across os 3 datasets
+- Métrica "duplamente robusta": generalização intra-dataset + consistência inter-dataset
+- Output: tabela com média/std/min/max dos cross-fold scores por detector
+- **Pergunta que responde**: "Qual detector generaliza melhor em AMBAS as dimensões (intra + inter dataset)?"
+- **Esforço**: Baixo (extensão direta do `aggregate_twofold_analysis.py`)
+
+**Opção 2: Leave-One-Dataset-Out Validation** 🔬 (Mais rigoroso, viável!)
+- Testar se hiperparâmetros de um dataset funcionam **noutros datasets**
+- Ex.: parâmetros de FLOSS de afib_paroxysmal (melhor fold) → aplicar em malignantventricular + vtachyarrhythmias
+- Fazer para cada combinação (3 datasets × 6 detectores = 18 testes)
+- **Pergunta que responde**: "Posso usar parâmetros de afib_paroxysmal em datasets completamente novos?"
+- **Esforço**: Médio (~20-30 min) - **NÃO requer re-execução**: os `predictions_intermediate.csv` já contêm grid search completo com TODAS as combinações de hiperparâmetros, basta filtrar e agregar
+- **Benefício**: Testa portabilidade real de hiperparâmetros entre datasets usando dados já calculados
+
+**Opção 3: Unified Robustness Score** 📈 (Mais completo, estatístico)
+- Combinar ambas dimensões numa métrica unificada:
+  ```
+  Robustness_Score = w1 × (1 - avg_2fold_gap) + w2 × (1 - cross_dataset_variance)
+  ```
+  onde w1 + w2 = 1 (e.g., w1=0.6, w2=0.4)
+- Detecta detectores que generalizam bem DENTRO de datasets E são consistentes ACROSS datasets
+- **Pergunta que responde**: "Qual detector é universalmente robusto em ambas as dimensões?"
+- **Esforço**: Médio (análise estatística + escolha de pesos)
+
+**Recomendação**: Começar por **Opção 1** (rápido, insight imediato), depois avaliar necessidade de Opção 2/3.
+
+#### **Outras Tarefas Pendentes**
+- Expandir comparações visuais FLOSS vs outros detectores (ponto 2 do backlog Sessão 6)
+- Criar matriz de decisão visual (qual detector usar em qual cenário)
 
 ## RESUMO EXECUTIVO DA SESSÃO 9 (2025-11-28)
 

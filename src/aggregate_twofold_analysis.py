@@ -353,6 +353,242 @@ def generate_summary_report(aggregated: Dict[str, List[Dict]]) -> None:
     print(f"✅ Report exported: {output_path}")
 
 
+def generate_cross_dataset_generalization_report(aggregated: Dict[str, List[Dict]]) -> None:
+    """
+    Generate cross-dataset analysis using generalization (cross-fold) scores.
+
+    This shows the "performance ceiling" when each detector is properly tuned
+    per dataset, using cross-fold scores (more realistic than intra-fold).
+    """
+    import statistics
+
+    output_path = Path("/home/franz/ts-segmentation/results/cross_dataset_analysis/cross_dataset_generalization_option1.md")
+    output_dir = output_path.parent
+    output_dir.mkdir(exist_ok=True)
+
+    # Organize by detector
+    detector_stats = {}
+    detectors = ["adwin", "page_hinkley", "kswin", "hddm_a", "hddm_w", "floss"]
+
+    for detector in detectors:
+        cross_fold_scores = []
+        intra_fold_scores = []
+        gaps = []
+        dataset_names = []
+
+        for dataset, entries in aggregated.items():
+            for entry in entries:
+                if entry["detector"] == detector:
+                    cross_fold_scores.append(entry["cross_fold_f3"])
+                    intra_fold_scores.append(entry["intra_fold_f3"])
+                    gaps.append(entry["generalization_gap"])
+                    dataset_names.append(dataset)
+
+        if cross_fold_scores:
+            detector_stats[detector] = {
+                "cross_fold_scores": cross_fold_scores,
+                "intra_fold_scores": intra_fold_scores,
+                "gaps": gaps,
+                "datasets": dataset_names,
+                "mean_cross": statistics.mean(cross_fold_scores),
+                "median_cross": statistics.median(cross_fold_scores),
+                "std_cross": statistics.stdev(cross_fold_scores) if len(cross_fold_scores) > 1 else 0,
+                "min_cross": min(cross_fold_scores),
+                "max_cross": max(cross_fold_scores),
+                "mean_gap": statistics.mean(gaps),
+                "cv_cross": (statistics.stdev(cross_fold_scores) / statistics.mean(cross_fold_scores) * 100) if len(cross_fold_scores) > 1 and statistics.mean(cross_fold_scores) > 0 else 0
+            }
+
+    with open(output_path, "w") as f:
+        f.write("# Cross-Dataset Generalization Analysis (Option 1)\n\n")
+        f.write(f"Generated: {datetime.now().isoformat()}\n\n")
+
+        f.write("## Executive Summary\n\n")
+        f.write("This analysis shows the **performance ceiling** of each detector when properly tuned ")
+        f.write("per dataset, using **cross-fold F3 scores** (generalization metric from 2-fold validation).\n\n")
+
+        f.write("### Key Concept\n\n")
+        f.write("- Each detector was optimized **independently** on each dataset (using 2-fold CV)\n")
+        f.write("- We use the **cross-fold F3 score** (performance on opposite fold) as the metric\n")
+        f.write("- Cross-fold scores are more realistic than intra-fold (test on unseen data)\n")
+        f.write("- This shows: **\"What's the best each detector can do when properly tuned?\"**\n\n")
+
+        f.write("**Different from Option 2**: This does NOT test parameter portability. ")
+        f.write("Each dataset uses its own best parameters.\n\n")
+
+        f.write("---\n\n")
+
+        # Overall ranking
+        f.write("## Overall Ranking (by Mean Cross-Fold F3)\n\n")
+        f.write("| Rank | Detector | Mean F3 | Median F3 | Std Dev | Min | Max | CV% | Avg Gap |\n")
+        f.write("|------|----------|---------|-----------|---------|-----|-----|-----|----------|\n")
+
+        sorted_detectors = sorted(
+            detector_stats.items(),
+            key=lambda x: x[1]["mean_cross"],
+            reverse=True
+        )
+
+        for rank, (detector, stats) in enumerate(sorted_detectors, 1):
+            medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}"
+            f.write(
+                f"| {medal} | {detector} | {stats['mean_cross']:.4f} | {stats['median_cross']:.4f} | "
+                f"{stats['std_cross']:.4f} | {stats['min_cross']:.4f} | {stats['max_cross']:.4f} | "
+                f"{stats['cv_cross']:.1f}% | {stats['mean_gap']:.4f} |\n"
+            )
+
+        f.write("\n**Interpretation**:\n")
+        f.write("- **Mean F3**: Average performance ceiling across 3 datasets (higher = better)\n")
+        f.write("- **Std Dev**: Consistency across datasets (lower = more stable)\n")
+        f.write("- **CV%**: Coefficient of variation (lower = more reliable)\n")
+        f.write("- **Avg Gap**: Average generalization gap from 2-fold (lower = more robust)\n\n")
+
+        f.write("---\n\n")
+
+        # Consistency analysis
+        f.write("## Consistency Analysis\n\n")
+        f.write("### By Coefficient of Variation (CV%)\n\n")
+        f.write("Lower CV% = more consistent performance across different datasets\n\n")
+
+        sorted_by_cv = sorted(
+            detector_stats.items(),
+            key=lambda x: x[1]["cv_cross"]
+        )
+
+        f.write("| Rank | Detector | CV% | Interpretation |\n")
+        f.write("|------|----------|-----|----------------|\n")
+
+        for rank, (detector, stats) in enumerate(sorted_by_cv, 1):
+            cv = stats['cv_cross']
+            interpretation = "Excellent" if cv < 20 else "Good" if cv < 30 else "Moderate" if cv < 40 else "Variable"
+            f.write(f"| {rank} | {detector} | {cv:.1f}% | {interpretation} |\n")
+
+        f.write("\n---\n\n")
+
+        # Per-detector details
+        f.write("## Detailed Breakdown by Detector\n\n")
+
+        for detector in sorted(detector_stats.keys()):
+            stats = detector_stats[detector]
+            f.write(f"### {detector.upper()}\n\n")
+
+            f.write(f"**Summary Statistics**:\n")
+            f.write(f"- Mean Cross-Fold F3: **{stats['mean_cross']:.4f}**\n")
+            f.write(f"- Median: {stats['median_cross']:.4f}\n")
+            f.write(f"- Std Dev: {stats['std_cross']:.4f}\n")
+            f.write(f"- Range: [{stats['min_cross']:.4f}, {stats['max_cross']:.4f}]\n")
+            f.write(f"- CV%: {stats['cv_cross']:.1f}%\n")
+            f.write(f"- Avg Generalization Gap: {stats['mean_gap']:.4f}\n\n")
+
+            f.write("**Per-Dataset Performance**:\n\n")
+            f.write("| Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |\n")
+            f.write("|---------|---------------|---------------|-----|\n")
+
+            for i, dataset in enumerate(stats['datasets']):
+                cross = stats['cross_fold_scores'][i]
+                intra = stats['intra_fold_scores'][i]
+                gap = stats['gaps'][i]
+                f.write(f"| {dataset} | {cross:.4f} | {intra:.4f} | {gap:.4f} |\n")
+
+            # Insights
+            f.write("\n**Insights**:\n")
+            best_dataset_idx = stats['cross_fold_scores'].index(stats['max_cross'])
+            worst_dataset_idx = stats['cross_fold_scores'].index(stats['min_cross'])
+            f.write(f"- Best on: **{stats['datasets'][best_dataset_idx]}** (F3={stats['max_cross']:.4f})\n")
+            f.write(f"- Weakest on: {stats['datasets'][worst_dataset_idx]} (F3={stats['min_cross']:.4f})\n")
+
+            performance_drop = (stats['max_cross'] - stats['min_cross']) / stats['max_cross'] * 100
+            f.write(f"- Performance variation: {performance_drop:.1f}% between best and worst dataset\n\n")
+
+        f.write("---\n\n")
+
+        # Key findings
+        f.write("## Key Findings\n\n")
+
+        best_detector = sorted_detectors[0][0]
+        best_mean = sorted_detectors[0][1]["mean_cross"]
+
+        most_consistent = sorted_by_cv[0][0]
+        lowest_cv = sorted_by_cv[0][1]["cv_cross"]
+
+        f.write(f"1. **Highest Average Performance**: {best_detector.upper()} (mean F3={best_mean:.4f})\n")
+        f.write(f"   - This detector achieves the best performance when properly tuned per dataset\n\n")
+
+        f.write(f"2. **Most Consistent**: {most_consistent.upper()} (CV={lowest_cv:.1f}%)\n")
+        f.write(f"   - This detector shows most stable performance across different datasets\n\n")
+
+        # Check if best performer is also most consistent
+        if best_detector == most_consistent:
+            f.write(f"3. **Winner**: {best_detector.upper()} dominates both performance AND consistency ✅\n\n")
+        else:
+            f.write(f"3. **Trade-off**: Best performance ({best_detector}) vs best consistency ({most_consistent})\n\n")
+
+        # Generalization insights
+        best_gap_detector = min(detector_stats.items(), key=lambda x: x[1]["mean_gap"])[0]
+        f.write(f"4. **Best Generalization**: {best_gap_detector.upper()} ")
+        f.write(f"(avg gap={detector_stats[best_gap_detector]['mean_gap']:.4f})\n")
+        f.write(f"   - Smallest average gap between intra-fold and cross-fold scores\n\n")
+
+        f.write("---\n\n")
+
+        # Recommendations
+        f.write("## Recommendations\n\n")
+        f.write("### When to Use Each Detector\n\n")
+
+        for detector, stats in sorted_detectors:
+            f.write(f"**{detector.upper()}**:\n")
+            if stats['mean_cross'] > 0.4:
+                f.write(f"- ✅ **Recommended**: Excellent average performance (F3={stats['mean_cross']:.4f})\n")
+            elif stats['mean_cross'] > 0.3:
+                f.write(f"- ⚠️  Good option: Solid performance (F3={stats['mean_cross']:.4f})\n")
+            else:
+                f.write(f"- 🔻 Consider alternatives: Lower performance (F3={stats['mean_cross']:.4f})\n")
+
+            if stats['cv_cross'] < 25:
+                f.write(f"- ✅ Consistent across datasets (CV={stats['cv_cross']:.1f}%)\n")
+            else:
+                f.write(f"- ⚠️  Variable across datasets (CV={stats['cv_cross']:.1f}%)\n")
+
+            f.write(f"- Best use case: {stats['datasets'][stats['cross_fold_scores'].index(stats['max_cross'])]}\n\n")
+
+        f.write("---\n\n")
+
+        # Methodology note
+        f.write("## Methodology Notes\n\n")
+        f.write("1. **Cross-Fold F3**: Performance on opposite fold from 2-fold cross-validation\n")
+        f.write("2. **Independent Tuning**: Each detector was optimized separately per dataset\n")
+        f.write("3. **No Parameter Transfer**: This analysis does NOT test portability\n")
+        f.write("4. **Represents Ceiling**: Shows best achievable with proper tuning\n\n")
+
+        f.write("**Next Steps**: See Option 2 analysis for parameter portability testing.\n\n")
+
+    print(f"✅ Cross-dataset generalization report (Option 1): {output_path}")
+
+    # Export CSV
+    csv_path = output_dir / "cross_dataset_generalization_option1.csv"
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["detector", "mean_cross_fold_f3", "median_cross_fold_f3", "std_dev",
+                       "min", "max", "cv_percent", "avg_gap"]
+        )
+        writer.writeheader()
+
+        for detector, stats in sorted(detector_stats.items()):
+            writer.writerow({
+                "detector": detector,
+                "mean_cross_fold_f3": round(stats["mean_cross"], 4),
+                "median_cross_fold_f3": round(stats["median_cross"], 4),
+                "std_dev": round(stats["std_cross"], 4),
+                "min": round(stats["min_cross"], 4),
+                "max": round(stats["max_cross"], 4),
+                "cv_percent": round(stats["cv_cross"], 2),
+                "avg_gap": round(stats["mean_gap"], 4)
+            })
+
+    print(f"✅ CSV exported: {csv_path}")
+
+
 def main():
     """Main execution."""
     print("\n" + "="*100)
@@ -374,6 +610,12 @@ def main():
     print("="*100)
     export_csv_results(aggregated)
     generate_summary_report(aggregated)
+
+    # Generate Option 1 analysis
+    print("\n" + "="*100)
+    print("OPTION 1: CROSS-DATASET GENERALIZATION ANALYSIS")
+    print("="*100)
+    generate_cross_dataset_generalization_report(aggregated)
 
     print("\n✅ Two-fold analysis complete!")
 
