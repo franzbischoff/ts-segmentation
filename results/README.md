@@ -151,10 +151,64 @@ results/
 │   ├── page_hinkley/
 │   ├── kswin/
 │   └── ...
-├── comparisons/                 # Comparações entre detectors (aggregate across datasets)
+├── comparisons/                 # 📊 Comparações entre detectores (REORGANIZADO - Fase 1)
+│   ├── README.md                 # Guia de navegação
+│   ├── by_dataset/               # Análises por dataset (6 detectores × dataset)
+│   │   ├── afib_paroxysmal/
+│   │   │   ├── README.md
+│   │   │   ├── comparative_report.md
+│   │   │   ├── detector_rankings.csv
+│   │   │   ├── detector_summary.csv
+│   │   │   ├── constraint_tradeoffs.csv
+│   │   │   ├── robustness.csv
+│   │   │   └── visualizations/   # (Em preparação - Fase 2)
+│   │   │       ├── radar_6detectors.png
+│   │   │       ├── f3_vs_fp_scatter.png
+│   │   │       ├── heatmap_metrics_comparison.png
+│   │   │       └── parameter_tradeoffs.png
+│   │   ├── malignantventricular/ # (mesma estrutura)
+│   │   └── vtachyarrhythmias/    # (mesma estrutura)
+│   │
+│   ├── cross_dataset/            # 🌍 Análises cross-dataset (3 opções)
+│   │   ├── README.md
+│   │   ├── option123_summary.png # (Visão conjunta)
+│   │   ├── option1_ceiling_analysis.png     # (Em preparação)
+│   │   ├── option2_portability_heatmap.png  # (Em preparação)
+│   │   ├── option3_unified_score_ranking.png # (Em preparação)
+│   │   └── production_decision_matrix.png    # (Em preparação)
+│   │
+│   └── legacy/                   # 📦 Ficheiros antigos (archivados)
+│       ├── README.md
+│       ├── floss_vs_kswin.md
+│       └── floss_vs_kswin_*.png
+│
+├── cross_dataset_analysis/      # 📈 Análises estatísticas (Two-fold, Opção 1/2/3)
+│   └── (ver documentação em README.md)
+│
 └── README.md
-fp_per_min,page_hinkley,adwin,kswin,hddm_w,...
-```
+
+### 🎯 Como Navegar (Novo Fluxo - Fase 1, 2025-12-15)
+
+**Se quer saber: "Qual detector é melhor para dataset X?"**
+1. Ir a [`comparisons/by_dataset/<dataset>/README.md`](comparisons/by_dataset/)
+2. Ver melhores configs + trade-offs
+3. Visualizações PNG estarão em Fase 2
+
+**Se quer saber: "Qual detector escolho para produção?"**
+1. Ir a [`comparisons/cross_dataset/README.md`](comparisons/cross_dataset/)
+2. Ler sobre as **3 opções de análise**:
+   - Opção 1: Performance ceiling (máximo atingível)
+   - Opção 2: Parameter portability (generalização entre datasets)
+   - Opção 3: Unified robustness score (combinação de ambas)
+3. Ver matriz de decisão
+
+**Se quer detalhes estatísticos e two-fold:**
+1. Ir a [`cross_dataset_analysis/README.md`](cross_dataset_analysis/)
+
+**Se quer resultados brutos de um detector:**
+1. Ir a `<dataset>/<detector>/README.md` ou `<dataset>/<detector>/final_report_with_nab.json`
+
+---
 
 ### Ensemble Analysis
 Combinar detectores via:

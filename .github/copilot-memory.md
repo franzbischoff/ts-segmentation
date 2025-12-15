@@ -1,5 +1,79 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 11 — 2025-12-15 (Fase 1: Reorganização Comparações)
+
+### ✅ Trabalho de Hoje
+
+**Objetivo**: Reorganizar `/results/comparisons/` para estrutura hierárquica e documentação clara
+
+#### 1. Reorganização de Pastas
+- Criada estrutura hierárquica em `results/comparisons/`:
+  - `by_dataset/{afib_paroxysmal,malignantventricular,vtachyarrhythmias}/`
+  - `cross_dataset/` (para 3 opções de análise)
+  - `legacy/` (preserva ficheiros antigos)
+- Movidos PNG antigos para `legacy/` (preserva histórico)
+- Criados `.gitkeep` em pastas vazias (pronto para Fase 2)
+
+#### 2. Documentação Criada (7 READMEs)
+- **`comparisons/README.md`** - Guia navegação centralizado (2.5 KB)
+  - Explica as 3 opções (ceiling, portability, unified score)
+  - Matriz de decisão: qual detector usar por cenário
+  - Roadmap da Fase 2
+
+- **`by_dataset/afib_paroxysmal/README.md`** - Exemplo completo (4.5 KB)
+  - Top 6 detectores com scores
+  - Análise detalhada por detector
+  - Trade-offs principais (F3 vs Recall vs FP)
+  - Recomendações por use case
+
+- **`by_dataset/{malignantventricular,vtachyarrhythmias}/README.md`** - Templates
+
+- **`cross_dataset/README.md`** - Análises robustez (5.8 KB)
+  - Opção 1: Performance Ceiling (F3 máximo)
+    - FLOSS 0.4285 > KSWIN 0.3176 > Page-H 0.3132
+  - Opção 2: Parameter Portability
+    - ADWIN 94.90% > KSWIN 87.84% > FLOSS 75.85%
+  - Opção 3: Unified Score
+    - FLOSS 0.9763 > ADWIN 0.9713 > KSWIN 0.9690
+  - Matriz de decisão + use cases
+
+- **`legacy/README.md`** - Explica ficheiros archivados
+
+#### 3. Roadmap Fase 2 (Detalhe Completo)
+- **`PHASE2_ROADMAP.md`** (6.2 KB)
+  - 3 scripts Python a implementar:
+    1. `visualize_comparison_by_dataset.py` - 4 PNG/dataset
+    2. `visualize_cross_dataset_summary.py` - 4 PNG cross-dataset
+    3. `generate_comparison_reports.py` - Wrapper
+  - Especificações visuais (cores, fontes, sizing)
+  - Checklist detalhado de implementação
+  - Estimativa: 7-10 horas
+
+#### 4. Documentação Estrutural
+- **`results/README.md`** - Atualizado com:
+  - Nova estrutura de `comparisons/`
+  - 4 cenários de uso (qual ler, onde ir)
+  - Links diretos para novos READMEs
+
+- **`PHASE1_COMPLETION.md`** - Resumo executivo da Fase 1
+  - Antes vs Depois
+  - Checklist completo (✅ 25/25 itens)
+  - Próximos passos (Fase 2)
+
+### 📊 Impacto
+
+**Antes**: 1 pasta `comparisons/` com 3 PNG antigos (FLOSS vs KSWIN apenas)
+**Depois**: Estrutura hierárquica com 7 READMEs + roadmap + preparação para 12+ PNG novos
+
+**Navegação**: De "qual ficheiro ler?" → Fluxo intuitivo com links estruturados
+
+### 🔜 Próximos Passos (Fase 2)
+1. Implementar scripts de visualização (7-10 horas)
+2. Gerar PNGs atualizadas para todos os datasets
+3. Atualizar READMEs com descrições de gráficos
+
+---
+
 ## RESUMO EXECUTIVO DA SESSÃO 10 (continuação) — 2025-12-14 (Opção 3 + Visualização única)
 
 ### ✅ Entregas novas desta sessão
