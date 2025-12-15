@@ -101,26 +101,27 @@ def normalize_metric(values: np.ndarray, invert: bool = False) -> np.ndarray:
 
 def create_radar_chart(detector_metrics: Dict[str, Dict], output_path: Path):
     """
-    Create radar chart comparing 6 detectors across 6 normalized metrics.
+    Create radar chart comparing 6 detectors across 4 core metrics.
 
-    Metrics (all normalized to [0, 1]):
-    1. F3-weighted (higher better)
-    2. NAB Standard (inverted, higher better)
-    3. Recall@10s (higher better)
-    4. Precision@10s (higher better)
-    5. 1 - FP/min (inverted, higher better)
-    6. 1 - EDD/10s (inverted, higher better)
+    All metrics use interpretable scales:
+    - F3, Recall, Precision: 0-100% (actual values)
+    - EDD: 0-10s scale (inverted: lower EDD = higher on radar)
+
+    Metrics:
+    1. F3-weighted (0-1, higher better)
+    2. Recall@10s (0-1, higher better)
+    3. Precision@10s (0-1, higher better)
+    4. Fast Detection (0-10s, inverted - lower better)
     """
     logger.info("Creating radar chart...")
 
     # Define metrics to plot
+    # Format: (key, label, invert, skip_normalization, fixed_scale)
     metrics = [
-        ('f3_weighted', 'F3-Weighted', False),
-        ('nab_score_standard', 'NAB Standard', True),  # Invert (less negative = better)
-        ('recall_10s', 'Recall@10s', False),
-        ('precision_10s', 'Precision@10s', False),
-        ('fp_per_min', 'Low FP/min', True),  # Invert (lower = better)
-        ('edd_median_s', 'Fast Detection', True)  # Invert (lower = better)
+        ('f3_weighted', 'F3-Weighted', False, True, None),           # Already 0-1
+        ('recall_10s', 'Recall@10s', False, True, None),             # Already 0-1
+        ('precision_10s', 'Precision@10s', False, True, None),       # Already 0-1
+        ('edd_median_s', 'Fast Detection', True, True, (0, 10))      # Fixed 0-10s scale + inversion
     ]
 
     # Collect data
@@ -134,7 +135,7 @@ def create_radar_chart(detector_metrics: Dict[str, Dict], output_path: Path):
         detectors.append(detector)
         row = []
 
-        for metric_key, _, invert in metrics:
+        for metric_key, _, _, _, _ in metrics:
             value = data.get(metric_key, np.nan)
             row.append(value)
 
@@ -144,10 +145,23 @@ def create_radar_chart(detector_metrics: Dict[str, Dict], output_path: Path):
         logger.warning("No data for radar chart")
         return
 
-    # Normalize each metric column
+    # Process each metric column
     values_matrix = np.array(values_matrix)
-    for i, (_, _, invert) in enumerate(metrics):
-        values_matrix[:, i] = normalize_metric(values_matrix[:, i], invert=invert)
+    for i, (_, _, invert, skip_norm, fixed_scale) in enumerate(metrics):
+        if skip_norm and fixed_scale is None:
+            # Keep original values (already in [0, 1])
+            pass
+        elif fixed_scale is not None:
+            # Apply fixed scale
+            min_scale, max_scale = fixed_scale
+            # Clip values to scale and normalize
+            clipped = np.clip(values_matrix[:, i], min_scale, max_scale)
+            values_matrix[:, i] = (clipped - min_scale) / (max_scale - min_scale)
+            if invert:
+                values_matrix[:, i] = 1 - values_matrix[:, i]
+        else:
+            # Normalize to [0, 1] based on actual values
+            values_matrix[:, i] = normalize_metric(values_matrix[:, i], invert=invert)
 
     # Set up radar chart
     num_vars = len(metrics)
@@ -172,12 +186,12 @@ def create_radar_chart(detector_metrics: Dict[str, Dict], output_path: Path):
     ax.set_xticklabels([m[1] for m in metrics], size=11)
     ax.set_ylim(0, 1)
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-    ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], size=9)
+    ax.set_yticklabels(['20%', '40%', '60%', '80%', '100%'], size=9)
     ax.grid(True, linestyle='--', alpha=0.7)
 
     # Title and legend
-    ax.set_title('Multi-Detector Performance Radar (Normalized Metrics)',
-                 size=16, weight='bold', pad=20)
+    ax.set_title('Multi-Detector Performance Radar\n(F3/Recall/Precision: % | Fast Detection: 0-10s scale)',
+                 size=14, weight='bold', pad=20)
     ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=10, ncol=2)
 
     plt.tight_layout()

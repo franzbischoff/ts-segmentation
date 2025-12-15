@@ -1,76 +1,152 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
-## RESUMO EXECUTIVO DA SESSÃO 11 — 2025-12-15 (Fase 1: Reorganização Comparações)
+## RESUMO EXECUTIVO DA SESSÃO 11 — 2025-12-15 (Fase 2: Visualizações Comparativas COMPLETA ✅)
 
 ### ✅ Trabalho de Hoje
 
-**Objetivo**: Reorganizar `/results/comparisons/` para estrutura hierárquica e documentação clara
+**Objetivo**: Criar scripts de visualização comparativa e gerar 16 PNGs para análise multi-detector
 
-#### 1. Reorganização de Pastas
-- Criada estrutura hierárquica em `results/comparisons/`:
-  - `by_dataset/{afib_paroxysmal,malignantventricular,vtachyarrhythmias}/`
-  - `cross_dataset/` (para 3 opções de análise)
-  - `legacy/` (preserva ficheiros antigos)
-- Movidos PNG antigos para `legacy/` (preserva histórico)
-- Criados `.gitkeep` em pastas vazias (pronto para Fase 2)
+#### 1. Scripts Python Criados (3)
+- **`src/visualize_comparison_by_dataset.py`** (474 linhas)
+  - Gera 4 PNG por dataset: radar, scatter, heatmap, 3D
+  - Radar chart: 4 métricas (F3, Recall, Precision, Fast Detection)
+  - Métricas 0-1: valores reais (não normalizadas)
+  - EDD: escala fixa 0-10s (invertida)
+  - Cores consistentes por detector (DETECTOR_COLORS)
 
-#### 2. Documentação Criada (7 READMEs)
-- **`comparisons/README.md`** - Guia navegação centralizado (2.5 KB)
-  - Explica as 3 opções (ceiling, portability, unified score)
-  - Matriz de decisão: qual detector usar por cenário
-  - Roadmap da Fase 2
+- **`src/visualize_cross_dataset_summary.py`** (329 linhas)
+  - Gera 4 PNG cross-dataset
+  - Option1: Ceiling analysis (bar chart + error bars)
+  - Option2: Portability heatmap (transferability %)
+  - Option3: Unified score ranking (bar chart)
+  - Production decision matrix (bubble chart + quadrantes)
 
-- **`by_dataset/afib_paroxysmal/README.md`** - Exemplo completo (4.5 KB)
-  - Top 6 detectores com scores
-  - Análise detalhada por detector
-  - Trade-offs principais (F3 vs Recall vs FP)
-  - Recomendações por use case
+- **`src/generate_comparison_reports.py`** (257 linhas)
+  - Wrapper para executar Scripts 1 & 2
+  - Atualiza READMEs com timestamps
+  - Execution summary com success/failure tracking
 
-- **`by_dataset/{malignantventricular,vtachyarrhythmias}/README.md`** - Templates
+#### 2. Visualizações Geradas (16 PNGs)
+- **By-Dataset** (12 ficheiros, 4 por dataset):
+  - `afib_paroxysmal/`: radar (782KB), scatter (315KB), heatmap (200KB), 3D (699KB)
+  - `malignantventricular/`: radar (835KB), scatter (298KB), heatmap (199KB), 3D (677KB)
+  - `vtachyarrhythmias/`: radar (733KB), scatter (297KB), heatmap (198KB), 3D (710KB)
+- **Cross-Dataset** (4 ficheiros):
+  - Option1 ceiling (166KB), Option2 portability (102KB)
+  - Option3 unified (161KB), Decision matrix (364KB)
 
-- **`cross_dataset/README.md`** - Análises robustez (5.8 KB)
-  - Opção 1: Performance Ceiling (F3 máximo)
-    - FLOSS 0.4285 > KSWIN 0.3176 > Page-H 0.3132
-  - Opção 2: Parameter Portability
-    - ADWIN 94.90% > KSWIN 87.84% > FLOSS 75.85%
-  - Opção 3: Unified Score
-    - FLOSS 0.9763 > ADWIN 0.9713 > KSWIN 0.9690
-  - Matriz de decisão + use cases
+#### 3. Correções de Normalização Implementadas
+- **Problema inicial**: FLOSS mostrava zeros no radar (Recall, NAB, EDD)
+- **Causa**: Normalização min-max entre detectores (mínimo = 0.0, máximo = 1.0)
+- **Solução aplicada**:
+  1. **NAB Standard**: Removida inversão (valores maiores = melhor, mesmo negativos)
+  2. **F3/Recall/Precision**: Mantidos valores reais 0-100% (não normalizados)
+  3. **EDD**: Escala fixa 0-10s com inversão (menor tempo = melhor)
+  4. **FP/min e NAB**: Removidos do radar (escalas confusas)
+- **Resultado**: Radar com 4 métricas interpretáveis, FLOSS mostra Recall=65% (não 0%)
 
-- **`legacy/README.md`** - Explica ficheiros archivados
+#### 4. Limpeza de Código
+- Removido `src/visualize_comparison.py` (246 linhas, obsoleto)
+- Script antigo só comparava 2 detectores
+- Substituído por `visualize_comparison_by_dataset.py` (6 detectores)
 
-#### 3. Roadmap Fase 2 (Detalhe Completo)
-- **`PHASE2_ROADMAP.md`** (6.2 KB)
-  - 3 scripts Python a implementar:
-    1. `visualize_comparison_by_dataset.py` - 4 PNG/dataset
-    2. `visualize_cross_dataset_summary.py` - 4 PNG cross-dataset
-    3. `generate_comparison_reports.py` - Wrapper
-  - Especificações visuais (cores, fontes, sizing)
-  - Checklist detalhado de implementação
-  - Estimativa: 7-10 horas
+#### 5. Métricas de Execução
+- **Tempo total**: ~13 segundos (3 datasets + cross-dataset)
+- **Taxa de sucesso**: 100% (4/4 tasks, 16/16 PNGs)
+- **Total de código**: 1,060 linhas Python (3 scripts)
+- **Total de PNGs**: 7.8 MB (16 ficheiros)
+- **READMEs atualizados**: 7 ficheiros com timestamps
 
-#### 4. Documentação Estrutural
-- **`results/README.md`** - Atualizado com:
-  - Nova estrutura de `comparisons/`
-  - 4 cenários de uso (qual ler, onde ir)
-  - Links diretos para novos READMEs
-
-- **`PHASE1_COMPLETION.md`** - Resumo executivo da Fase 1
-  - Antes vs Depois
-  - Checklist completo (✅ 25/25 itens)
-  - Próximos passos (Fase 2)
+#### 6. Documentação Atualizada
+- **`PHASE2_COMPLETION_SUMMARY.md`** (novo) - Sumário executivo completo
+- **`PHASE2_ROADMAP.md`** - Marcado como ✅ COMPLETADO (16:24:43)
+- READMEs by-dataset atualizados com `Last Updated: 2025-12-15 16:56:XX`
+- README cross-dataset atualizado
 
 ### 📊 Impacto
 
-**Antes**: 1 pasta `comparisons/` com 3 PNG antigos (FLOSS vs KSWIN apenas)
-**Depois**: Estrutura hierárquica com 7 READMEs + roadmap + preparação para 12+ PNG novos
+**Antes**: Estrutura preparada mas sem visualizações (Fase 1)
+**Depois**: 16 PNG visualizações geradas + 3 scripts Python funcionais + documentação completa
 
-**Navegação**: De "qual ficheiro ler?" → Fluxo intuitivo com links estruturados
+**Qualidade**: Radars com métricas interpretáveis (não mais zeros confusos)
 
-### 🔜 Próximos Passos (Fase 2)
-1. Implementar scripts de visualização (7-10 horas)
-2. Gerar PNGs atualizadas para todos os datasets
-3. Atualizar READMEs com descrições de gráficos
+### 🎯 Estado Final do Projeto
+
+#### Scripts Ativos (src/)
+- `visualize_comparison_by_dataset.py` (474 linhas) - Comparações por dataset
+- `visualize_cross_dataset_summary.py` (329 linhas) - Análises cross-dataset
+- `generate_comparison_reports.py` (257 linhas) - Wrapper automático
+- Outros 13 scripts de pipeline (detectors, evaluation, etc.)
+
+#### Visualizações Completas
+- **By-Dataset**: 3 datasets × 4 PNG = 12 ficheiros
+- **Cross-Dataset**: 4 PNG (ceiling, portability, unified, decision matrix)
+- **Legacy**: 3 PNG antigos preservados
+
+#### Decisões Técnicas Importantes
+1. **Normalização**: Métricas 0-1 mantidas em valores reais
+2. **EDD Scale**: Escala fixa 0-10s (interpretável)
+3. **Radar Simplificado**: 4 métricas core (F3, Recall, Precision, Fast Detection)
+4. **Cores Consistentes**: Palette fixa por detector em todos os gráficos
+
+### 🔜 Próximos Passos Sugeridos
+
+#### Curto Prazo (Próxima Sessão)
+1. **Análise de Resultados**: Revisar radars e identificar padrões
+2. **Decisão de Produção**: Escolher detector(es) baseado em visualizações
+3. **Validação Clínica**: Consultar especialistas sobre trade-offs
+
+#### Médio Prazo
+4. **Ensemble Methods**: Combinar FLOSS (precision) + ADWIN (recall)?
+5. **Confidence Intervals**: Adicionar intervalos de confiança aos gráficos
+6. **Interactive Dashboard**: Converter PNGs estáticos para Plotly/Dash
+
+#### Longo Prazo
+7. **Automated Testing**: CI/CD para regenerar visualizações em updates
+8. **Real-Time Monitoring**: Dashboard streaming para produção
+9. **A/B Testing**: Comparar detectores em ambiente clínico real
+
+---
+
+## PLANO PARA PRÓXIMA SESSÃO (2025-12-16)
+
+### Objetivo Principal
+**Análise e Interpretação dos Resultados Visuais**
+
+### Tarefas Propostas
+
+#### 1. Revisão de Radars (30-45 min)
+- Comparar os 3 radars (afib, malignant, vtachy)
+- Identificar padrões consistentes vs específicos por dataset
+- Documentar insights em cada README by-dataset
+
+#### 2. Análise Cross-Dataset (30 min)
+- Interpretar production decision matrix
+- Validar recomendações por quadrante
+- Atualizar matriz de decisão se necessário
+
+#### 3. Decisão de Detector(es) para Produção (45 min)
+- Definir cenário de uso primário (Recall? Precision? Balanced?)
+- Escolher top 3 detectores candidatos
+- Propor estratégia de validação clínica
+
+#### 4. Próximos Experimentos (30 min)
+- Definir se testa ensemble methods
+- Planejar grid search refinado para top detector
+- Considerar datasets adicionais (se disponíveis)
+
+### Perguntas a Responder
+
+1. **FLOSS** tem melhor F3 mas recall 65% - aceitável clinicamente?
+2. **ADWIN** tem recall 98% mas 10 FP/min - demasiados alarmes?
+3. **KSWIN** é o melhor compromisso? Ou precisamos de ensemble?
+4. As diferenças entre datasets indicam overfitting ou variabilidade real?
+5. EDD ~3s é aceitável para todos os eventos ou precisamos <2s para alguns?
+
+### Recursos Necessários
+- Acesso a radars gerados (`results/comparisons/by_dataset/*/visualizations/`)
+- Decision matrix (`results/comparisons/cross_dataset/production_decision_matrix.png`)
+- Contexto clínico (se disponível): severidade dos eventos, tolerância a FPs
 
 ---
 
