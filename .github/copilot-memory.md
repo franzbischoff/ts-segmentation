@@ -1,5 +1,165 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 12 — 2025-12-22 (Preparação para Análise SHAP)
+
+### ✅ Trabalho de Hoje
+
+**Objetivo**: Discutir métodos de análise de importância de parâmetros e criar ficheiros agregados para análise SHAP em R
+
+#### 1. Discussão: Análise de Importância de Parâmetros
+
+**Contexto**: Visualização `parameter_sensitivity.png` usa método descritivo simples
+- **Método atual**: Análise univariada (agrupa por parâmetro, calcula média ± desvio padrão)
+- **Limitações identificadas**:
+  - Não captura interações entre parâmetros
+  - Não distingue importância global vs local
+  - Não quantifica contribuição relativa (apenas correlação univariada)
+  
+**Métodos avançados não utilizados** (discussão teórica):
+- ❌ **SHAP** (Shapley Additive exPlanations) - contribuição marginal
+- ❌ **FIRM** (Feature Importance Ranking Measure)
+- ❌ **ICE** (Individual Conditional Expectation) - efeitos heterogéneos
+- ❌ **Permutation Importance** - impacto de permutar parâmetros
+
+**Decisão**: Manter método atual na pipeline Python; análise SHAP será feita externamente em R
+
+#### 2. Interpretação de Gráficos SHAP Dependence
+
+**Exemplo analisado**: `regime_threshold` vs SHAP value (cor: `window_size`)
+
+**Diferenças chave entre gráficos**:
+
+| Aspeto | `parameter_sensitivity.png` | SHAP dependence (R) |
+|--------|----------------------------|---------------------|
+| **Eixo Y** | Métrica absoluta (0-1) | Contribuição relativa (pode ser negativa) |
+| **Baseline** | Não tem referência | Centrado em 0 (predição média) |
+| **Cor** | Uniforme | Codifica outro parâmetro (interações) |
+| **Tipo** | Univariado descritivo | Multivariado explicativo |
+
+**Interpretação do exemplo SHAP**:
+- `regime_threshold < 0.3`: SHAP positivo (+10 a +50) → **melhora** métrica
+- `regime_threshold ≥ 0.3`: SHAP negativo (−5 a −20) → **piora** métrica
+- Cor (window_size): Modera o efeito negativo (laranja = mais resistente, roxo = mais sensível)
+
+**Conclusão**: SHAP complementa (não substitui) o gráfico atual. Atual mostra "qual configuração é melhor"; SHAP mostra "por que é melhor e como interage"
+
+#### 3. Script Criado: `src/simplify_metrics_for_analysis.py`
+
+**Propósito**: Agregar CSV de métricas por combinação única de parâmetros (modelo)
+
+**Funcionalidades**:
+- Auto-detecção de colunas de parâmetros e métricas
+- Agregação por combinação única (mean ou median)
+- Formato de saída: `model_id` + parâmetros + `n_records` + métricas agregadas
+- Suporte para estatísticas adicionais (std, min, max) com `--add-stats`
+- Preserva NaN em métricas (`edd_median_s`, `edd_p95_s` ficam NaN quando não há detecções)
+
+**Comando típico**:
+```bash
+python -m src.simplify_metrics_for_analysis \
+  --input results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv \
+  --output results/<dataset>/<detector>/models_aggregated.csv \
+  --aggregation mean
+```
+
+#### 4. Ficheiros Gerados: `models_aggregated.csv` (18 ficheiros)
+
+**Criados para todos os detectores × datasets**:
+
+| Detector | afib_paroxysmal | malignantventricular | vtachyarrhythmias |
+|----------|----------------|---------------------|-------------------|
+| **adwin** | 594 modelos (229 rec/modelo) | 495 modelos (22 rec) | 495 modelos (34 rec) |
+| **page_hinkley** | 600 modelos (229 rec) | 384 modelos (22 rec) | 384 modelos (34 rec) |
+| **kswin** | 1,280 modelos (229 rec) | 1,280 modelos (22 rec) | 1,280 modelos (34 rec) |
+| **hddm_a** | 320 modelos (229 rec) | 320 modelos (22 rec) | 320 modelos (34 rec) |
+| **hddm_w** | 1,280 modelos (229 rec) | 1,280 modelos (22 rec) | 1,280 modelos (34 rec) |
+| **floss** | 25,920 modelos (229 rec) | 25,920 modelos (22 rec) | 25,920 modelos (34 rec) |
+
+**Estrutura dos CSV**:
+- Coluna 1: `model_id` (model_1, model_2, ...)
+- Colunas 2-5: Parâmetros do modelo (ex: window_size, regime_threshold, regime_landmark, min_gap_samples)
+- Coluna 6: `n_records` (quantos ficheiros foram agregados)
+- Colunas 7-26: Métricas agregadas (20 métricas: f3_weighted, recall_10s, nab_score_standard, etc.)
+
+**Valores NaN preservados**:
+- `edd_median_s`: 3,000 modelos (FLOSS malignantventricular) têm NaN → modelos que não detectaram a tempo
+- `edd_p95_s`: Mesma quantidade de NaN
+- **Decisão**: Manter NaN (indica falha de detecção, informação valiosa para SHAP)
+
+#### 5. Git: Adição Forçada ao Repositório
+
+**Problema**: `results/**/*.csv` está no `.gitignore`
+**Solução**: Adição forçada com `git add -f`
+
+**Ficheiros staged (18)**:
+```bash
+A  results/afib_paroxysmal/adwin/models_aggregated.csv
+A  results/afib_paroxysmal/floss/models_aggregated.csv
+A  results/afib_paroxysmal/hddm_a/models_aggregated.csv
+A  results/afib_paroxysmal/hddm_w/models_aggregated.csv
+A  results/afib_paroxysmal/kswin/models_aggregated.csv
+A  results/afib_paroxysmal/page_hinkley/models_aggregated.csv
+A  results/malignantventricular/adwin/models_aggregated.csv
+A  results/malignantventricular/floss/models_aggregated.csv
+A  results/malignantventricular/hddm_a/models_aggregated.csv
+A  results/malignantventricular/hddm_w/models_aggregated.csv
+A  results/malignantventricular/kswin/models_aggregated.csv
+A  results/malignantventricular/page_hinkley/models_aggregated.csv
+A  results/vtachyarrhythmias/adwin/models_aggregated.csv
+A  results/vtachyarrhythmias/floss/models_aggregated.csv
+A  results/vtachyarrhythmias/hddm_a/models_aggregated.csv
+A  results/vtachyarrhythmias/hddm_w/models_aggregated.csv
+A  results/vtachyarrhythmias/kswin/models_aggregated.csv
+A  results/vtachyarrhythmias/page_hinkley/models_aggregated.csv
+```
+
+**Mensagem de commit sugerida**:
+```
+Add aggregated model metrics for SHAP analysis
+
+- Add models_aggregated.csv for all 6 detectors × 3 datasets
+- Each file aggregates metrics by unique parameter combinations
+- Generated using src/simplify_metrics_for_analysis.py
+- Format: model_id + parameters + aggregated metrics (mean across files)
+- Ready for external analysis (SHAP/FIRM) in R environment
+```
+
+### 📊 Impacto
+
+**Antes**: Apenas CSV detalhados (570K linhas para FLOSS malignantventricular)
+**Depois**: CSV agregados por modelo (25,920 linhas para FLOSS) + script reutilizável
+
+**Casos de uso**:
+1. **Análise SHAP em R**: Usar `models_aggregated.csv` como input para `shapviz::sv_dependence()`
+2. **Random Forest/XGBoost**: Treinar modelo preditivo com parâmetros → métricas
+3. **Permutation Importance**: Avaliar impacto de permutar parâmetros
+4. **Portability para outros projetos**: Script genérico (`simplify_metrics_for_analysis.py`)
+
+### 🎯 Estado Atual
+
+**Scripts Python ativos**:
+- ✅ `src/simplify_metrics_for_analysis.py` (196 linhas) - Agregação para SHAP/ML
+
+**Ficheiros prontos para análise externa**:
+- ✅ 18 × `models_aggregated.csv` (6 detectores × 3 datasets)
+- ✅ Staged no git para commit
+
+**Próxima ação pendente**: Commit dos ficheiros `models_aggregated.csv`
+
+### 🔜 Próximos Passos Sugeridos
+
+#### Análise SHAP em R (Projeto `false.alarm`)
+1. **Carregar dados**: `read.csv("models_aggregated.csv")`
+2. **Treinar modelo preditivo**: Random Forest com parâmetros → `f3_weighted`
+3. **Calcular SHAP values**: `shapviz::shapviz()` + `sv_dependence()`
+4. **Gerar gráficos**: Dependence plots, importance ranking, interaction plots
+
+#### Documentação Futura
+5. **Criar guia**: `docs/shap_analysis_guide.md` com workflow completo R ↔ Python
+6. **Atualizar README**: Mencionar `models_aggregated.csv` como output alternativo
+
+---
+
 ## RESUMO EXECUTIVO DA SESSÃO 11 — 2025-12-15 (Fase 2: Visualizações Comparativas COMPLETA ✅)
 
 ### ✅ Trabalho de Hoje
