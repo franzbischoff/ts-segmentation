@@ -624,6 +624,11 @@ def main():
         default='results/visualizations',
         help='Directory to save visualization plots'
     )
+    parser.add_argument(
+        '--aggregated-output',
+        default=None,
+        help='Path to save aggregated metrics CSV (default: <output-dir>/metrics_aggregated.csv)'
+    )
 
     args = parser.parse_args()
 
@@ -634,6 +639,14 @@ def main():
     print(f"Loading metrics from: {args.metrics}")
     df = load_metrics(args.metrics)
     print(f"Loaded {len(df)} parameter combinations\n")
+
+    aggregated_output = (
+        Path(args.aggregated_output)
+        if args.aggregated_output
+        else output_dir / 'metrics_aggregated.csv'
+    )
+    df.to_csv(aggregated_output, index=False)
+    print(f"✓ Saved aggregated metrics: {aggregated_output}\n")
 
     # Set style
     sns.set_style("whitegrid")
