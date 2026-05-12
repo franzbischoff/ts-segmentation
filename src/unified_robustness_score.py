@@ -141,6 +141,14 @@ def generate_unified_report(
 
     # Sort by unified score (descending)
     sorted_scores = sorted(unified_scores.items(), key=lambda x: x[1]['unified_score'], reverse=True)
+    option3_winner = sorted_scores[0][0].upper() if sorted_scores else "N/A"
+
+    # Option 1 winner is detector with highest ceiling F3 among current loaded scores
+    option1_winner_detector, option1_winner_scores = max(
+        unified_scores.items(), key=lambda x: x[1]['ceiling_f3']
+    )
+    option1_winner_detector = option1_winner_detector.upper()
+    option1_winner_f3 = option1_winner_scores['ceiling_f3']
 
     report = f"""# Unified Robustness Score (Option 3)
 
@@ -184,7 +192,7 @@ $$\\text{{Robustness Score}} = 0.6 \\times (1 - \\text{{2-fold gap}}) + 0.4 \\ti
 
 """
 
-    report += """
+    report += f"""
 ---
 
 ## Interpretation Guide
@@ -226,7 +234,7 @@ $$\\text{{Robustness Score}} = 0.6 \\times (1 - \\text{{2-fold gap}}) + 0.4 \\ti
 | **Focus** | Ceiling performance with local tuning | Parameter transfer across datasets | Combined robustness |
 | **Best For** | Research, max performance | Production deployment | Holistic detector selection |
 | **Questions Answered** | What's the best we can do if we retune? | Can we use params without retuning? | Which detector is most reliable overall? |
-| **Winner Typically** | FLOSS (performance focused) | ADWIN (robustness focused) | KSWIN (balanced) |
+| **Winner Typically** | FLOSS (performance focused) | ADWIN (robustness focused) | {option3_winner} (highest unified score) |
 
 ---
 
@@ -244,7 +252,7 @@ Detectors performing well on small datasets (vtachy) and hard datasets (malign) 
 ## Recommendations
 
 ### For Research/Benchmarking
-- **Use FLOSS** (Option 1: F3=0.4285 ceiling)
+- **Use {option1_winner_detector}** (Option 1: F3={option1_winner_f3:.4f} ceiling)
 - Accept the tuning cost, get maximum performance
 
 ### For Production Deployment

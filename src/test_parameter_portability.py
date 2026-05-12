@@ -3,7 +3,7 @@ Test parameter portability across datasets (Option 2).
 
 For each detector:
 1. Extract best hyperparameters from source dataset (from two-fold report)
-2. Filter predictions_intermediate.csv in target datasets with those exact parameters
+2. Filter metrics_comprehensive_with_nab.csv in target datasets with those exact parameters
 3. Calculate F3 performance with transferred parameters
 4. Compare with local best performance
 5. Report transferability score
@@ -252,7 +252,7 @@ def generate_portability_report(results: List[Dict[str, Any]]) -> None:
 
         f.write("### Methodology\n\n")
         f.write("1. Extract best hyperparameters from source dataset (from 2-fold CV)\n")
-        f.write("2. Apply those exact parameters to target dataset (filter predictions_intermediate.csv)\n")
+        f.write("2. Apply those exact parameters to target dataset (filter metrics_comprehensive_with_nab.csv)\n")
         f.write("3. Calculate F3 performance with transferred parameters\n")
         f.write("4. Compare with target's local best (optimized independently)\n")
         f.write("5. Compute transferability ratio = transferred_f3 / local_best_f3\n\n")

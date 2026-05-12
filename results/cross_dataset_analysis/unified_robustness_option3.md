@@ -1,6 +1,6 @@
 # Unified Robustness Score (Option 3)
 
-Generated: 2025-12-14T21:48:59.082908
+Generated: 2026-05-12T20:06:21.999926
 
 ## Executive Summary
 
@@ -12,14 +12,14 @@ $$\text{Robustness Score} = 0.6 \times (1 - \text{2-fold gap}) + 0.4 \times (1 -
 
 ### Final Ranking
 
-| Rank | Detector | Unified Score | Intra-Consistency | Inter-Generalization | Ceiling F3 | Transfer CV |
+| Rank | Detector | Unified Score | Intra-Consistency | Inter-Generalization | Ceiling Cross-Fold F3-weighted | Transfer CV |
 |------|----------|---------------|-------------------|----------------------|------------|------------|
-| 1 | **floss** | 0.9763 | 0.9789 | 0.9723 | 0.4285 | 21.9% |
-| 2 | **adwin** | 0.9713 | 0.9576 | 0.9919 | 0.2879 | 9.5% |
-| 3 | **kswin** | 0.9690 | 0.9558 | 0.9887 | 0.3176 | 12.1% |
-| 4 | **hddm_a** | 0.9509 | 0.9540 | 0.9463 | 0.2997 | 35.5% |
-| 5 | **hddm_w** | 0.9426 | 0.9788 | 0.8882 | 0.1527 | 73.2% |
-| 6 | **page_hinkley** | 0.9049 | 0.9484 | 0.8396 | 0.3132 | 73.7% |
+| 1 | **floss** | 0.9761 | 0.9786 | 0.9723 | 0.4306 | 21.9% |
+| 2 | **adwin** | 0.9710 | 0.9568 | 0.9923 | 0.2890 | 9.2% |
+| 3 | **kswin** | 0.9690 | 0.9552 | 0.9898 | 0.3203 | 11.5% |
+| 4 | **hddm_a** | 0.9507 | 0.9528 | 0.9476 | 0.3022 | 35.2% |
+| 5 | **hddm_w** | 0.9425 | 0.9785 | 0.8884 | 0.1534 | 73.0% |
+| 6 | **page_hinkley** | 0.9047 | 0.9473 | 0.8408 | 0.3152 | 73.5% |
 
 ---
 
@@ -29,27 +29,27 @@ $$\text{Robustness Score} = 0.6 \times (1 - \text{2-fold gap}) + 0.4 \times (1 -
 
 
 **🥇 #1: floss**
-- **Unified Score**: 0.9763
-- **Intra-Dataset Consistency**: 0.9789 (stable across folds)
+- **Unified Score**: 0.9761
+- **Intra-Dataset Consistency**: 0.9786 (stable across folds)
 - **Inter-Dataset Generalization**: 0.9723 (stable across datasets)
-- **Ceiling Performance (F3)**: 0.4285
+- **Ceiling Performance (cross-fold F3-weighted)**: 0.4306
 - **Transfer Variability**: 21.9% (CV across transfers)
 
 
 **🥈 #2: adwin**
-- **Unified Score**: 0.9713
-- **Intra-Dataset Consistency**: 0.9576 (stable across folds)
-- **Inter-Dataset Generalization**: 0.9919 (stable across datasets)
-- **Ceiling Performance (F3)**: 0.2879
-- **Transfer Variability**: 9.5% (CV across transfers)
+- **Unified Score**: 0.9710
+- **Intra-Dataset Consistency**: 0.9568 (stable across folds)
+- **Inter-Dataset Generalization**: 0.9923 (stable across datasets)
+- **Ceiling Performance (cross-fold F3-weighted)**: 0.2890
+- **Transfer Variability**: 9.2% (CV across transfers)
 
 
 **🥉 #3: kswin**
 - **Unified Score**: 0.9690
-- **Intra-Dataset Consistency**: 0.9558 (stable across folds)
-- **Inter-Dataset Generalization**: 0.9887 (stable across datasets)
-- **Ceiling Performance (F3)**: 0.3176
-- **Transfer Variability**: 12.1% (CV across transfers)
+- **Intra-Dataset Consistency**: 0.9552 (stable across folds)
+- **Inter-Dataset Generalization**: 0.9898 (stable across datasets)
+- **Ceiling Performance (cross-fold F3-weighted)**: 0.3203
+- **Transfer Variability**: 11.5% (CV across transfers)
 
 
 ---
@@ -75,16 +75,6 @@ $$\text{Robustness Score} = 0.6 \times (1 - \text{2-fold gap}) + 0.4 \times (1 -
 - **0.6 for Intra**: Dominant weight because consistent parameters within domain are foundational
 - **0.4 for Inter**: Secondary weight because transfer is less critical than baseline reliability
 
-### Rationale for the Unified Formula
-
-- **Multiobjective weighted-sum**: Combinar objetivos normalizados via pesos explícitos é o método clássico em otimização multiobjetivo; aqui, consolidamos performance intra (1−gap) e estabilidade inter (1−variance) num único escalar comparável.
-- **Generalização = estabilidade + variância**: A robustez prática depende de consistência no domínio (pouca sensibilidade a splits) e baixa variância ao transferir para novos domínios; a fórmula captura exatamente essas duas dimensões.
-- **Pesos transparentes e ajustáveis**: 0.6/0.4 refletem prioridade prática (confiabilidade interna ligeiramente mais importante que portabilidade), mas podem ser recalibrados conforme a tolerância a risco de transferência.
-- **Fontes literárias**:
-	- Deb, K. *Multi-Objective Optimization Using Evolutionary Algorithms*. Wiley, 2001. (weighted-sum como método base de agregação multiobjetivo)
-	- Quiñonero-Candela et al. *Dataset Shift in Machine Learning*. MIT Press, 2009. (robustez vs. variância sob mudança de domínio)
-	- Keeney, R., Raiffa, H. *Decisions with Multiple Objectives*. Cambridge Univ. Press, 1993. (pesos explícitos e preferências em decisão multicritério)
-
 ---
 
 ## Production Guidance by Score Range
@@ -103,7 +93,7 @@ $$\text{Robustness Score} = 0.6 \times (1 - \text{2-fold gap}) + 0.4 \times (1 -
 | **Focus** | Ceiling performance with local tuning | Parameter transfer across datasets | Combined robustness |
 | **Best For** | Research, max performance | Production deployment | Holistic detector selection |
 | **Questions Answered** | What's the best we can do if we retune? | Can we use params without retuning? | Which detector is most reliable overall? |
-| **Winner Typically** | FLOSS (performance focused) | ADWIN (robustness focused) | KSWIN (balanced) |
+| **Winner Typically** | FLOSS (performance focused) | ADWIN (robustness focused) | FLOSS (highest unified score) |
 
 ---
 
@@ -121,7 +111,7 @@ Detectors performing well on small datasets (vtachy) and hard datasets (malign) 
 ## Recommendations
 
 ### For Research/Benchmarking
-- **Use FLOSS** (Option 1: F3=0.4285 ceiling)
+- **Use FLOSS** (Option 1: cross-fold F3-weighted ceiling=0.4306)
 - Accept the tuning cost, get maximum performance
 
 ### For Production Deployment
