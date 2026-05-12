@@ -11,8 +11,8 @@ Comparison of optimal parameter settings for each metric:
 
 | metric             | adwin                              | page_hinkley                                       | kswin                                                 | hddm_a                                                                                              | hddm_w                                                                                                     | floss                                               |
 |:-------------------|:-----------------------------------|:---------------------------------------------------|:------------------------------------------------------|:----------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------|:----------------------------------------------------|
-| f3_weighted        | 0.2367 (δ=0.025, ma=250, gap=2000) | 0.2295 (λ=10, δ=0.005, α=0.9999, ma=200, gap=2000) | 0.2409 (α=0.05, win=500, stat=50, ma=100, gap=2000)   | 0.2229 (drift_confidence=0.0001, warning_confidence=0.001, two_side_option=True, ma=100, gap=2000)  | 0.0204 (drift_confidence=0.0005, warning_confidence=0.001, λ=0.01, two_side_option=False, ma=10, gap=3000) | 0.5440 (win=75, reg_th=0.45, reg_lm=3, gap=1000)    |
-| f1_weighted        | 0.0884 (δ=0.005, ma=10, gap=4000)  | 0.0711 (λ=30, δ=0.02, α=0.9999, ma=200, gap=4000)  | 0.0783 (α=0.001, win=500, stat=30, ma=10, gap=3000)   | 0.0682 (drift_confidence=0.0001, warning_confidence=0.001, two_side_option=True, ma=100, gap=3000)  | 0.0075 (drift_confidence=0.005, warning_confidence=0.001, λ=0.01, two_side_option=False, ma=1, gap=2000)   | 0.3720 (win=125, reg_th=0.25, reg_lm=3.5, gap=2000) |
+| f3_weighted        | 0.2379 (δ=0.025, ma=250, gap=2000) | 0.2307 (λ=10, δ=0.005, α=0.9999, ma=200, gap=2000) | 0.2424 (α=0.05, win=500, stat=50, ma=100, gap=2000)   | 0.2243 (drift_confidence=0.0001, warning_confidence=0.001, two_side_option=True, ma=100, gap=2000)  | 0.0204 (drift_confidence=0.0005, warning_confidence=0.001, λ=0.01, two_side_option=False, ma=10, gap=3000) | 0.5463 (win=75, reg_th=0.45, reg_lm=3, gap=1000)    |
+| f1_weighted        | 0.0910 (δ=0.005, ma=10, gap=4000)  | 0.0732 (λ=30, δ=0.02, α=0.9999, ma=200, gap=4000)  | 0.0795 (α=0.001, win=500, stat=30, ma=10, gap=3000)   | 0.0695 (drift_confidence=0.005, warning_confidence=0.001, two_side_option=True, ma=100, gap=3000)   | 0.0076 (drift_confidence=0.005, warning_confidence=0.001, λ=0.01, two_side_option=False, ma=1, gap=2000)   | 0.3823 (win=125, reg_th=0.25, reg_lm=3.5, gap=2000) |
 | nab_score_standard | -1.8779 (δ=0.005, ma=10, gap=4000) | -2.4641 (λ=30, δ=0.02, α=0.9999, ma=200, gap=4000) | -2.2784 (α=0.005, win=500, stat=50, ma=100, gap=5000) | -2.8088 (drift_confidence=0.0001, warning_confidence=0.001, two_side_option=True, ma=100, gap=3000) | -2.8529 (drift_confidence=0.0001, warning_confidence=0.001, λ=0.05, two_side_option=False, ma=1, gap=500)  | 0.1824 (win=75, reg_th=0.45, reg_lm=3, gap=500)     |
 | nab_score_low_fp   | -3.1494 (δ=0.005, ma=10, gap=4000) | -5.1397 (λ=30, δ=0.02, α=0.9999, ma=200, gap=4000) | -2.8529 (α=0.001, win=50, stat=50, ma=1, gap=500)     | -5.0587 (drift_confidence=0.001, warning_confidence=0.001, two_side_option=False, ma=50, gap=5000)  | -2.8529 (drift_confidence=0.0001, warning_confidence=0.001, λ=0.05, two_side_option=False, ma=1, gap=500)  | -0.5569 (win=75, reg_th=0.45, reg_lm=3, gap=1000)   |
 | nab_score_low_fn   | -1.0829 (δ=0.1, ma=150, gap=2000)  | -1.0051 (λ=80, δ=0.04, α=0.9999, ma=50, gap=2000)  | -0.8889 (α=0.001, win=500, stat=50, ma=10, gap=2000)  | -1.1061 (drift_confidence=0.0001, warning_confidence=0.001, two_side_option=False, ma=50, gap=2000) | -5.5735 (drift_confidence=0.001, warning_confidence=0.001, λ=0.01, two_side_option=False, ma=10, gap=3000) | -0.0924 (win=150, reg_th=0.6, reg_lm=4, gap=1000)   |
@@ -27,7 +27,7 @@ Detectors ranked by performance on key metrics:
 
 | metric        | rank_1          | rank_2          | rank_3                | rank_4                 | rank_5                | rank_6           |
 |:--------------|:----------------|:----------------|:----------------------|:-----------------------|:----------------------|:-----------------|
-| F3-Weighted   | floss (0.5440)  | kswin (0.2409)  | adwin (0.2367)        | page_hinkley (0.2295)  | hddm_a (0.2229)       | hddm_w (0.0204)  |
+| F3-Weighted   | floss (0.5463)  | kswin (0.2424)  | adwin (0.2379)        | page_hinkley (0.2307)  | hddm_a (0.2243)       | hddm_w (0.0204)  |
 | NAB Standard  | floss (0.1824)  | adwin (-1.8779) | kswin (-2.2784)       | page_hinkley (-2.4641) | hddm_a (-2.8088)      | hddm_w (-2.8529) |
 | Recall@10s    | hddm_a (0.9902) | kswin (0.9804)  | page_hinkley (0.9660) | adwin (0.9575)         | floss (0.7971)        | hddm_w (0.0559)  |
 | Precision@10s | floss (0.2608)  | kswin (0.0477)  | page_hinkley (0.0450) | adwin (0.0444)         | hddm_a (0.0443)       | hddm_w (0.0043)  |
@@ -49,18 +49,18 @@ when running the script (see --robust-top-n / --robust-top-percent).
 
 | Metric        | Detector     |    Best |   Top-10 Mean | Param Tolerance (%)   |   Total Configs |
 |:--------------|:-------------|--------:|--------------:|:----------------------|----------------:|
-| F3-Weighted   | adwin        |  0.2367 |        0.2288 | 89.3%                 |             495 |
-| F3-Weighted   | page_hinkley |  0.2295 |        0.229  | 6.3%                  |             384 |
-| F3-Weighted   | kswin        |  0.2409 |        0.2365 | 74.0%                 |            1280 |
-| F3-Weighted   | hddm_a       |  0.2229 |        0.2225 | 68.7%                 |             640 |
+| F3-Weighted   | adwin        |  0.2379 |        0.2302 | 89.3%                 |             495 |
+| F3-Weighted   | page_hinkley |  0.2307 |        0.2303 | 6.3%                  |             384 |
+| F3-Weighted   | kswin        |  0.2424 |        0.2379 | 74.0%                 |            1280 |
+| F3-Weighted   | hddm_a       |  0.2243 |        0.2239 | 68.7%                 |             640 |
 | F3-Weighted   | hddm_w       |  0.0204 |        0.0204 | 0.0%                  |            2560 |
-| F3-Weighted   | floss        |  0.544  |        0.5401 | 43.3%                 |           25920 |
-| F1-Weighted   | adwin        |  0.0884 |        0.0824 | 41.0%                 |             495 |
-| F1-Weighted   | page_hinkley |  0.0711 |        0.0694 | 89.4%                 |             384 |
-| F1-Weighted   | kswin        |  0.0783 |        0.0743 | 92.2%                 |            1280 |
-| F1-Weighted   | hddm_a       |  0.0682 |        0.0681 | 68.7%                 |             640 |
-| F1-Weighted   | hddm_w       |  0.0075 |        0.0075 | 2.9%                  |            2560 |
-| F1-Weighted   | floss        |  0.372  |        0.364  | 33.5%                 |           25920 |
+| F3-Weighted   | floss        |  0.5463 |        0.5426 | 45.3%                 |           25920 |
+| F1-Weighted   | adwin        |  0.091  |        0.0841 | 19.6%                 |             495 |
+| F1-Weighted   | page_hinkley |  0.0732 |        0.0715 | 85.3%                 |             384 |
+| F1-Weighted   | kswin        |  0.0795 |        0.0756 | 92.2%                 |            1280 |
+| F1-Weighted   | hddm_a       |  0.0695 |        0.0695 | 90.4%                 |             640 |
+| F1-Weighted   | hddm_w       |  0.0076 |        0.0076 | 2.9%                  |            2560 |
+| F1-Weighted   | floss        |  0.3823 |        0.3723 | 31.7%                 |           25920 |
 | NAB Standard  | adwin        | -1.8779 |       -2.0596 | 21.7%                 |             495 |
 | NAB Standard  | page_hinkley | -2.4641 |       -2.4896 | 0.4%                  |             384 |
 | NAB Standard  | kswin        | -2.2784 |       -2.3741 | 68.3%                 |            1280 |

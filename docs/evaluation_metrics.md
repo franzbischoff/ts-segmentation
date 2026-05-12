@@ -134,13 +134,12 @@ w(\delta) = \begin{cases}
 $$
 
 **Parâmetros típicos**:
-- **Plateau**: 4 segundos (detecção rápida = peso máximo)
+- **Plateau**: 4 segundos por padrão (configurável via argumento `--plateau`)
 - **τ (tau)**: 10 segundos (limite de aceitação)
 
 **Interpretação**:
-- $\delta \in [0, 4s]$: peso = 1.0 (perfeito)
-- $\delta \in (4, 10]$: peso decai linearmente de 1.0 a 0.0
-- $\delta > 10s$: peso = 0.0 (rejeitado)
+- Com os valores padrão da pipeline (`plateau=4s`, `\tau=10s`): $\delta \in [0, 4s]$ tem peso = 1.0, e $\delta \in (4, 10]$ decai linearmente de 1.0 a 0.0
+- $\delta > \tau$: peso = 0.0 (rejeitado)
 
 ### Precision Ponderada ($\text{Precision}^*$)
 
@@ -157,6 +156,19 @@ $$
 $$
 
 **Interpretação**: TP com latência alta contam menos; FN sempre conta como 1.
+
+### Racional dos Denominadores (Para Publicação)
+
+Nesta pipeline, a latência degrada a utilidade do acerto via $\sum w(\delta)$ no numerador, mas evitamos misturar essa penalização com a contagem bruta de erros em ambos os denominadores ao mesmo tempo.
+
+Escolhas adotadas:
+- Em $\text{Precision}^*$, usamos $\sum w(\delta)$ também no denominador (em vez de $TP$ bruto) para manter a semântica de confiabilidade do alarme quando não há FP e reduzir ambiguidades interpretativas.
+- Em $\text{Recall}^*$, mantemos $TP+FN$ bruto no denominador para preservar a noção de cobertura do fenómeno (fração de eventos reais capturados).
+
+Motivação técnica:
+- **Separação de preocupações**: Precision mede confiabilidade dos alarmes; Recall mede cobertura/ utilidade da deteção.
+- **Evitar penalização dupla no $F_3$**: penalizar latência de forma redundante em termos incompatíveis torna o score excessivamente sensível e dificulta diagnóstico de erro.
+- **Comparabilidade externa**: a formulação mantém alinhamento com literatura de range-based metrics e com leituras comuns em benchmarks tipo NAB.
 
 ### F1-Weighted ($F1^*$)
 
@@ -239,8 +251,8 @@ Sistema de scoring que simula **custos operacionais reais** de detecção.
 | Componente | Custo |
 |-----------|-------|
 | TP | +1.0 (ganho) |
-| FP | −0.11 (penalidade) |
-| FN | −1.0 (penalidade) |
+| FP | 0.11 (penalidade) |
+| FN | 1.0 (penalidade) |
 
 **Interpretação**: Equilibra custo de FP e FN. Típico para cenários genéricos.
 
@@ -249,8 +261,8 @@ Sistema de scoring que simula **custos operacionais reais** de detecção.
 | Componente | Custo |
 |-----------|-------|
 | TP | +1.0 (ganho) |
-| FP | −1.0 (penalidade ALTA) |
-| FN | −0.22 (penalidade) |
+| FP | 0.22 (penalidade ALTA) |
+| FN | 1.0 (penalidade) |
 
 **Interpretação**: Para cenários com **operadores humanos** que sofrem fadiga de alarme. Falsos positivos são custosos.
 
@@ -259,8 +271,8 @@ Sistema de scoring que simula **custos operacionais reais** de detecção.
 | Componente | Custo |
 |-----------|-------|
 | TP | +1.0 (ganho) |
-| FP | −0.22 (penalidade) |
-| FN | −1.0 (penalidade ALTA) |
+| FP | 0.055 (penalidade) |
+| FN | 2.0 (penalidade ALTA) |
 
 **Interpretação**: Para cenários **críticos** onde não perder um evento é essencial. Falsos negativos são custosos.
 
@@ -269,17 +281,22 @@ Sistema de scoring que simula **custos operacionais reais** de detecção.
 Para cada TP, o score final é multiplicado por uma **função sigmoide** que depende da **posição relativa** da detecção na janela:
 
 $$
-s_{\text{TP}} = \text{sigmoid}\left(\frac{\delta - \tau/2}{\tau/4}\right)
+r = -1 + \frac{t_{det} - t_{gt}}{\tau},\quad r \in [-1, 0]
 $$
 
-- Detecção no meio da janela: $s = 0.5$ (prêmio reduzido a 50%)
-- Detecção rápida: $s \to 1.0$ (prêmio máximo)
-- Detecção tardia: $s \to 0.0$ (prêmio mínimo)
+$$
+s_{\text{TP}}(r) = 2 \cdot \text{sigmoid}(-5r) - 1
+$$
+
+- Início da janela ($r=-1$): $s \approx 0.9866$ (prêmio máximo)
+- Meio da janela ($r=-0.5$): $s \approx 0.8483$
+- Fim da janela ($r=0$): $s = 0.0$
+- Após a janela ($r>0$): score negativo (falso positivo)
 
 **Score Final**:
 
 $$
-\text{NAB} = \sum_{\text{TP}} s_{\text{TP}} - (\#\text{FP} \times c_{\text{FP}}) - (\#\text{FN} \times c_{\text{FN}})
+NAB = \sum_{\text{janelas}} \max\left(s_{\text{TP},j}, -c_{\text{FN}}\right) + \sum_{\text{FP}} \left(s_{\text{FP}} \cdot c_{\text{FP}}\right)
 $$
 
 ### Interpretação Prática
@@ -371,7 +388,7 @@ $$\text{Score} = 0.6 \times (1 - \text{intra_dataset_gap}) + 0.4 \times (1 - \te
 
 **NAB Standard**:
 - Validação do F3-weighted
-- Quando se quer penalizar FP significativamente
+- Cenário genérico/balanceado (FP e FN com peso equivalente)
 
 **NAB Low FP**:
 - Cenários com operadores humanos (fadiga de alarme)
@@ -411,8 +428,8 @@ Suponha um sinal com 1 evento real em t=100s:
 - Resultado:
   - TP = 1, FP = 0, FN = 0
   - $w(8s) = 1 - (8-4)/(10-4) = 0.333$
-  - $\text{Recall}^* = 0.333/1 = 0.333$, $\text{Precision}^* = 0.333/1 = 0.333$
-  - $F3^* = 0.333$ ⚠️ (penalizado)
+  - $\text{Recall}^* = 0.333/1 = 0.333$, $\text{Precision}^* = 0.333/(0.333+0) = 1.0$
+  - $F3^* = 10 \times 1.0 \times 0.333 / (9 \times 1.0 + 0.333) \approx 0.357$ ⚠️ (penalizado)
   - $\text{EDD} = 8s$
 
 **Cenário 3: Falso Positivo**
@@ -480,10 +497,10 @@ results/cross_dataset_analysis/
 ### Tratamento de Casos Especiais
 
 1. **Divisão por zero** em Precision/Recall
-   - Se TP = FP = 0: Precision = indefinido → considerado 1.0
-   - Se TP = FN = 0: Recall = indefinido → considerado 1.0
+   - Se TP = FP = 0: Precision = indefinido → considerado **0.0**
+   - Se TP = FN = 0: Recall = indefinido → considerado **0.0**
 
-2. **NaN em métricas NAB**
+2. **NaN em métricas de latência (EDD)**
    - Alguns modelos podem gerar NaN em EDD se não houver TPs
    - Estes modelos são mantidos nos CSVs como NaN (indicam falha de detecção)
 

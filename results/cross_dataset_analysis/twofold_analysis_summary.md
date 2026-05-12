@@ -1,6 +1,6 @@
 # Two-Fold Cross-Validation Analysis Summary
 
-Generated: 2025-12-14T21:22:47.554056
+Generated: 2026-05-12T19:06:10.622220
 
 ## Executive Summary
 
@@ -21,12 +21,12 @@ For each detector×dataset:
 
 | Detector | Avg Cross-Fold F3 | Avg Gap | Robustness |
 |----------|-------------------|---------|------------|
-| floss | 0.4285 | 0.0211 | ✅ Excellent |
-| hddm_w | 0.1527 | 0.0212 | ✅ Excellent |
-| adwin | 0.2879 | 0.0424 | ✅ Excellent |
-| kswin | 0.3176 | 0.0442 | ✅ Excellent |
-| hddm_a | 0.2997 | 0.0460 | ✅ Excellent |
-| page_hinkley | 0.3132 | 0.0516 | ⚠️  Good |
+| floss | 0.4306 | 0.0214 | ✅ Excellent |
+| hddm_w | 0.1534 | 0.0215 | ✅ Excellent |
+| adwin | 0.2890 | 0.0432 | ✅ Excellent |
+| kswin | 0.3203 | 0.0448 | ✅ Excellent |
+| hddm_a | 0.3022 | 0.0472 | ✅ Excellent |
+| page_hinkley | 0.3152 | 0.0527 | ⚠️  Good |
 
 ---
 
@@ -36,32 +36,32 @@ For each detector×dataset:
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected Fold |
 |------|----------|---------------|---------------|-----|---------------|
-| 1 | floss | 0.4768 | 0.4770 | 0.0002 | fold_b |
-| 2 | kswin | 0.4305 | 0.3929 | 0.0376 | fold_b |
-| 3 | adwin | 0.4221 | 0.3768 | 0.0453 | fold_b |
-| 4 | page_hinkley | 0.4103 | 0.3654 | 0.0449 | fold_b |
-| 5 | hddm_w | 0.3772 | 0.3282 | 0.0490 | fold_b |
-| 6 | hddm_a | 0.3725 | 0.3451 | 0.0274 | fold_b |
+| 1 | floss | 0.4790 | 0.4794 | 0.0004 | fold_b |
+| 2 | kswin | 0.4326 | 0.3942 | 0.0384 | fold_b |
+| 3 | adwin | 0.4231 | 0.3774 | 0.0457 | fold_b |
+| 4 | page_hinkley | 0.4107 | 0.3656 | 0.0451 | fold_b |
+| 5 | hddm_w | 0.3790 | 0.3294 | 0.0496 | fold_b |
+| 6 | hddm_a | 0.3742 | 0.3464 | 0.0278 | fold_b |
 
 ### malignantventricular
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected Fold |
 |------|----------|---------------|---------------|-----|---------------|
-| 1 | kswin | 0.3080 | 0.2266 | 0.0814 | fold_a |
-| 2 | hddm_a | 0.3019 | 0.2129 | 0.0890 | fold_a |
-| 3 | floss | 0.2788 | 0.3234 | 0.0446 | fold_b |
-| 4 | page_hinkley | 0.2737 | 0.2177 | 0.0560 | fold_a |
-| 5 | adwin | 0.2435 | 0.2389 | 0.0046 | fold_a |
-| 6 | hddm_w | 0.0617 | 0.0503 | 0.0114 | fold_b |
+| 1 | kswin | 0.3115 | 0.2278 | 0.0837 | fold_a |
+| 2 | hddm_a | 0.3052 | 0.2143 | 0.0909 | fold_a |
+| 3 | floss | 0.2810 | 0.3253 | 0.0443 | fold_b |
+| 4 | page_hinkley | 0.2775 | 0.2189 | 0.0586 | fold_a |
+| 5 | adwin | 0.2451 | 0.2392 | 0.0059 | fold_a |
+| 6 | hddm_w | 0.0618 | 0.0503 | 0.0115 | fold_b |
 
 ### vtachyarrhythmias
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected Fold |
 |------|----------|---------------|---------------|-----|---------------|
-| 1 | floss | 0.5299 | 0.5483 | 0.0184 | fold_a |
-| 2 | page_hinkley | 0.2557 | 0.2019 | 0.0538 | fold_b |
-| 3 | hddm_a | 0.2248 | 0.2032 | 0.0216 | fold_b |
-| 4 | kswin | 0.2142 | 0.2278 | 0.0136 | fold_b |
-| 5 | adwin | 0.1980 | 0.2753 | 0.0773 | fold_a |
-| 6 | hddm_w | 0.0193 | 0.0161 | 0.0032 | fold_b |
+| 1 | floss | 0.5317 | 0.5513 | 0.0196 | fold_a |
+| 2 | page_hinkley | 0.2573 | 0.2028 | 0.0545 | fold_b |
+| 3 | hddm_a | 0.2271 | 0.2041 | 0.0230 | fold_b |
+| 4 | kswin | 0.2168 | 0.2290 | 0.0122 | fold_b |
+| 5 | adwin | 0.1989 | 0.2769 | 0.0780 | fold_a |
+| 6 | hddm_w | 0.0194 | 0.0161 | 0.0033 | fold_b |
 

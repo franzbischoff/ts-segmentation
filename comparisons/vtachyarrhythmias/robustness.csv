@@ -1,16 +1,16 @@
 Metric,Detector,Best,Top-10 Mean,Param Tolerance (%),Total Configs
-F3-Weighted,adwin,0.2367,0.2288,89.3%,495
-F3-Weighted,page_hinkley,0.2295,0.2290,6.3%,384
-F3-Weighted,kswin,0.2409,0.2365,74.0%,1280
-F3-Weighted,hddm_a,0.2229,0.2225,68.7%,640
+F3-Weighted,adwin,0.2379,0.2302,89.3%,495
+F3-Weighted,page_hinkley,0.2307,0.2303,6.3%,384
+F3-Weighted,kswin,0.2424,0.2379,74.0%,1280
+F3-Weighted,hddm_a,0.2243,0.2239,68.7%,640
 F3-Weighted,hddm_w,0.0204,0.0204,0.0%,2560
-F3-Weighted,floss,0.5440,0.5401,43.3%,25920
-F1-Weighted,adwin,0.0884,0.0824,41.0%,495
-F1-Weighted,page_hinkley,0.0711,0.0694,89.4%,384
-F1-Weighted,kswin,0.0783,0.0743,92.2%,1280
-F1-Weighted,hddm_a,0.0682,0.0681,68.7%,640
-F1-Weighted,hddm_w,0.0075,0.0075,2.9%,2560
-F1-Weighted,floss,0.3720,0.3640,33.5%,25920
+F3-Weighted,floss,0.5463,0.5426,45.3%,25920
+F1-Weighted,adwin,0.0910,0.0841,19.6%,495
+F1-Weighted,page_hinkley,0.0732,0.0715,85.3%,384
+F1-Weighted,kswin,0.0795,0.0756,92.2%,1280
+F1-Weighted,hddm_a,0.0695,0.0695,90.4%,640
+F1-Weighted,hddm_w,0.0076,0.0076,2.9%,2560
+F1-Weighted,floss,0.3823,0.3723,31.7%,25920
 NAB Standard,adwin,-1.8779,-2.0596,21.7%,495
 NAB Standard,page_hinkley,-2.4641,-2.4896,0.4%,384
 NAB Standard,kswin,-2.2784,-2.3741,68.3%,1280

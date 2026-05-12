@@ -59,7 +59,7 @@ python -m src.visualize_results \
 **Detalhes**:
 - **Painel Esquerdo**: Recall@4s vs Precision@4s (janela de 4 segundos)
 - **Painel Direito**: Recall@10s vs Precision@10s (janela de 10 segundos)
-- Cada ponto = uma combinação (delta, ma_window, min_gap_samples)
+- Cada ponto = uma combinação de parâmetros do detector
 - Cor do ponto = Score F3-weighted (escala viridis: roxo→verde→amarelo)
 - Estrela vermelha = melhor configuração F3-weighted
 

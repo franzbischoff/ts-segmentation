@@ -1,6 +1,6 @@
 # Especificação do Formato CSV `predictions_intermediate.csv`
 
-Este documento descreve o formato exato do ficheiro CSV gerado pelos scripts `generate_*.sh` para uso com o agente R na conversão de dados.
+Este documento descreve o formato exato do ficheiro CSV `predictions_intermediate.csv` usado na pipeline (gerado pelos scripts `generate_*.sh` para detectores Python e, no caso de FLOSS, por integração externa em R).
 
 ## Estrutura Geral
 
@@ -35,11 +35,17 @@ O CSV deve ter:
 
 **Nota**: As especificações abaixo mostram o formato COMPLETO usado pelo Python. No R, você pode omitir as colunas redundantes/opcionais.
 
+## Compatibilidade com a Pipeline Atual
+
+- A pipeline de avaliação usa **nomes de colunas** (não posição), portanto a ordem das colunas **não é requisito funcional**.
+- O que precisa estar correto é: nomes das colunas esperadas, tipos compatíveis e listas parseáveis em `gt_times`/`det_times`.
+- O formato completo por detector abaixo é uma **referência recomendada** para reprodutibilidade e interoperabilidade, não uma exigência rígida de ordem.
+
 ## Formato por Detector
 
 ### ADWIN
 
-**Colunas obrigatórias (14 colunas, nesta ordem exata):**
+**Formato completo de referência (14 colunas):**
 
 ```
 record_id,detector,delta,ma_window,min_gap_samples,duration_samples,duration_seconds,gt_indices,gt_times,det_indices,det_times,n_detections,n_ground_truth,processing_time
@@ -54,7 +60,7 @@ data_101_1.par,adwin,0.005,10,1000,145971,583.884,[70599],[282.396],"[799, 2463,
 
 ### Page-Hinkley
 
-**Colunas obrigatórias (16 colunas):**
+**Formato completo de referência (16 colunas):**
 
 ```
 record_id,detector,lambda_,delta,alpha,ma_window,min_gap_samples,duration_samples,duration_seconds,gt_indices,gt_times,det_indices,det_times,n_detections,n_ground_truth,processing_time
@@ -68,7 +74,7 @@ record_id,detector,lambda_,delta,alpha,ma_window,min_gap_samples,duration_sample
 
 ### KSWIN
 
-**Colunas obrigatórias (17 colunas):**
+**Formato completo de referência (16 colunas + `error` opcional):**
 
 ```
 record_id,detector,alpha,window_size,stat_size,ma_window,min_gap_samples,duration_samples,duration_seconds,gt_indices,gt_times,det_indices,det_times,n_detections,n_ground_truth,processing_time,error
@@ -76,13 +82,13 @@ record_id,detector,alpha,window_size,stat_size,ma_window,min_gap_samples,duratio
 
 **Diferenças:**
 - 3 parâmetros ANTES de `ma_window`: `alpha`, `window_size`, `stat_size`
-- **Coluna adicional no final**: `error` (vazia se não houver erro, ou mensagem de erro se houver)
+- **Coluna opcional no final**: `error` (vazia se não houver erro, ou mensagem de erro se houver)
 
 ---
 
 ### HDDM_A
 
-**Colunas obrigatórias (16 colunas):**
+**Formato completo de referência (16 colunas):**
 
 ```
 record_id,detector,drift_confidence,warning_confidence,two_side_option,ma_window,min_gap_samples,duration_samples,duration_seconds,gt_indices,gt_times,det_indices,det_times,n_detections,n_ground_truth,processing_time
@@ -95,7 +101,7 @@ record_id,detector,drift_confidence,warning_confidence,two_side_option,ma_window
 
 ### HDDM_W
 
-**Colunas obrigatórias (17 colunas):**
+**Formato completo de referência (17 colunas):**
 
 ```
 record_id,detector,drift_confidence,warning_confidence,lambda_option,two_side_option,ma_window,min_gap_samples,duration_samples,duration_seconds,gt_indices,gt_times,det_indices,det_times,n_detections,n_ground_truth,processing_time
@@ -129,6 +135,10 @@ record_id,detector,drift_confidence,warning_confidence,lambda_option,two_side_op
 - `det_times` (segundos) = `det_indices` (amostras) / 250 Hz
 - Exemplo: índice 70599 → 70599/250 = 282.396 segundos
 
+**Nota sobre FLOSS**:
+- FLOSS é integrado externamente (R/projeto `false.alarm`) e não é produzido por `src/generate_predictions.py`.
+- O formato CSV continua o mesmo para consumo da pipeline de avaliação.
+
 ### Colunas de Parâmetros Específicos
 
 #### ADWIN
@@ -155,7 +165,6 @@ record_id,detector,drift_confidence,warning_confidence,lambda_option,two_side_op
 | `stat_size` | integer | Tamanho da janela estatística | `20`, `30`, `50`, `100` |
 | `ma_window` | integer | Janela de média móvel (1 = sem suavização) | `1`, `10`, `50`, `100` |
 | `min_gap_samples` | integer | Mínimo de amostras entre deteções | `500`, `1000`, `2000`, `3000`, `5000` |
-| `error` | string | Mensagem de erro (vazia se não houver) | vazio ou `"Error message"` |
 
 #### HDDM_A
 | Coluna | Tipo | Descrição | Valores Típicos |
@@ -175,6 +184,14 @@ record_id,detector,drift_confidence,warning_confidence,lambda_option,two_side_op
 | `two_side_option` | boolean | Teste bilateral ou unilateral | `True`, `False` |
 | `ma_window` | integer | Janela de média móvel (1 = sem suavização) | `1`, `10`, `50`, `100` |
 | `min_gap_samples` | integer | Mínimo de amostras entre deteções | `500`, `1000`, `2000`, `3000`, `5000` |
+
+#### FLOSS (Integração Externa)
+| Coluna | Tipo | Descrição | Valores Típicos |
+|--------|------|-----------|-----------------|
+| `window_size` | integer | Tamanho da janela do FLOSS | `25`, `50`, `100`, ... |
+| `regime_threshold` | float | Limiar de mudança de regime | `0.05`, `0.1`, ... |
+| `regime_landmark` | float | Landmark para segmentação de regime | `2.0`, `5.0`, ... |
+| `min_gap_samples` | integer | Mínimo de amostras entre deteções | `200`, `500`, `1000`, ... |
 
 ---
 
@@ -278,14 +295,14 @@ df <- df %>%
 
 1. **`record_id`** nunca pode ser vazio
 2. **`detector`** deve ser um de: `adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w`, `floss`
-3. **`duration_samples`** > 0
-4. **`duration_seconds`** > 0 e = `duration_samples / 250` (assumindo 250 Hz)
-5. **`n_detections`** = comprimento de `det_indices` = comprimento de `det_times`
-6. **`n_ground_truth`** = comprimento de `gt_indices` = comprimento de `gt_times`
-7. **`processing_time`** >= 0
-8. **Listas `gt_indices` e `det_indices`**: valores inteiros >= 0
-9. **Listas `gt_times` e `det_times`**: valores float >= 0
-10. **Ordem das colunas**: EXATA conforme especificação do detector
+3. **`duration_seconds`** > 0
+4. Se `duration_samples` existir, então `duration_seconds` = `duration_samples / 250` (assumindo 250 Hz)
+5. **`n_detections`** = comprimento de `det_times` (e de `det_indices`, se `det_indices` existir)
+6. **`n_ground_truth`** = comprimento de `gt_times` (e de `gt_indices`, se `gt_indices` existir)
+7. Se `processing_time` existir, `processing_time` >= 0
+8. Se existirem, listas `gt_indices` e `det_indices`: valores inteiros >= 0
+9. Listas `gt_times` e `det_times`: valores float >= 0
+10. **Ordem das colunas**: livre; recomenda-se manter o formato de referência por detector para facilitar auditoria e integração
 
 ### Exemplo de Validação em R:
 ```r
@@ -293,15 +310,23 @@ validate_predictions_csv <- function(df, detector_name) {
   # Validações básicas
   stopifnot(!any(is.na(df$record_id)))
   stopifnot(all(df$detector == detector_name))
-  stopifnot(all(df$duration_samples > 0))
   stopifnot(all(df$duration_seconds > 0))
-  stopifnot(all(df$processing_time >= 0))
+  if ("duration_samples" %in% names(df)) {
+    stopifnot(all(df$duration_samples > 0))
+  }
+  if ("processing_time" %in% names(df)) {
+    stopifnot(all(df$processing_time >= 0))
+  }
 
   # Validar consistência de listas
-  stopifnot(all(map_int(df$det_indices, length) == df$n_detections))
   stopifnot(all(map_int(df$det_times, length) == df$n_detections))
-  stopifnot(all(map_int(df$gt_indices, length) == df$n_ground_truth))
   stopifnot(all(map_int(df$gt_times, length) == df$n_ground_truth))
+  if ("det_indices" %in% names(df)) {
+    stopifnot(all(map_int(df$det_indices, length) == df$n_detections))
+  }
+  if ("gt_indices" %in% names(df)) {
+    stopifnot(all(map_int(df$gt_indices, length) == df$n_ground_truth))
+  }
 
   return(TRUE)
 }
@@ -339,7 +364,7 @@ predictions_df <- predictions_df %>%
     det_times = map_chr(det_times, ~ toJSON(.x, auto_unbox = FALSE))
   )
 
-# 3. Garantir ordem correta das colunas
+# 3. (Opcional) Fixar ordem para reprodutibilidade
 column_order <- c(
   "record_id", "detector", "delta", "ma_window", "min_gap_samples",
   "duration_seconds", "gt_times", "det_times",
@@ -386,7 +411,7 @@ predictions_df <- predictions_df %>%
     det_times = map_chr(det_times, ~ toJSON(.x, auto_unbox = FALSE))
   )
 
-# 3. Garantir ordem correta das colunas
+# 3. (Opcional) Fixar ordem para reprodutibilidade
 column_order <- c(
   "record_id", "detector", "delta", "ma_window", "min_gap_samples",
   "duration_samples", "duration_seconds", "gt_indices", "gt_times",
@@ -504,7 +529,7 @@ Certos modelos podem ter `NaN` em métricas específicas quando a condição nã
    # - error (opcional)
    ```
 
-3. **Ordem das Colunas**: A ordem EXATA das colunas é crítica se usar formato completo. Usar `select(all_of(column_order))` para garantir.
+3. **Ordem das Colunas**: Não é crítica para a pipeline atual. Ainda assim, usar `select(all_of(column_order))` é recomendado para padronização entre equipas/ferramentas.
 
 4. **Conversão de Listas**: Usar `jsonlite::toJSON()` com `auto_unbox = FALSE` para converter vetores R em listas Python.
 
@@ -514,7 +539,7 @@ Certos modelos podem ter `NaN` em métricas específicas quando a condição nã
 
 6. **Valores Faltantes**: Se não houver deteções ou ground truth, usar listas vazias `[]`, não `NA`.
 
-7. **Coluna `error`**: Apenas KSWIN tem esta coluna no formato completo. Pode omitir completamente.
+7. **Coluna `error`**: Opcional para qualquer detector. É preenchida quando ocorre exceção durante geração.
 
 8. **Encoding**: Sempre salvar como UTF-8.
 
@@ -522,16 +547,16 @@ Certos modelos podem ter `NaN` em métricas específicas quando a condição nã
 
 ## Resumo Rápido por Detector
 
-| Detector | Nº Colunas | Parâmetros Específicos | Tem coluna `error`? |
-|----------|------------|------------------------|---------------------|
-| ADWIN | 14 | `delta`, `ma_window`, `min_gap_samples` | ❌ |
-| Page-Hinkley | 16 | `lambda_`, `delta`, `alpha`, `ma_window`, `min_gap_samples` | ❌ |
-| KSWIN | 17 | `alpha`, `window_size`, `stat_size`, `ma_window`, `min_gap_samples` | ✅ |
-| HDDM_A | 16 | `drift_confidence`, `warning_confidence`, `two_side_option`, `ma_window`, `min_gap_samples` | ❌ |
-| HDDM_W | 17 | `drift_confidence`, `warning_confidence`, `lambda_option`, `two_side_option`, `ma_window`, `min_gap_samples` | ❌ |
-| FLOSS | 15 | `window_size`, `regime_threshold`, `regime_landmark`, `min_gap_samples` | ❌ |
+| Detector | Nº Colunas (completas, sem `error`) | Parâmetros Específicos | Coluna `error` |
+|----------|-------------------------------------|------------------------|----------------|
+| ADWIN | 14 | `delta`, `ma_window`, `min_gap_samples` | Opcional (em falhas) |
+| Page-Hinkley | 16 | `lambda_`, `delta`, `alpha`, `ma_window`, `min_gap_samples` | Opcional (em falhas) |
+| KSWIN | 16 | `alpha`, `window_size`, `stat_size`, `ma_window`, `min_gap_samples` | Opcional (em falhas) |
+| HDDM_A | 16 | `drift_confidence`, `warning_confidence`, `two_side_option`, `ma_window`, `min_gap_samples` | Opcional (em falhas) |
+| HDDM_W | 17 | `drift_confidence`, `warning_confidence`, `lambda_option`, `two_side_option`, `ma_window`, `min_gap_samples` | Opcional (em falhas) |
+| FLOSS | 15 | `window_size`, `regime_threshold`, `regime_landmark`, `min_gap_samples` | Opcional (em falhas) |
 
-**Colunas comuns a todos** (sempre no final): `duration_samples`, `duration_seconds`, `gt_indices`, `gt_times`, `det_indices`, `det_times`, `n_detections`, `n_ground_truth`, `processing_time`
+**No formato completo, as colunas comuns no final** são: `duration_samples`, `duration_seconds`, `gt_indices`, `gt_times`, `det_indices`, `det_times`, `n_detections`, `n_ground_truth`, `processing_time`
 
 ---
 

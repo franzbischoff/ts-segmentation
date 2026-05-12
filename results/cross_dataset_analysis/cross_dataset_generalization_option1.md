@@ -1,6 +1,6 @@
 # Cross-Dataset Generalization Analysis (Option 1)
 
-Generated: 2025-12-14T21:22:47.559156
+Generated: 2026-05-12T19:06:10.629019
 
 ## Executive Summary
 
@@ -21,12 +21,12 @@ This analysis shows the **performance ceiling** of each detector when properly t
 
 | Rank | Detector | Mean F3 | Median F3 | Std Dev | Min | Max | CV% | Avg Gap |
 |------|----------|---------|-----------|---------|-----|-----|-----|----------|
-| 🥇 | floss | 0.4285 | 0.4768 | 0.1323 | 0.2788 | 0.5299 | 30.9% | 0.0211 |
-| 🥈 | kswin | 0.3176 | 0.3080 | 0.1085 | 0.2142 | 0.4305 | 34.2% | 0.0442 |
-| 🥉 | page_hinkley | 0.3132 | 0.2737 | 0.0845 | 0.2557 | 0.4103 | 27.0% | 0.0516 |
-| 4 | hddm_a | 0.2997 | 0.3019 | 0.0739 | 0.2248 | 0.3725 | 24.6% | 0.0460 |
-| 5 | adwin | 0.2879 | 0.2435 | 0.1185 | 0.1980 | 0.4221 | 41.1% | 0.0424 |
-| 6 | hddm_w | 0.1527 | 0.0617 | 0.1955 | 0.0193 | 0.3772 | 128.0% | 0.0212 |
+| 🥇 | floss | 0.4306 | 0.4790 | 0.1322 | 0.2810 | 0.5317 | 30.7% | 0.0214 |
+| 🥈 | kswin | 0.3203 | 0.3115 | 0.1082 | 0.2168 | 0.4326 | 33.8% | 0.0448 |
+| 🥉 | page_hinkley | 0.3152 | 0.2775 | 0.0833 | 0.2573 | 0.4107 | 26.4% | 0.0527 |
+| 4 | hddm_a | 0.3022 | 0.3052 | 0.0736 | 0.2271 | 0.3742 | 24.4% | 0.0472 |
+| 5 | adwin | 0.2890 | 0.2451 | 0.1184 | 0.1989 | 0.4231 | 41.0% | 0.0432 |
+| 6 | hddm_w | 0.1534 | 0.0618 | 0.1965 | 0.0194 | 0.3790 | 128.1% | 0.0215 |
 
 **Interpretation**:
 - **Mean F3**: Average performance ceiling across 3 datasets (higher = better)
@@ -44,12 +44,12 @@ Lower CV% = more consistent performance across different datasets
 
 | Rank | Detector | CV% | Interpretation |
 |------|----------|-----|----------------|
-| 1 | hddm_a | 24.6% | Good |
-| 2 | page_hinkley | 27.0% | Good |
-| 3 | floss | 30.9% | Moderate |
-| 4 | kswin | 34.2% | Moderate |
-| 5 | adwin | 41.1% | Variable |
-| 6 | hddm_w | 128.0% | Variable |
+| 1 | hddm_a | 24.4% | Good |
+| 2 | page_hinkley | 26.4% | Good |
+| 3 | floss | 30.7% | Moderate |
+| 4 | kswin | 33.8% | Moderate |
+| 5 | adwin | 41.0% | Variable |
+| 6 | hddm_w | 128.1% | Variable |
 
 ---
 
@@ -58,154 +58,154 @@ Lower CV% = more consistent performance across different datasets
 ### ADWIN
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.2879**
-- Median: 0.2435
-- Std Dev: 0.1185
-- Range: [0.1980, 0.4221]
-- CV%: 41.1%
-- Avg Generalization Gap: 0.0424
+- Mean Cross-Fold F3: **0.2890**
+- Median: 0.2451
+- Std Dev: 0.1184
+- Range: [0.1989, 0.4231]
+- CV%: 41.0%
+- Avg Generalization Gap: 0.0432
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.4221 | 0.3768 | 0.0453 |
-| malignantventricular | 0.2435 | 0.2389 | 0.0046 |
-| vtachyarrhythmias | 0.1980 | 0.2753 | 0.0773 |
+| afib_paroxysmal | 0.4231 | 0.3774 | 0.0457 |
+| malignantventricular | 0.2451 | 0.2392 | 0.0059 |
+| vtachyarrhythmias | 0.1989 | 0.2769 | 0.0780 |
 
 **Insights**:
-- Best on: **afib_paroxysmal** (F3=0.4221)
-- Weakest on: vtachyarrhythmias (F3=0.1980)
-- Performance variation: 53.1% between best and worst dataset
+- Best on: **afib_paroxysmal** (F3=0.4231)
+- Weakest on: vtachyarrhythmias (F3=0.1989)
+- Performance variation: 53.0% between best and worst dataset
 
 ### FLOSS
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.4285**
-- Median: 0.4768
-- Std Dev: 0.1323
-- Range: [0.2788, 0.5299]
-- CV%: 30.9%
-- Avg Generalization Gap: 0.0211
+- Mean Cross-Fold F3: **0.4306**
+- Median: 0.4790
+- Std Dev: 0.1322
+- Range: [0.2810, 0.5317]
+- CV%: 30.7%
+- Avg Generalization Gap: 0.0214
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.4768 | 0.4770 | 0.0002 |
-| malignantventricular | 0.2788 | 0.3234 | 0.0446 |
-| vtachyarrhythmias | 0.5299 | 0.5483 | 0.0184 |
+| afib_paroxysmal | 0.4790 | 0.4794 | 0.0004 |
+| malignantventricular | 0.2810 | 0.3253 | 0.0443 |
+| vtachyarrhythmias | 0.5317 | 0.5513 | 0.0196 |
 
 **Insights**:
-- Best on: **vtachyarrhythmias** (F3=0.5299)
-- Weakest on: malignantventricular (F3=0.2788)
-- Performance variation: 47.4% between best and worst dataset
+- Best on: **vtachyarrhythmias** (F3=0.5317)
+- Weakest on: malignantventricular (F3=0.2810)
+- Performance variation: 47.2% between best and worst dataset
 
 ### HDDM_A
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.2997**
-- Median: 0.3019
-- Std Dev: 0.0739
-- Range: [0.2248, 0.3725]
-- CV%: 24.6%
-- Avg Generalization Gap: 0.0460
+- Mean Cross-Fold F3: **0.3022**
+- Median: 0.3052
+- Std Dev: 0.0736
+- Range: [0.2271, 0.3742]
+- CV%: 24.4%
+- Avg Generalization Gap: 0.0472
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.3725 | 0.3451 | 0.0274 |
-| malignantventricular | 0.3019 | 0.2129 | 0.0890 |
-| vtachyarrhythmias | 0.2248 | 0.2032 | 0.0216 |
+| afib_paroxysmal | 0.3742 | 0.3464 | 0.0278 |
+| malignantventricular | 0.3052 | 0.2143 | 0.0909 |
+| vtachyarrhythmias | 0.2271 | 0.2041 | 0.0230 |
 
 **Insights**:
-- Best on: **afib_paroxysmal** (F3=0.3725)
-- Weakest on: vtachyarrhythmias (F3=0.2248)
-- Performance variation: 39.7% between best and worst dataset
+- Best on: **afib_paroxysmal** (F3=0.3742)
+- Weakest on: vtachyarrhythmias (F3=0.2271)
+- Performance variation: 39.3% between best and worst dataset
 
 ### HDDM_W
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.1527**
-- Median: 0.0617
-- Std Dev: 0.1955
-- Range: [0.0193, 0.3772]
-- CV%: 128.0%
-- Avg Generalization Gap: 0.0212
+- Mean Cross-Fold F3: **0.1534**
+- Median: 0.0618
+- Std Dev: 0.1965
+- Range: [0.0194, 0.3790]
+- CV%: 128.1%
+- Avg Generalization Gap: 0.0215
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.3772 | 0.3282 | 0.0490 |
-| malignantventricular | 0.0617 | 0.0503 | 0.0114 |
-| vtachyarrhythmias | 0.0193 | 0.0161 | 0.0032 |
+| afib_paroxysmal | 0.3790 | 0.3294 | 0.0496 |
+| malignantventricular | 0.0618 | 0.0503 | 0.0115 |
+| vtachyarrhythmias | 0.0194 | 0.0161 | 0.0033 |
 
 **Insights**:
-- Best on: **afib_paroxysmal** (F3=0.3772)
-- Weakest on: vtachyarrhythmias (F3=0.0193)
+- Best on: **afib_paroxysmal** (F3=0.3790)
+- Weakest on: vtachyarrhythmias (F3=0.0194)
 - Performance variation: 94.9% between best and worst dataset
 
 ### KSWIN
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.3176**
-- Median: 0.3080
-- Std Dev: 0.1085
-- Range: [0.2142, 0.4305]
-- CV%: 34.2%
-- Avg Generalization Gap: 0.0442
+- Mean Cross-Fold F3: **0.3203**
+- Median: 0.3115
+- Std Dev: 0.1082
+- Range: [0.2168, 0.4326]
+- CV%: 33.8%
+- Avg Generalization Gap: 0.0448
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.4305 | 0.3929 | 0.0376 |
-| malignantventricular | 0.3080 | 0.2266 | 0.0814 |
-| vtachyarrhythmias | 0.2142 | 0.2278 | 0.0136 |
+| afib_paroxysmal | 0.4326 | 0.3942 | 0.0384 |
+| malignantventricular | 0.3115 | 0.2278 | 0.0837 |
+| vtachyarrhythmias | 0.2168 | 0.2290 | 0.0122 |
 
 **Insights**:
-- Best on: **afib_paroxysmal** (F3=0.4305)
-- Weakest on: vtachyarrhythmias (F3=0.2142)
-- Performance variation: 50.2% between best and worst dataset
+- Best on: **afib_paroxysmal** (F3=0.4326)
+- Weakest on: vtachyarrhythmias (F3=0.2168)
+- Performance variation: 49.9% between best and worst dataset
 
 ### PAGE_HINKLEY
 
 **Summary Statistics**:
-- Mean Cross-Fold F3: **0.3132**
-- Median: 0.2737
-- Std Dev: 0.0845
-- Range: [0.2557, 0.4103]
-- CV%: 27.0%
-- Avg Generalization Gap: 0.0516
+- Mean Cross-Fold F3: **0.3152**
+- Median: 0.2775
+- Std Dev: 0.0833
+- Range: [0.2573, 0.4107]
+- CV%: 26.4%
+- Avg Generalization Gap: 0.0527
 
 **Per-Dataset Performance**:
 
 | Dataset | Cross-Fold F3 | Intra-Fold F3 | Gap |
 |---------|---------------|---------------|-----|
-| afib_paroxysmal | 0.4103 | 0.3654 | 0.0449 |
-| malignantventricular | 0.2737 | 0.2177 | 0.0560 |
-| vtachyarrhythmias | 0.2557 | 0.2019 | 0.0538 |
+| afib_paroxysmal | 0.4107 | 0.3656 | 0.0451 |
+| malignantventricular | 0.2775 | 0.2189 | 0.0586 |
+| vtachyarrhythmias | 0.2573 | 0.2028 | 0.0545 |
 
 **Insights**:
-- Best on: **afib_paroxysmal** (F3=0.4103)
-- Weakest on: vtachyarrhythmias (F3=0.2557)
-- Performance variation: 37.7% between best and worst dataset
+- Best on: **afib_paroxysmal** (F3=0.4107)
+- Weakest on: vtachyarrhythmias (F3=0.2573)
+- Performance variation: 37.4% between best and worst dataset
 
 ---
 
 ## Key Findings
 
-1. **Highest Average Performance**: FLOSS (mean F3=0.4285)
+1. **Highest Average Performance**: FLOSS (mean F3=0.4306)
    - This detector achieves the best performance when properly tuned per dataset
 
-2. **Most Consistent**: HDDM_A (CV=24.6%)
+2. **Most Consistent**: HDDM_A (CV=24.4%)
    - This detector shows most stable performance across different datasets
 
 3. **Trade-off**: Best performance (floss) vs best consistency (hddm_a)
 
-4. **Best Generalization**: FLOSS (avg gap=0.0211)
+4. **Best Generalization**: FLOSS (avg gap=0.0214)
    - Smallest average gap between intra-fold and cross-fold scores
 
 ---
@@ -215,33 +215,33 @@ Lower CV% = more consistent performance across different datasets
 ### When to Use Each Detector
 
 **FLOSS**:
-- ✅ **Recommended**: Excellent average performance (F3=0.4285)
-- ⚠️  Variable across datasets (CV=30.9%)
+- ✅ **Recommended**: Excellent average performance (F3=0.4306)
+- ⚠️  Variable across datasets (CV=30.7%)
 - Best use case: vtachyarrhythmias
 
 **KSWIN**:
-- ⚠️  Good option: Solid performance (F3=0.3176)
-- ⚠️  Variable across datasets (CV=34.2%)
+- ⚠️  Good option: Solid performance (F3=0.3203)
+- ⚠️  Variable across datasets (CV=33.8%)
 - Best use case: afib_paroxysmal
 
 **PAGE_HINKLEY**:
-- ⚠️  Good option: Solid performance (F3=0.3132)
-- ⚠️  Variable across datasets (CV=27.0%)
+- ⚠️  Good option: Solid performance (F3=0.3152)
+- ⚠️  Variable across datasets (CV=26.4%)
 - Best use case: afib_paroxysmal
 
 **HDDM_A**:
-- 🔻 Consider alternatives: Lower performance (F3=0.2997)
-- ✅ Consistent across datasets (CV=24.6%)
+- ⚠️  Good option: Solid performance (F3=0.3022)
+- ✅ Consistent across datasets (CV=24.4%)
 - Best use case: afib_paroxysmal
 
 **ADWIN**:
-- 🔻 Consider alternatives: Lower performance (F3=0.2879)
-- ⚠️  Variable across datasets (CV=41.1%)
+- 🔻 Consider alternatives: Lower performance (F3=0.2890)
+- ⚠️  Variable across datasets (CV=41.0%)
 - Best use case: afib_paroxysmal
 
 **HDDM_W**:
-- 🔻 Consider alternatives: Lower performance (F3=0.1527)
-- ⚠️  Variable across datasets (CV=128.0%)
+- 🔻 Consider alternatives: Lower performance (F3=0.1534)
+- ⚠️  Variable across datasets (CV=128.1%)
 - Best use case: afib_paroxysmal
 
 ---

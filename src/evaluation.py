@@ -207,9 +207,9 @@ def latency_weighted_f1(
     tp_weight_sum = sum(tp_weights)
 
     # Calculate primary metrics
-    # For precision_star: we consider TP count (not weight) + FP count in denominator
-    # but weight the numerator. This makes precision_star = weight_ratio when no FPs
-    precision_star = tp_weight_sum / (tp_count + fp_count) if (tp_count + fp_count) > 0 else 0.0
+    # Literature-aligned weighted precision: latency affects TP utility via tp_weight_sum,
+    # while FP remains an unweighted alarm count term in the denominator.
+    precision_star = tp_weight_sum / (tp_weight_sum + fp_count) if (tp_weight_sum + fp_count) > 0 else 0.0
     recall_star = tp_weight_sum / len(gt) if len(gt) > 0 else 0.0
     f1_star = (2 * precision_star * recall_star / (precision_star + recall_star)
                if (precision_star + recall_star) > 0 else 0.0)
