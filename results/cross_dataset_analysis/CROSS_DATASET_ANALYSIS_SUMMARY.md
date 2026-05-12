@@ -1,7 +1,7 @@
 # Cross-Dataset Analysis (Atualização 2025-11-25)
 
-**Script**: `python -m src.cross_dataset_analysis`  
-**Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`  
+**Script**: `python -m src.cross_dataset_analysis`
+**Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`
 **Mudança chave**: Todas as métricas passaram a exigir **cobertura em todos os datasets** (`n_datasets=3`). Isso elimina o antigo “specialist loophole”, onde combinações inexistentes nos datasets menores inflavam o score macro.
 
 ---
@@ -29,9 +29,9 @@
 | Rank | Detector | Melhor Configuração | Score | Std |
 |------|----------|---------------------|-------|-----|
 | **1** | **FLOSS** | `window=75`, `thr=0.7`, `landmark=4.0`, `gap=1000` | **0.4491** | 0.2244 |
-| 2 | Page-Hinkley | `λ=10`, `δ=0.005`, `ma=10`, `gap=1000` | 0.3345 | 0.2018 |
-| 3 | KSWIN | `alpha=0.005`, `window=500`, `stat=50`, `ma=50`, `gap=1000` | 0.3773 | 0.2114 |
-| 4 | ADWIN | `delta=0.015`, `ma=250`, `gap=1000` | 0.3629 | 0.2145 |
+| 2 | KSWIN | `alpha=0.005`, `window=500`, `stat=50`, `ma=50`, `gap=1000` | 0.3773 | 0.2114 |
+| 3 | ADWIN | `delta=0.015`, `ma=250`, `gap=1000` | 0.3629 | 0.2145 |
+| 4 | Page-Hinkley | `λ=10`, `δ=0.005`, `ma=10`, `gap=1000` | 0.3345 | 0.2018 |
 | 5 | HDDM_A | `drift=0.005`, `warn=0.01`, `ma=1`, `gap=1000` | 0.3273 | 0.1944 |
 | 6 | HDDM_W | `drift=0.005`, `warn=0.001`, `λ=0.2`, `ma=1`, `gap=1000` | 0.2843 | 0.2567 |
 
@@ -71,7 +71,7 @@ results/cross_dataset_analysis/
 
 ## ✅ Próximos Passos Sugeridos
 
-1. **Comparações atualizadas**: rodar `src.compare_detectors` usando as novas combinações macro para alimentar `results/comparisons/`.
+1. **Comparações atualizadas**: rodar `src.compare_detectors` usando as novas combinações macro para alimentar `comparisons/<dataset>/`.
 2. **Documentação**: Referenciar explicitamente o parâmetro `--min-datasets` no README principal do projeto.
 3. **Novos gráficos**: Gerar heatmaps com a métrica macro para comunicar as regiões “generalistas” por detector.
 4. **Ensembles**: investigar “FLOSS + detector clássico” para reduzir FP mantendo o alto recall evidenciado no file-weighted.

@@ -3,16 +3,18 @@
 **Date**: 2025-11-24
 **Subject**: Discrepancies between File-Weighted and True Macro-Average Rankings
 
+> ⚠️ **Nota histórica**: este documento descreve o estado **pré-correção**. O pipeline atual já exige cobertura `n_datasets=3`; para o estado canônico atualizado, consulte `CROSS_DATASET_ANALYSIS_SUMMARY.md` e os READMEs por detector.
+
 ---
 
 ## 🚨 Executive Summary
 
-Our analysis of the ranking methodologies revealed a critical insight: **The "True Macro-Average" calculation currently contains a "Specialist Loophole"** that favors configurations present in only one dataset over true generalists.
+Our analysis of the ranking methodologies revealed a critical insight: **The "True Macro-Average" calculation (before the coverage filter) contained a "Specialist Loophole"** that favored configurations present in only one dataset over true generalists.
 
 - **FLOSS, KSWIN, HDDM_A, HDDM_W**: 100% of configurations are present in all 3 datasets. Rankings are stable and reliable.
 - **ADWIN & Page-Hinkley**: Top-ranked "True Macro" configurations appear in only **1 dataset** (Rank #1), while the best "Generalist" configurations (3 datasets) are ranked much lower (~#100).
 
-**Conclusion**: The current True Macro-Average implementation (using `mean(axis=1)` which skips NaNs) unfairly penalizes generalists that attempt hard datasets, while rewarding specialists that "drop out" (return NaN) on those datasets.
+**Conclusion (historical)**: The former True Macro-Average implementation (using `mean(axis=1)` which skips NaNs) unfairly penalized generalists that attempted hard datasets, while rewarding specialists that "drop out" (return NaN) on those datasets.
 
 ---
 
@@ -52,8 +54,8 @@ We analyzed the "Coverage" (percentage of configurations present in all 3 datase
 | **KSWIN** | 1,280 | 1,280 | **100%** | ✅ **Robust** |
 | **HDDM_A** | 640 | 640 | **100%** | ✅ **Robust** |
 | **HDDM_W** | 2,560 | 2,560 | **100%** | ✅ **Robust** |
-| **ADWIN** | 495 | 594 | **83%** | ⚠️ **Loophole Active** |
-| **Page-Hinkley**| 384 | 600 | **64%** | ⚠️ **Loophole Active** |
+| **ADWIN** | 495 | 594 | **83%** | ⚠️ **Loophole observed (pre-filter)** |
+| **Page-Hinkley**| 384 | 600 | **64%** | ⚠️ **Loophole observed (pre-filter)** |
 
 ### Detailed Findings
 
@@ -80,7 +82,7 @@ We analyzed the "Coverage" (percentage of configurations present in all 3 datase
 ## 💡 Recommendations
 
 1.  **Trust FLOSS**: It is the only detector that combines high performance with 100% cross-dataset stability.
-2.  **Enforce Coverage**: Future "True Macro-Average" calculations should **require `n_datasets=3`** or treat missing values as 0.0 to close the loophole.
+2.  **Enforce Coverage**: "True Macro-Average" calculations should **require `n_datasets=3`** (já aplicado no pipeline atual) ou tratar valores ausentes como 0.0 para fechar o loophole.
 3.  **Discard ADWIN/Page-Hinkley for General Purpose**: Unless creating a dataset-specific pipeline, these detectors show poor generalization capabilities compared to FLOSS/KSWIN.
 
 ---

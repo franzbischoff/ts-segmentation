@@ -1,5 +1,108 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 14 — 2026-05-12 (Limpeza Final de Documentação)
+
+### ✅ Trabalho de Hoje
+
+**Objetivo**: Remover inconsistências finais na documentação e alinhar a memória do projecto com o estado actual do repositório
+
+#### 1. Limpeza de Artefactos Redundantes
+- Removidos os `*.jsonl` que tinham `*.csv` equivalente em `results/`
+- Mantidos os `*.json` de relatórios, sumários e execuções two-fold, por não serem duplicados directos
+
+#### 2. Correções de Documentação
+- `results/README.md`: corrigido o padrão de entrada de `data/<dataset>_*.csv` e normalizados os nomes reais dos ficheiros de análise cross-dataset
+- `docs/visualizations_guide.md`: actualizado para 9 PNGs na Camada 1 e para os nomes reais das saídas da Camada 2
+- `results/afib_paroxysmal/adwin/README.md`: corrigido `afib_regimes` para `afib_paroxysmal`
+- `.github/copilot-instructions.md`: corrigido o caminho de `docs/evaluation_metrics.md`
+
+### 📌 Estado Actual
+- `results/` ficou sem `*.jsonl` redundantes com `*.csv`
+- A documentação principal já não refere caminhos/nomes desactualizados para os artefactos activos
+- O projecto permanece pronto para revisão final antes da publicação
+
+**Última Atualização**: 2026-05-12 (Sessão 14 - documentação e memória alinhadas)
+
+---
+
+## RESUMO EXECUTIVO DA SESSÃO 13 — 2025-12-23 (Auditoria e Limpeza de Documentação) ✅
+
+### ✅ Trabalho de Hoje
+
+**Objetivo**: Auditar toda documentação do projeto para verificar consistência, informação desatualizada e contradições antes da publicação
+
+#### 1. Auditoria Completa Realizada
+- Leu todos os ficheiros em `docs/`, `results/`, `comparisons/`
+- Verificou 35+ ficheiros em `tmp/` (marcados como obsoletos)
+- Identificou **5 ficheiros com problemas** (crítico a moderado)
+
+#### 2. Problemas Identificados e Corrigidos
+
+**`docs/visualizations_guide.md`** (CRÍTICO)
+- ❌ Mencionava script removido (`visualize_comparison.py`)
+- ❌ Fases confusas (Fase 1/2/3 vs Camadas 1/2/3)
+- ❌ Sem menção a análise SHAP (Sessão 12)
+- ✅ **Corrigido**: Reescreveu contexto como "3 camadas" (per-detector, cross-dataset, SHAP), adicionou scripts novos
+
+**`docs/evaluation_metrics.md`** (MODERADO)
+- ❌ Não mencionava agregação macro/micro cross-dataset
+- ❌ Sem contexto das Opções 1, 2, 3
+- ✅ **Corrigido**: Adicionada seção 6 com as 3 opções (ceiling, portability, robustness) com interpretações completas
+
+**`results/README.md`** (MODERADO)
+- ❌ Invertia realidade: dizia `results/comparisons/` era ativo quando é legado
+- ❌ Faltava documentação de `models_aggregated.csv` (novo em Sessão 12)
+- ❌ Faltava menção a `--append` mode
+- ✅ **Corrigido**:
+  - Clarificado `comparisons/<dataset>/` é ativo, `results/comparisons/` é histórico
+  - Adicionado "Cross-Dataset Analysis" (Op1, Op2, Op3)
+  - Adicionado "Agregação de Métricas" (models_aggregated.csv)
+  - Adicionado "Modo 2: Append Mode" no fluxo
+  - Expandido para 4 modos completos
+
+**`comparisons/afib_paroxysmal/comparative_report.md`** (MENOR)
+- ❌ Data desatualizada (2025-11-13, 10 dias desatualizada)
+- ✅ **Corrigido**: Atualizado para 2025-12-22
+
+**`docs/predictions_csv_format_specification.md`** (MENOR)
+- ⚠️ Não tinha documentação sobre `models_aggregated.csv` (novo)
+- ✅ **Corrigido**: Adicionada seção "Formato Agregado: models_aggregated.csv" com:
+  - Estrutura completa (model_id, parâmetros, n_records, 20 métricas)
+  - Exemplo de saída
+  - Diferenças vs predictions_intermediate.csv
+  - Notas sobre NaN
+
+#### 3. Ficheiros **NÃO** Corrigidos (Conforme Pedido)
+- ✅ **`tmp/`**: Mantido como está (35+ ficheiros obsoletos preservados para histórico)
+
+### 📊 Sumário de Correções
+
+| Ficheiro | Severidade | Problema | Status |
+|----------|-----------|----------|--------|
+| docs/visualizations_guide.md | 🔴 CRÍTICO | Script removido, fases confusas, SHAP omitido | ✅ Corrigido |
+| docs/evaluation_metrics.md | 🟡 MODERADO | Sem contexto macro/agregação | ✅ Corrigido |
+| results/README.md | 🟡 MODERADO | Inverteu histórico, faltam artefatos | ✅ Corrigido |
+| comparisons/afib_paroxysmal/comparative_report.md | 🟡 MODERADO | Data desatualizada | ✅ Corrigido |
+| docs/predictions_csv_format_specification.md | 🟢 MENOR | Falta formato agregado | ✅ Corrigido |
+
+### 🎯 Documentação Agora
+
+- ✅ Todas as instruções operacionais atualizadas
+- ✅ Arquitetura de análise clara (3 camadas)
+- ✅ Todas as opções documentadas (Opções 1, 2, 3)
+- ✅ Novos artefatos `models_aggregated.csv` documentados
+- ✅ Pipeline completo incluindo `--append` mode
+- ✅ Sem contradições entre ficheiros
+
+### 🔄 Pronto para Publicação
+
+Documentação está **congruente, rigorosa e sem contradições**. Pronta para:
+- Publicação académica
+- Reprodução por terceiros
+- Apresentação aos stakeholders
+
+---
+
 ## RESUMO EXECUTIVO DA SESSÃO 12 — 2025-12-22 (Preparação para Análise SHAP)
 
 ### ✅ Trabalho de Hoje
@@ -14,7 +117,7 @@
   - Não captura interações entre parâmetros
   - Não distingue importância global vs local
   - Não quantifica contribuição relativa (apenas correlação univariada)
-  
+
 **Métodos avançados não utilizados** (discussão teórica):
 - ❌ **SHAP** (Shapley Additive exPlanations) - contribuição marginal
 - ❌ **FIRM** (Feature Importance Ranking Measure)
@@ -912,7 +1015,7 @@ Todos os datasets foram extraídos do **Zenodo 6879233** (afib_regimes) e proces
 **Nota**: DDM e EDDM foram removidos (inadequados para séries temporais contínuas).
 
 #### R (1 detector integrado)
-6. **FLOSS** - Fast Low-rank Online Subspace Tracking ✅
+6. **FLOSS** - Fast Lowcost Online Semantic Segmentation ✅
    - Implementado em R (pacote `false.alarm`)
    - Integração R→Python validada
    - 989,280 avaliações completas

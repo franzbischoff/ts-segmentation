@@ -1,48 +1,38 @@
-# Dataset Comparisons: `malignantventricular`
+# Dataset Comparisons: `malignantventricular` — HISTÓRICO VISUAL
 
-**Last Updated:** 2025-12-15 16:56:11 (✅ SUCCESS)
+> ⚠️ **IMPORTANTE**: Esta pasta contém **visualizações históricas** apenas.
+>
+> **Para números finais e rankings**, consultar: [`comparisons/malignantventricular/`](../../../../comparisons/malignantventricular/)
 
-
-**Dataset**: Malignant Ventricular Arrhythmias
-**Ficheiros**: 22
-**Eventos de Regime**: 592
-**Samples Totais**: 11.6M @ 250 Hz
-**Lead**: II
+**Dataset**: Malignant Ventricular Arrhythmias | **Ficheiros**: 22 | **Eventos**: 592
 
 ---
 
-## 📊 Resumo Executivo
+## 📊 Visualizações Disponíveis
 
-### Status
-- ✅ Dados processados
-- ✅ 6 detectores avaliados
-- ✅ Relatórios `.md` e `.csv` disponíveis em `./`
-- 🔜 Visualizações a ser geradas (Fase 2)
-
-### Top Detectors (por F3-Weighted)
-
-| Rank | Detector | F3-Weighted | Recall@10s | FP/min |
-|------|----------|---|---|---|
-| 1 | FLOSS | TBD | TBD | TBD |
-| 2 | KSWIN | TBD | TBD | TBD |
-| 3 | Page-Hinkley | TBD | TBD | TBD |
+Esta pasta contém gráficos PNG:
+- **`visualizations/radar_6detectors.png`** — Visão holística (6 detectores × 6 métricas)
+- **`visualizations/f3_vs_fp_scatter.png`** — Trade-off performance vs taxa falsos alarmes
+- **`visualizations/heatmap_metrics_comparison.png`** — Sensibilidade de parâmetros
+- **`visualizations/parameter_tradeoffs.png`** — Superfície de trade-offs 3D
 
 ---
 
-## 📁 Ficheiros Disponíveis
+## 📍 Números Canônicos
 
-### Relatórios Gerados
-- **`comparative_report.md`** - Análise detalhada
-- **`detector_rankings.csv`** - Rankings
-- **`detector_summary.csv`** - Melhores configs
-- **`constraint_tradeoffs.csv`** - Trade-offs
-- **`robustness.csv`** - Robustez
+Para análise quantitativa, consultar **aqui**:
 
-### Visualizações (Fase 2)
-- `visualizations/radar_6detectors.png`
-- `visualizations/f3_vs_fp_scatter.png`
-- `visualizations/heatmap_metrics_comparison.png`
-- `visualizations/parameter_tradeoffs.png`
+| Ficheiro | Conteúdo |
+|----------|----------|
+| [`comparisons/malignantventricular/comparative_report.md`](../../../../comparisons/malignantventricular/comparative_report.md) | Relatório comparativo detalhado |
+| [`comparisons/malignantventricular/detector_rankings.csv`](../../../../comparisons/malignantventricular/detector_rankings.csv) | Rankings por métrica |
+| [`comparisons/malignantventricular/detector_summary.csv`](../../../../comparisons/malignantventricular/detector_summary.csv) | Melhores configurações |
+| [`comparisons/malignantventricular/constraint_tradeoffs.csv`](../../../../comparisons/malignantventricular/constraint_tradeoffs.csv) | Análise de trade-offs |
+| [`comparisons/malignantventricular/robustness.csv`](../../../../comparisons/malignantventricular/robustness.csv) | Robustez paramétrica |
+
+---
+
+**Gerador**: `src.visualize_comparison_by_dataset` | **Data**: 2025-12-15 | **Status**: Arquivo visual
 
 ---
 
@@ -62,4 +52,4 @@ Vendo números atualizados em `comparative_report.md` + `detector_summary.csv`
 ---
 
 **Última Atualização**: 2025-12-15
-**Status**: Estrutura pronta; dados a ser preenchidos com execução de `compare_detectors.py`
+**Status**: Histórico visual; números canônicos em `comparisons/malignantventricular/`

@@ -1,13 +1,52 @@
-# Guia de Visualizações do Grid Search
+# Guia de Visualizações
 
-Este documento descreve as visualizações geradas pelo script `src/visualize_results.py` para análise dos resultados do grid search de parâmetros.
+Documentação das ferramentas de visualização utilizadas na pipeline de análise de detectores de mudança de regime.
 
-## Geração das Visualizações
+## Contexto: Arquitetura de Análise
+
+A pipeline de análise compreende **3 camadas distintas**:
+
+### Camada 1: Visualizações Por-Detector (Grid Search)
+**Script**: `src/visualize_results.py`
+**Entrada**: `results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv`
+**Saída**: 9 ficheiros PNG (PR scatter, Pareto front, 4 heatmaps, distribuições, 3D, sensibilidade)
+**Uso**: Exploração rápida de performance local (1 detector × 1 dataset)
+
+### Camada 2: Análise Cross-Dataset (Robustez)
+**Scripts**:
+- `src/aggregate_twofold_analysis.py` → Opção 1 (ceiling com tuning local / cross-dataset generalization)
+- `src/test_parameter_portability.py` → Opção 2 (parameter transfer)
+- `src/unified_robustness_score.py` → Opção 3 (robustness unificado)
+
+**Entrada**: Todos os `metrics_comprehensive_with_nab.csv` (6 detectores × 3 datasets)
+**Saída**:
+- `results/cross_dataset_analysis/cross_dataset_generalization_option1.{csv,md}`
+- `results/cross_dataset_analysis/parameter_portability_option2.{csv,md}`
+- `results/cross_dataset_analysis/unified_robustness_option3.{csv,md}`
+- `results/cross_dataset_analysis/option123_summary.png`
+**Uso**: Comparar robustez e portabilidade entre detectores (macro-análise)
+
+### Camada 3: Análise de Parâmetros (Interpretabilidade)
+**Scripts**:
+- `src/simplify_metrics_for_analysis.py` → Agregação por modelo
+- (Análise SHAP em R: projeto externo)
+
+**Entrada**: `results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv`
+**Saída**: `results/<dataset>/<detector>/models_aggregated.csv` (1 linha/modelo)
+**Uso**: Preparar dados para análise SHAP/interpretabilidade de parâmetros
+
+**Este documento foca na Camada 1** (visualizações por-detector). Para Camadas 2 e 3, consulte:
+- [`results/cross_dataset_analysis/README.md`](../results/cross_dataset_analysis/README.md) — Opções 1, 2, 3 completas
+- [`evaluation_metrics.md`](evaluation_metrics.md) — Definições rigorosas de métricas
+
+---
+
+## Geração das Visualizações (Camada 1)
 
 ```bash
 python -m src.visualize_results \
-    --metrics results/metrics_comprehensive_with_nab.csv \
-    --output-dir results/visualizations
+  --metrics results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv \
+  --output-dir results/<dataset>/<detector>/visualizations
 ```
 
 ## Gráficos Produzidos
@@ -70,17 +109,16 @@ Identificar conjunto de configurações ótimas para diferentes cenários clíni
 **Descrição**: Mapas de calor 2D mostrando efeito de delta × ma_window.
 
 **Detalhes**:
-- **Linhas**: Valores de `delta` (threshold do detector)
-- **Colunas**: Valores de `ma_window` (janela média móvel)
-- **Painéis**: Diferentes valores de `min_gap_samples` (top 3)
-- **Cor**: Valor da métrica (vermelho→amarelo→verde para maximize; invertido para FP/min)
+- **Linhas/Colunas**: Os dois parâmetros com maior variação no grid (auto-detectados por detector). Exemplos: `delta` × `ma_window` para ADWIN; `window_size` × `regime_threshold` para FLOSS; `alpha` × `window_size` para KSWIN.
+- **Painéis**: Top 3 valores de `min_gap_samples` (ou outro parâmetro de agrupamento, se `min_gap_samples` não variar)
+- **Cor**: Valor da métrica (vermelho→amarelo→verde para maximizar; invertido para FP/min)
 - **Anotações**: Valor numérico em cada célula
 
 **Como interpretar**:
 - Regiões quentes = melhores configurações
 - Gradientes suaves = robustez (pequenas variações não afetam muito)
 - Picos isolados = configuração frágil (evitar)
-- Comparar painéis mostra interação com min_gap_samples
+- Comparar painéis mostra interação com o parâmetro de agrupamento
 
 **Uso típico**:
 Fine-tuning de parâmetros após identificar região promissora. Verificar se configuração ótima é robusta ou sensível.
@@ -145,12 +183,12 @@ Análise exploratória avançada quando trade-offs binários não são suficient
 **Descrição**: Gráficos de linha mostrando sensibilidade de métricas a parâmetros.
 
 **Detalhes**:
-- **Layout**: 2 linhas × 3 colunas
+- **Layout**: 2 linhas × N colunas (N = número de parâmetros do detector)
 - **Linhas**: F3-weighted (cima) e Recall@10s (baixo)
-- **Colunas**: delta / ma_window / min_gap_samples
-- **Linha**: Média da métrica
+- **Colunas**: Um painel por parâmetro (auto-detectados). Exemplos: `delta`, `ma_window`, `min_gap_samples` para ADWIN; `window_size`, `regime_threshold`, `regime_landmark`, `min_gap_samples` para FLOSS.
+- **Linha**: Média da métrica para cada valor do parâmetro
 - **Área sombreada**: ± 1 desvio padrão
-- **Eixo X log-scale**: Para ma_window (valores variam ordem de magnitude)
+- **Eixo X log-scale**: Para parâmetros que variam em ordens de magnitude
 
 **Como interpretar**:
 - **Inclinação acentuada**: Parâmetro tem forte impacto (crítico para tuning)
@@ -159,9 +197,9 @@ Análise exploratória avançada quando trade-offs binários não são suficient
 - **Picos/vales**: Valores ótimos do parâmetro
 
 **Insights típicos**:
-- `delta`: Geralmente trade-off (baixo → alta recall + alto FP)
-- `ma_window`: Pode ter ponto ótimo (muito baixo = ruído, muito alto = atraso)
-- `min_gap_samples`: Reduz FP mas pode reduzir recall se mudanças próximas
+- Parâmetros de threshold (ex: `delta`, `regime_threshold`): Geralmente trade-off (baixo → alta recall + alto FP)
+- Parâmetros de janela (ex: `ma_window`, `window_size`): Pode ter ponto ótimo (muito baixo = ruído, muito alto = atraso)
+- `min_gap_samples`: Reduz FP mas pode reduzir recall se mudanças forem próximas
 
 **Uso típico**:
 Entender mecanismo de cada parâmetro. Priorizar tuning dos parâmetros com maior impacto. Validar se comportamento é monotônico ou tem máximo local.
@@ -308,5 +346,5 @@ R: Sim, mas escalas podem variar. Recomenda-se normalizar eixos ou usar mesma fa
 
 ---
 
-**Última atualização**: 2025-11-13
-**Versão**: 1.0
+**Última atualização**: 2026-05-12
+**Versão**: 1.1

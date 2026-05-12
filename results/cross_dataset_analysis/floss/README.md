@@ -1,6 +1,6 @@
 # Análise Cross-Dataset: FLOSS (2025-11-25)
 
-**Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`  
+**Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`
 **Critério padrão**: True Macro-Average com cobertura em todos os datasets.
 
 ---
@@ -63,6 +63,6 @@ F3-weighted macro-average: 0.3958 ± 0.0972
 ---
 
 **Próximos passos**:
-1. Testar ensembles “FLOSS + detector clássico” para reduzir FP mantendo o recall superior.  
-2. Geração de gráficos comparando o novo espaço (window 125) vs combinações antigas (window 75).  
-3. Atualizar `results/comparisons/*` usando as configurações macro generalistas para evitar o antigo viés do dataset principal.
+1. Testar ensembles “FLOSS + detector clássico” para reduzir FP mantendo o recall superior.
+2. Geração de gráficos comparando o novo espaço (window 125) vs combinações antigas (window 75).
+3. Atualizar `comparisons/<dataset>/*` usando as configurações macro generalistas para evitar o antigo viés do dataset principal.

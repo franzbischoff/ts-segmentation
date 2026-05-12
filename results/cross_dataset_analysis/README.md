@@ -46,7 +46,7 @@ ADWIN:    0.2879 ceiling ────→ 94.90% transfer
 ### Opção 2: Parameter Portability
 - **CSV**: `parameter_portability_option2.csv`
   - Columns: detector, source_dataset, target_dataset, source_cross_f3, target_transferred_f3, target_local_best_f3, transferability_ratio, performance_drop, performance_drop_pct, interpretation
-  - 34 transfers testadas (6 detectores × 3 sources × 2 targets)
+  - **34 transferências efetivas testadas** (6 detectores × 3 origins × 2 targets = 36 esperadas; page_hinkley falhou em 2 combinações)
 - **Markdown**: `parameter_portability_option2.md`
   - Trade-off table (Option 1 vs Option 2)
   - Critical insights (FLOSS paradox, KSWIN sweet spot, ADWIN robustness)
@@ -247,8 +247,10 @@ results/cross_dataset_analysis/
 │   ├── cross_dataset_generalization_option1.csv (source for Option 1)
 │   └── twofold_robustness_*.csv (3 files)
 │
-├── LEGACY/ARCHIVE
+├── SUPPORTING (Current)
 │   ├── CROSS_DATASET_ANALYSIS_SUMMARY.md
+│
+├── LEGACY/ARCHIVE
 │   ├── ANALYSIS_RANKING_DISCREPANCIES.md
 │   ├── AGGREGATION_METHODS_COMPARISON.md
 │   └── <detector>/ (6 dirs with per-detector analysis)

@@ -2,7 +2,7 @@
 # evaluate_floss.sh
 # Evaluate FLOSS detector predictions and generate comprehensive metrics
 #
-# This script evaluates the FLOSS (Fast Low-rank Online Subspace Tracking) detector
+# This script evaluates the FLOSS (Fast Lowcost Online Semantic Segmentation) detector
 # predictions from the R implementation and calculates all metrics (F1/F3, NAB, temporal).
 #
 # Prerequisites:

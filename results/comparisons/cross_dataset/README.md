@@ -3,8 +3,8 @@
 **Last Updated:** 2025-12-15 16:56:17 (✅ SUCCESS)
 
 
-**Última Atualização**: 2025-12-15 (Fase 1 - Estrutura + Documentação)
-**Próxima Fase**: Fase 2 - Geração de Visualizações
+**Última Atualização**: 2026-05-12
+**Status**: Visualizações concluídas; usar `comparisons/<dataset>/` para rankings canônicos.
 
 ---
 
@@ -46,7 +46,7 @@ Avaliar **robustez** de detectores através de múltiplos datasets, respondendo 
 **Use Case**: Research, quando tem labels para tuning
 
 **Ficheiros**:
-- `option1_ceiling_analysis.png` (em preparação)
+- `option1_ceiling_analysis.png`
 - Dados: [`../../cross_dataset_analysis/cross_dataset_generalization_option1.csv`](../../cross_dataset_analysis/cross_dataset_generalization_option1.csv)
 - Report: [`../../cross_dataset_analysis/cross_dataset_generalization_option1.md`](../../cross_dataset_analysis/cross_dataset_generalization_option1.md)
 
@@ -81,7 +81,7 @@ ratio = (F3_transferred / F3_local_best) × 100%
 **Use Case**: Produção com novo dataset SEM labels
 
 **Ficheiros**:
-- `option2_portability_heatmap.png` (em preparação)
+- `option2_portability_heatmap.png`
 - Dados: [`../../cross_dataset_analysis/parameter_portability_option2.csv`](../../cross_dataset_analysis/parameter_portability_option2.csv)
 - Report: [`../../cross_dataset_analysis/parameter_portability_option2.md`](../../cross_dataset_analysis/parameter_portability_option2.md)
 
@@ -117,7 +117,7 @@ Score = 0.6×(1 - avg_ceiling_gap) + 0.4×(1 - transfer_variance)
 **Use Case**: Escolha holística para maioria dos cenários
 
 **Ficheiros**:
-- `option3_unified_score_ranking.png` (em preparação)
+- `option3_unified_score_ranking.png`
 - Dados: [`../../cross_dataset_analysis/unified_robustness_option3.csv`](../../cross_dataset_analysis/unified_robustness_option3.csv)
 - Report: [`../../cross_dataset_analysis/unified_robustness_option3.md`](../../cross_dataset_analysis/unified_robustness_option3.md)
 
@@ -166,16 +166,13 @@ NOVO DATASET?
 
 ## 📁 Ficheiros Disponíveis
 
-### Visualizações (Fase 2 - em preparação)
-- `option123_summary.png` - Visão conjunta (3 opções em 1 gráfico)
-  - Eixo X: Ceiling F3 (Opção 1)
-  - Eixo Y: Transferability (Opção 2)
-  - Cor/Tamanho: Unified Score (Opção 3)
-
+### Visualizações disponíveis
 - `option1_ceiling_analysis.png` - Bar chart com CV
 - `option2_portability_heatmap.png` - Heatmap 3 datasets × 6 detectores
 - `option3_unified_score_ranking.png` - Bar chart ranqueado
 - `production_decision_matrix.png` - Matriz visual de decisão
+
+Observação: `option123_summary.png` está em `results/cross_dataset_analysis/option123_summary.png`.
 
 ### Dados (CSVs + Markdown)
 - Opção 1: [`../../cross_dataset_analysis/cross_dataset_generalization_option1.*`](../../cross_dataset_analysis/)
@@ -187,7 +184,7 @@ NOVO DATASET?
 ## 🔍 Como Navegar
 
 ### Se quer: Resumo rápido
-→ Ver `option123_summary.png` (quando disponível na Fase 2)
+→ Ver `results/cross_dataset_analysis/option123_summary.png`
 
 ### Se quer: Detalhes de um aspeto
 - Performance máxima? → Opção 1 + `option1_ceiling_analysis.png`
@@ -202,7 +199,7 @@ NOVO DATASET?
 
 ---
 
-## 📊 Visualizações (Fase 2 Roadmap)
+## 📊 Visualizações (Referência de geração)
 
 ```
 FASE 2: Geração de Visualizações
@@ -222,9 +219,7 @@ FASE 2: Geração de Visualizações
 │   └── Script: visualize_cross_dataset_summary.py
 │   └── Plot: Bubble chart ou decision tree visual
 │
-└── option123_summary.png (NOVO!)
-    └── Script: visualize_option123.py (mantém para compatibilidade)
-    └── Plot: 3D scatter (X=ceiling, Y=transferability, cor/tamanho=score unificado)
+Nota: o resumo conjunto (`option123_summary.png`) não é salvo nesta pasta.
 ```
 
 ---
@@ -244,9 +239,9 @@ FASE 2: Geração de Visualizações
 2. **Opção 2 (ADWIN 95%) é superior para produção sem tuning**
 3. **Opção 1 (FLOSS 0.43) representa máximo potencial se tiver labels**
 4. **Opção 3 (FLOSS score=0.97) é "sabedoria convencional" se não souber qual escolher**
-5. **Visualizações atualizadas serão geradas em Fase 2** com dados de 2025-12-14
+5. Este diretório contém os PNGs históricos gerados para suporte visual.
 
 ---
 
-**Última Atualização**: 2025-12-15 (Fase 1 - Estrutura)
-**Status**: ✅ Documentação completa; 🔜 Visualizações em Fase 2
+**Última Atualização**: 2026-05-12
+**Status**: ✅ Visualizações presentes; ✅ documentação ajustada para consistência

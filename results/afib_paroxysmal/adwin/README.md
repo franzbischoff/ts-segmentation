@@ -1,6 +1,6 @@
 # Resultados do Detector ADWIN
 
-Esta pasta contém todos os resultados da avaliação do detector **ADWIN** (Adaptive Windowing) no dataset afib_regimes.
+Esta pasta contém todos os resultados da avaliação do detector **ADWIN** (Adaptive Windowing) no dataset afib_paroxysmal.
 
 ## Detector: ADWIN
 
@@ -170,13 +170,12 @@ python -m src.visualize_results \
 3. **Para minimizar FP**: usar `delta=0.005, ma_window=10, min_gap=5000` (compromete recall)
 4. **Para comparação justa**: reportar sempre NAB Standard score
 
-## Próximos Passos
+## Estado de Execução
 
-- [ ] Comparar com Page-Hinkley (`results/page_hinkley/`)
-- [ ] Comparar com DDM (`results/ddm/`)
-- [ ] Análise de ensemble (votação entre detectores)
-- [ ] Análise de failure cases (ficheiros com pior performance)
-- [ ] Validação cruzada por paciente
+- ✅ Comparação com Page-Hinkley disponível em `comparisons/afib_paroxysmal/`
+- ✅ Comparação com outros detectores concluída (adwin, page_hinkley, kswin, hddm_a, hddm_w, floss)
+- ✅ Artefatos completos em `results/afib_paroxysmal/adwin/`
+- ✅ Pronto para análises complementares (ensemble, failure cases e validação por paciente)
 
 ## Referências
 

@@ -1,8 +1,8 @@
 # Resultados do Detector Page-Hinkley
 
-**Status**: 🔄 A implementar
+**Status**: ✅ COMPLETO (Novembro 2025)
 
-Esta pasta conterá os resultados da avaliação do detector **Page-Hinkley** no dataset afib_regimes.
+Esta pasta contém os resultados da avaliação do detector **Page-Hinkley** no dataset afib_paroxysmal.
 
 ## Detector: Page-Hinkley
 
@@ -22,7 +22,7 @@ Esta pasta conterá os resultados da avaliação do detector **Page-Hinkley** no
 python -m src.generate_predictions \
     --data data/afib_paroxysmal_tidy.csv \
     --detector page_hinkley \
-    --output results/page_hinkley/predictions_intermediate.csv \
+    --output results/afib_paroxysmal/page_hinkley/predictions_intermediate.csv \
     --param lambda_=10 lambda_=20 lambda_=30 lambda_=40 lambda_=50 \
     --param delta=0.005 delta=0.01 delta=0.02 delta=0.03 \
     --param alpha=0.9999 alpha=0.999 alpha=0.99 \
@@ -33,16 +33,16 @@ python -m src.generate_predictions \
 ### 2. Avaliar Métricas
 ```bash
 python -m src.evaluate_predictions \
-    --predictions results/page_hinkley/predictions_intermediate.csv \
-    --metrics-output results/page_hinkley/metrics_comprehensive_with_nab.csv \
-    --report-output results/page_hinkley/final_report_with_nab.json
+    --predictions results/afib_paroxysmal/page_hinkley/predictions_intermediate.csv \
+    --metrics-output results/afib_paroxysmal/page_hinkley/metrics_comprehensive_with_nab.csv \
+    --report-output results/afib_paroxysmal/page_hinkley/final_report_with_nab.json
 ```
 
 ### 3. Gerar Visualizações
 ```bash
 python -m src.visualize_results \
-    --metrics results/page_hinkley/metrics_comprehensive_with_nab.csv \
-    --output-dir results/page_hinkley/visualizations
+    --metrics results/afib_paroxysmal/page_hinkley/metrics_comprehensive_with_nab.csv \
+    --output-dir results/afib_paroxysmal/page_hinkley/visualizations
 ```
 
 ## Grid Search Sugerido
@@ -86,14 +86,14 @@ MIN_GAP_VALUES = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000]
 | Tipo mudança | Média/Variância | Média |
 | Parâmetros | 1 (delta) | 3 (lambda, delta, alpha) |
 
-## Próximos Passos
+## Estado de Execução
 
-- [ ] Implementar grid search completo
-- [ ] Analisar sensibilidade aos parâmetros
-- [ ] Comparar com resultados ADWIN
-- [ ] Testar em diferentes classes (paroxysmal/persistent/non-afib)
+- ✅ Grid search executado e integrado na pipeline
+- ✅ Métricas e visualizações geradas em `results/afib_paroxysmal/page_hinkley/`
+- ✅ Comparações por dataset disponíveis em `comparisons/afib_paroxysmal/`
 
 ---
 
 **Criado**: 2025-11-13
-**Status**: Pendente implementação
+**Última atualização**: 2026-05-12
+**Status**: Análise completa integrada na pipeline

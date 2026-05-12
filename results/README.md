@@ -1,358 +1,137 @@
-# Resultados de Detecção de Mudanças de Regime - ECG
+# Results
 
-Esta pasta contém os resultados organizados por detector para comparação sistemática de algoritmos de detecção de mudanças de regime (change point detection) em sinais de ECG streaming.
+Esta pasta concentra os artefatos gerados pela pipeline de deteccao e avaliacao.
 
-## Estrutura de Pastas
+## Estrutura Atual
 
-```
+```text
 results/
-├── adwin/                      # Resultados do detector ADWIN
-│   ├── predictions_intermediate.csv
-│   ├── metrics_comprehensive_with_nab.csv
-│   ├── final_report_with_nab.json
-│   ├── visualizations/
-│   └── README.md
-│
-├── page_hinkley/              # Resultados do detector Page-Hinkley (a implementar)
-│   └── README.md
-│
-├── ddm/                       # Resultados do detector DDM (a implementar)
-│   └── README.md
-│
-├── comparisons/               # Comparações entre detectores
-│   ├── comparative_report.md
-│   ├── detector_rankings.csv
-│   └── ensemble_results/
-│
-└── README.md                  # Este ficheiro
-results/
-├── afib_paroxysmal/            # Results for the `afib_paroxysmal` dataset (229 files)
-│   ├── adwin/                   # Resultados do detector ADWIN
-├── page_hinkley/              # Resultados do detector Page-Hinkley (a implementar)
-  ├── page_hinkley/
-  └── ...
-
-├── malignantventricular/      # Results for `malignantventricular` dataset
-│   ├── adwin/
-│   └── ...
-
-├── vtachyarrhythmias/          # Results for `vtachyarrhythmias` dataset
-│   ├── adwin/
-│   └── ...
-
-├── page_hinkley/              # Resultados do detector Page-Hinkley (a implementar)
-## Detectores Implementados
-## Detectors and Dataset-aware Structure
-
-Each dataset will have its own subfolder under `results/` to keep outputs
-isolated and comparable. For example:
-
-```
-results/afib_paroxysmal/adwin/
-results/malignantventricular/adwin/
-results/vtachyarrhythmias/adwin/
+├── afib_paroxysmal/
+│   └── <detector>/
+├── malignantventricular/
+│   └── <detector>/
+├── vtachyarrhythmias/
+│   └── <detector>/
+├── cross_dataset_analysis/
+├── comparisons/            # historico e visualizacoes comparativas legadas
+└── README.md
 ```
 
-This allows running the same pipeline for different datasets without
-mixing predictions or metrics.
-**Pasta**: `results/<dataset>/adwin/`
-**Dataset**: afib_paroxysmal (229 ficheiros) — you may also run this on other datasets by passing a different path to the scripts.
-    --data data/afib_paroxysmal_tidy.csv \
-**Dataset**: afib_paroxysmal (229 ficheiros)
-    --output results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
-python -m src.compare_detectors \
-    --detectors <detector1> <detector2> <detector3> \
-    --results-dir results/<dataset> \
-    --output results/comparisons/<nome_comparacao>.md
-**Recall@10s**: 97.77%
-**FP/min**: 10.00
+Cada pasta results/<dataset>/<detector>/ contem tipicamente:
 
-[Ver detalhes completos →](adwin/README.md)
+- predictions_intermediate.csv
+- metrics_comprehensive_with_nab.csv
+- final_report_with_nab.json
+- visualizations/
+- README.md
 
-### 🔄 Page-Hinkley
-**Status**: A implementar
-**Pasta**: `results/page_hinkley/`
-**Princípio**: Teste sequencial de mudança de média
-**Vantagens**: Rápido, baixa memória
-**Parâmetros**: lambda, delta, alpha
+## Fluxo de Geracao
 
-<!-- DDM/EDDM removidos do pipeline: não são usados para detecção de mudanças em séries temporais contínuas. -->
+### Predicoes
 
-### 🔄 HDDM (Hoeffding's Bound Drift Detection)
-**Status**: Planejado
-**Pasta**: `results/hddm/`
-**Princípio**: Usa bound de Hoeffding
-**Vantagens**: Garantias teóricas
-
-### 🔄 KSWIN (Kolmogorov-Smirnov Windowing)
-**Status**: Planejado
-**Pasta**: `results/kswin/`
-**Princípio**: Teste estatístico KS entre janelas
-**Vantagens**: Não paramétrico, detecta qualquer tipo de mudança
-
-## Pipeline de Avaliação
-
-Cada detector segue o mesmo pipeline padronizado:
-
-### 1️⃣ Geração de Predições
 ```bash
 python -m src.generate_predictions \
-    --data data/afib_paroxysmal_tidy.csv \
-    --detector <DETECTOR_NAME> \
-    --output results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
-    --delta <VALUES> \
-    --ma-window <VALUES> \
-    --min-gap <VALUES>
+  --detector <detector> \
+  --data data/<dataset>_*.csv \
+  --output results/<dataset>/<detector>/predictions_intermediate.csv
 ```
 
-**Output**: `predictions_intermediate.csv` com todas as detecções brutas
+### Avaliacao
 
-> Nota: `min_gap_samples` é um filtro aplicado pela pipeline após as detecções serem
-> geradas; não faz parte dos detectores subjacentes. O `predictions_intermediate.csv`
-> contém as detecções "brutas" para cada combinação de parâmetros — o gap é depois
-> usado para suprimir eventos redundantes durante a avaliação.
-
-### 2️⃣ Avaliação de Métricas
 ```bash
 python -m src.evaluate_predictions \
-    --predictions results/<dataset>/<DETECTOR_NAME>/predictions_intermediate.csv \
-    --metrics-output results/<dataset>/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
-    --report-output results/<dataset>/<DETECTOR_NAME>/final_report_with_nab.json
+  --predictions results/<dataset>/<detector>/predictions_intermediate.csv \
+  --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv \
+  --report-output results/<dataset>/<detector>/final_report_with_nab.json
 ```
 
-**Output**:
-- `metrics_comprehensive_with_nab.csv` - Métricas detalhadas
-- `final_report_with_nab.json` - Sumário executivo
+### Visualizacoes
 
-> Novo (robustez 2-fold): acrescente `--two-fold-analysis` para dividir os ficheiros do dataset
-> em duas metades reprodutíveis e comparar a generalização dos melhores parâmetros entre elas.
-> Opcionalmente ajuste `--two-fold-seed` (default 42), `--two-fold-primary-metric` (ex.: `nab_score_standard`)
-> e `--two-fold-suffix` para personalizar o nome dos artefactos.
->
-> Outputs extras gerados por este modo:
-> - `results/<dataset>/fold_assignments_seed<seed>.json` – lista fixa dos ficheiros em cada metade
-> - `results/<dataset>/<DETECTOR_NAME>/final_report_with_nab_twofold_seed<seed>.json` – resumo das métricas intra-fold e cruzadas
-
-### 3️⃣ Visualizações
 ```bash
 python -m src.visualize_results \
-    --metrics results/<dataset>/<DETECTOR_NAME>/metrics_comprehensive_with_nab.csv \
-    --output-dir results/<dataset>/<DETECTOR_NAME>/visualizations
+  --metrics results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv \
+  --output-dir results/<dataset>/<detector>/visualizations
 ```
 
-**Output**: 9 gráficos PNG para análise visual
+## Comparacoes entre Detectores
 
-## Estrutura de Pastas
+### Relatórios Comparativos (Ativo)
+Os relatorios comparativos **ativos por dataset** sao escritos em:
 
-```
-results/
-├── <dataset>/                   # Results for each dataset (e.g. afib_paroxysmal)
-│   ├── adwin/
-│   ├── page_hinkley/
-│   ├── kswin/
-│   └── ...
-├── comparisons/                 # 📊 Comparações entre detectores (REORGANIZADO - Fase 1)
-│   ├── README.md                 # Guia de navegação
-│   ├── by_dataset/               # Análises por dataset (6 detectores × dataset)
-│   │   ├── afib_paroxysmal/
-│   │   │   ├── README.md
-│   │   │   ├── comparative_report.md
-│   │   │   ├── detector_rankings.csv
-│   │   │   ├── detector_summary.csv
-│   │   │   ├── constraint_tradeoffs.csv
-│   │   │   ├── robustness.csv
-│   │   │   └── visualizations/   # (Em preparação - Fase 2)
-│   │   │       ├── radar_6detectors.png
-│   │   │       ├── f3_vs_fp_scatter.png
-│   │   │       ├── heatmap_metrics_comparison.png
-│   │   │       └── parameter_tradeoffs.png
-│   │   ├── malignantventricular/ # (mesma estrutura)
-│   │   └── vtachyarrhythmias/    # (mesma estrutura)
-│   │
-│   ├── cross_dataset/            # 🌍 Análises cross-dataset (3 opções)
-│   │   ├── README.md
-│   │   ├── option123_summary.png # (Visão conjunta)
-│   │   ├── option1_ceiling_analysis.png     # (Em preparação)
-│   │   ├── option2_portability_heatmap.png  # (Em preparação)
-│   │   ├── option3_unified_score_ranking.png # (Em preparação)
-│   │   └── production_decision_matrix.png    # (Em preparação)
-│   │
-│   └── legacy/                   # 📦 Ficheiros antigos (archivados)
-│       ├── README.md
-│       ├── floss_vs_kswin.md
-│       └── floss_vs_kswin_*.png
-│
-├── cross_dataset_analysis/      # 📈 Análises estatísticas (Two-fold, Opção 1/2/3)
-│   └── (ver documentação em README.md)
-│
-└── README.md
+- `comparisons/<dataset>/comparative_report.md`
+- `comparisons/<dataset>/detector_rankings.csv`
+- `comparisons/<dataset>/detector_summary.csv`
+- `comparisons/<dataset>/constraint_tradeoffs.csv`
+- `comparisons/<dataset>/robustness.csv`
 
-### 🎯 Como Navegar (Novo Fluxo - Fase 1, 2025-12-15)
+**Geração**: `python -m src.compare_detectors --dataset <dataset> --detectors adwin page_hinkley kswin hddm_a hddm_w floss`
 
-**Se quer saber: "Qual detector é melhor para dataset X?"**
-1. Ir a [`comparisons/by_dataset/<dataset>/README.md`](comparisons/by_dataset/)
-2. Ver melhores configs + trade-offs
-3. Visualizações PNG estarão em Fase 2
+### Análise Cross-Dataset (Novo)
+Para comparações **robustas entre detectores** (agregando múltiplos datasets):
 
-**Se quer saber: "Qual detector escolho para produção?"**
-1. Ir a [`comparisons/cross_dataset/README.md`](comparisons/cross_dataset/)
-2. Ler sobre as **3 opções de análise**:
-   - Opção 1: Performance ceiling (máximo atingível)
-   - Opção 2: Parameter portability (generalização entre datasets)
-   - Opção 3: Unified robustness score (combinação de ambas)
-3. Ver matriz de decisão
+- `results/cross_dataset_analysis/cross_dataset_generalization_option1.{csv,md}` — Option 1: performance ceiling
+- `results/cross_dataset_analysis/parameter_portability_option2.{csv,md}` — Option 2: parameter transfer
+- `results/cross_dataset_analysis/unified_robustness_option3.{csv,md}` — Option 3: robustness score
+- `results/cross_dataset_analysis/option123_summary.png` — Visualização unificada
 
-**Se quer detalhes estatísticos e two-fold:**
-1. Ir a [`cross_dataset_analysis/README.md`](cross_dataset_analysis/)
+**Leitura**: Ver [`results/cross_dataset_analysis/README.md`](cross_dataset_analysis/README.md)
 
-**Se quer resultados brutos de um detector:**
-1. Ir a `<dataset>/<detector>/README.md` ou `<dataset>/<detector>/final_report_with_nab.json`
+### Agregação de Métricas (Novo)
+Para análise de parâmetros e SHAP (em R):
 
----
+- `results/<dataset>/<detector>/models_aggregated.csv` — Métricas por modelo (18 ficheiros)
 
-### Ensemble Analysis
-Combinar detectores via:
-- Votação majoritária
-- Weighted voting por confiança
-- Cascata (detector rápido → detector preciso)
+**Geração**: `python -m src.simplify_metrics_for_analysis --input results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --output results/<dataset>/<detector>/models_aggregated.csv`
 
-## Workflow para Adicionar Novo Detector
+### Histórico
+A pasta `results/comparisons/` contem visualizacoes comparativas legadas (ex: floss_vs_kswin.*).
 
-1. **Criar pasta dedicada**:
-   ```bash
-    mkdir -p results/<dataset>/<detector_name>
-   ```
+## Fluxo de Geração Completo
 
-2. **Executar pipeline completo**:
-   ```bash
-   # Gerar predições
-   python -m src.generate_predictions --detector <detector_name> \
-    --output results/<dataset>/<detector_name>/predictions_intermediate.csv ...
+### Modo 1: Geração Inicial (Do Zero)
+```bash
+# 1. Gerar predições
+python -m src.generate_predictions --detector <detector> --data data/<dataset>_*.csv --output results/<dataset>/<detector>/predictions_intermediate.csv
 
-   # Avaliar métricas
-   python -m src.evaluate_predictions \
-    --predictions results/<dataset>/<detector_name>/predictions_intermediate.csv \
-    --metrics-output results/<dataset>/<detector_name>/metrics_comprehensive_with_nab.csv \
-    --report-output results/<dataset>/<detector_name>/final_report_with_nab.json
+# 2. Avaliar métricas
+python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/predictions_intermediate.csv --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --report-output results/<dataset>/<detector>/final_report_with_nab.json
 
-   # Gerar visualizações
-   python -m src.visualize_results \
-    --metrics results/<dataset>/<detector_name>/metrics_comprehensive_with_nab.csv \
-    --output-dir results/<dataset>/<detector_name>/visualizations
-   ```
-
-3. **Criar README específico** (template em `results/adwin/README.md`)
-
-4. **Atualizar comparações**:
-   ```bash
-   python -m src.compare_detectors \
-       --detectors adwin page_hinkley <detector_name> \
-       --output results/comparisons/comparative_report.md
-   ```
-
-## Grid Search Padrão
-
-Para comparação justa, usar o mesmo grid para todos os detectores:
-
-```python
-DELTA_VALUES = [0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-MA_WINDOW_VALUES = [10, 30, 50, 100, 200, 300, 500]
-MIN_GAP_VALUES = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000]
+# 3. Visualizar por detector
+python -m src.visualize_results --metrics results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --output-dir results/<dataset>/<detector>/visualizations
 ```
 
-**Total**: 12 × 7 × 10 = 840 combinações por detector
+### Modo 2: Incrementar Predições (Append Mode)
+```bash
+# Útil para grid search em paralelo ou incremental
+python -m src.generate_predictions --detector <detector> --data data/<dataset>_*.csv --output results/<dataset>/<detector>/predictions_intermediate.csv --append --n-jobs -1
 
-## Recursos Computacionais
-
-### ADWIN (referência)
-- Tempo geração predições: ~45 minutos (229 ficheiros × 495 combinações)
-- Tempo avaliação: ~84 segundos (113,355 avaliações)
-- Tempo visualizações: ~30 segundos
-- **Total**: ~50 minutos por detector
-
-### Estimativas para 5 detectores
-- Tempo total: ~4 horas
-- Espaço em disco: ~1 GB (predições + métricas + visualizações)
-- RAM necessária: ~2 GB
-
-## Análise Estatística
-
-Para cada detector, calcular:
-
-### Robustez
-- Coeficiente de variação (CV) das métricas entre ficheiros
-- Identificar outliers (ficheiros muito difíceis/fáceis)
-
-### Estabilidade Paramétrica
-- Sensibilidade a cada parâmetro (gradiente médio)
-- Tamanho da região Pareto-ótima
-
-### Generalização
-- Performance em diferentes classes (paroxysmal vs persistent vs non-afib)
-- Validação cruzada por paciente
-
-## Formato de Ficheiros
-
-### predictions_intermediate.csv
-```csv
-record_id,detector,delta,ma_window,min_gap_samples,detection_samples,detection_time_s,ground_truth_samples,ground_truth_time_s
-data_101_1.par,adwin,0.005,300,1000,12500,50.0,12480,49.92
-...
+# Depois, reavalie métricas (mesmo comando da Etapa 2)
+python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/predictions_intermediate.csv --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --report-output results/<dataset>/<detector>/final_report_with_nab.json
 ```
 
-### metrics_comprehensive_with_nab.csv
-```csv
-record_id,detector,delta,ma_window,min_gap_samples,f1_classic,f1_weighted,f3_classic,f3_weighted,recall_4s,recall_10s,precision_4s,precision_10s,edd_median_s,fp_per_min,nab_score_standard,nab_score_low_fp,nab_score_low_fn,...
-data_101_1.par,adwin,0.005,300,1000,0.1689,0.1603,0.4188,0.3994,0.7863,0.9777,0.0714,0.1020,2.64,10.00,-8.8409,-20.1729,-4.4326,...
-...
+### Modo 3: Análises Cross-Dataset
+```bash
+# Opção 1: Performance ceiling
+python -m src.aggregate_twofold_analysis
+
+# Opção 2: Parameter portability
+python -m src.test_parameter_portability
+
+# Opção 3: Unified robustness
+python -m src.unified_robustness_score
+
+# Visualização unificada
+python -m src.visualize_option123
 ```
 
-### final_report_with_nab.json
-```json
-{
-  "detector": "adwin",
-  "dataset": "afib_paroxysmal",
-  "evaluation_summary": {...},
-  "best_parameters": {
-    "f3_weighted": {...},
-    "nab_standard": {...},
-    ...
-  },
-  "top_10_f3_weighted": [...],
-  "parameter_grid_coverage": {...}
-}
+### Modo 4: Agregação para SHAP
+```bash
+python -m src.simplify_metrics_for_analysis --input results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --output results/<dataset>/<detector>/models_aggregated.csv --aggregation mean
 ```
 
-## Citações
+## Notas de Consistencia
 
-Ao usar estes resultados, citar:
-
-**Dataset**:
-```
-Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database.
-IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001).
-```
-
-**NAB Benchmark**:
-```
-Ahmad S, Lavin A, Purdy S, Agha Z. Unsupervised real-time anomaly detection
-for streaming data. Neurocomputing, 2017.
-```
-
-**ADWIN**:
-```
-Bifet A, Gavaldà R. Learning from time-changing data with adaptive windowing.
-SIAM International Conference on Data Mining, 2007.
-```
-
-## Contato
-
-Para dúvidas sobre a estrutura de resultados ou adicionar novos detectores, consultar:
-- Documentação principal: `../README.md`
-- Guia de métricas: `../docs/evaluation_metrics_v1.md`
-- Guia de visualizações: `../docs/visualizations_guide.md`
-
----
-
-**Última atualização**: 2025-11-13
-**Versão**: 1.0
+- DDM e EDDM nao fazem parte do pipeline ativo.
+- min_gap_samples e aplicado como filtro de pos-processamento da pipeline.
+- Manter execucao causal e idempotencia dos scripts.
+- `--append` mode em generate_predictions permite incrementar grid search em paralelo.

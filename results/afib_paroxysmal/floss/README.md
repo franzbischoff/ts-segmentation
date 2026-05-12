@@ -2,7 +2,7 @@
 
 **Status**: ✅ COMPLETO (17 novembro 2025)
 
-Este diretório contém os resultados completos do detector FLOSS (Fast Low-rank Online Subspace Tracking) aplicado ao dataset completo de regimes de fibrilação atrial.
+Este diretório contém os resultados completos do detector FLOSS (Fast Lowcost Online Semantic Segmentation) aplicado ao dataset completo de regimes de fibrilação atrial.
 
 ## 📊 Ficheiros Gerados
 
@@ -93,7 +93,7 @@ As diferentes métricas favorecem configurações ligeiramente diferentes:
 ### Características do FLOSS
 
 O FLOSS é um detector de mudanças de regime baseado em:
-- **Fast Low-rank Online Subspace Tracking**: Tracking de subespaços de baixa dimensão
+- **Fast Lowcost Online Semantic Segmentation**: Segmentação semântica de baixa complexidade computacional
 - **Window-based**: Utiliza janelas deslizantes para análise local
 - **Regime detection**: Identifica mudanças na estrutura do sinal
 
@@ -215,6 +215,6 @@ record_id,detector,window_size,regime_threshold,regime_landmark,min_gap_samples,
 ## 🔗 Comparações com Outros Detectores
 
 Para comparações detalhadas com outros detectores, veja:
-- [`results/comparisons/floss_vs_kswin.md`](../comparisons/floss_vs_kswin.md) - Comparação completa FLOSS vs KSWIN
-- [`results/comparisons/floss_vs_kswin_radar.png`](../comparisons/floss_vs_kswin_radar.png) - Gráfico radar comparativo
-- [`results/comparisons/detector_rankings.csv`](../comparisons/detector_rankings.csv) - Rankings de todos os detectores
+- [`tmp/results_comparisons_legacy/floss_vs_kswin.md`](../../../tmp/results_comparisons_legacy/floss_vs_kswin.md) - Comparação histórica FLOSS vs KSWIN (arquivo local, não versionado)
+- [`tmp/results_comparisons_legacy/floss_vs_kswin_radar.png`](../../../tmp/results_comparisons_legacy/floss_vs_kswin_radar.png) - Gráfico radar histórico (arquivo local, não versionado)
+- [`comparisons/afib_paroxysmal/detector_rankings.csv`](../../../comparisons/afib_paroxysmal/detector_rankings.csv) - Rankings canônicos atuais por dataset

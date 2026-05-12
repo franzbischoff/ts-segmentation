@@ -1,27 +1,33 @@
-# Detector Comparisons & Analysis
+# 📊 Detector Comparisons & Analysis — HISTÓRICO VISUAL
+
+> ⚠️ **IMPORTANTE**: Esta pasta contém **visualizações históricas** geradas em Dezembro 2025.
+>
+> **Para números finais e rankings de publicação**, consultar: [`comparisons/<dataset>/`](../../comparisons/)
+>
+> **Para replicar estas visualizações**, ver: [Geração de Relatórios](#-geração-de-relatórios)
 
 **Última Atualização**: 2025-12-15
-**Estrutura Reorganizada**: Fase 1 (Limpeza + Documentação)
+**Status**: Arquivo visual de apoio (não canônico; use `comparisons/<dataset>/` para métricas/rankings)
 
 ---
 
-## 📁 Navegação Rápida
+## 📁 Estrutura de Navegação
 
 ### 🎯 **1. Comparações por Dataset** → `by_dataset/`
 
-Análises multi-detector por dataset específico. Cada pasta contém:
-- **Relatório comparativo** (`comparative_report.md`)
-- **Rankings & métricas** (`detector_rankings.csv`, `detector_summary.csv`)
-- **Visualizações** (`visualizations/` com gráficos atualizados):
-  - `radar_6detectors.png` - Visão holistada (6 detectores × 6 métricas)
+Visualizações multi-detector por dataset específico. Cada pasta contém:
+- **Gráficos comparativos** gerados localmente em `visualizations/`:
+  - `radar_6detectors.png` - Visão holística (6 detectores × 6 métricas)
   - `f3_vs_fp_scatter.png` - Trade-off performance vs alarmes
-  - `heatmap_metrics_comparison.png` - Sensibilidade de detectores
+  - `heatmap_metrics_comparison.png` - Comparação de sensibilidade de detectores
   - `parameter_tradeoffs.png` - Trade-offs multi-objetivo
 
-**Datasets Disponíveis:**
-- [**afib_paroxysmal**](by_dataset/afib_paroxysmal/) - 229 ficheiros, 1,301 eventos
-- [**malignantventricular**](by_dataset/malignantventricular/) - 22 ficheiros, 592 eventos
-- [**vtachyarrhythmias**](by_dataset/vtachyarrhythmias/) - 34 ficheiros, 97 eventos
+⚠️ **Nota**: Os ficheiros `comparative_report.md`, `detector_rankings.csv`, etc. estão no local canônico: [`comparisons/<dataset>/`](../../comparisons/)
+
+**Datasets com Visualizações:**
+- [**afib_paroxysmal**](by_dataset/afib_paroxysmal/) - 229 ficheiros, 1,301 eventos → [resultados canônicos](../../comparisons/afib_paroxysmal/)
+- [**malignantventricular**](by_dataset/malignantventricular/) - 22 ficheiros, 592 eventos → [resultados canônicos](../../comparisons/malignantventricular/)
+- [**vtachyarrhythmias**](by_dataset/vtachyarrhythmias/) - 34 ficheiros, 97 eventos → [resultados canônicos](../../comparisons/vtachyarrhythmias/)
 
 ---
 
@@ -88,72 +94,47 @@ Análises robustez e portabilidade de detectores **através de múltiplos datase
 
 ---
 
-## 📝 Estrutura de Ficheiros
+## 📝 Estrutura de Ficheiros (Histórica)
 
 ```
-comparisons/
+results/comparisons/  (HISTÓRICO VISUAL APENAS)
 ├── README.md (este ficheiro)
 │
-├── by_dataset/
-│   ├── afib_paroxysmal/
-│   │   ├── README.md
-│   │   ├── comparative_report.md
-│   │   ├── detector_rankings.csv
-│   │   ├── detector_summary.csv
-│   │   ├── constraint_tradeoffs.csv
-│   │   ├── robustness.csv
-│   │   └── visualizations/
-│   │       ├── radar_6detectors.png
-│   │       ├── f3_vs_fp_scatter.png
-│   │       ├── heatmap_metrics_comparison.png
-│   │       └── parameter_tradeoffs.png
-│   ├── malignantventricular/
-│   │   └── (mesma estrutura)
-│   └── vtachyarrhythmias/
-│       └── (mesma estrutura)
+├── by_dataset/  (visualizações PNG)
+│   ├── afib_paroxysmal/visualizations/
+│   │   ├── radar_6detectors.png
+│   │   ├── f3_vs_fp_scatter.png
+│   │   ├── heatmap_metrics_comparison.png
+│   │   └── parameter_tradeoffs.png
+│   ├── malignantventricular/visualizations/ (mesma estrutura)
+│   └── vtachyarrhythmias/visualizations/ (mesma estrutura)
 │
-├── cross_dataset/
-│   ├── README.md
-│   ├── option123_summary.png (visão conjunta de 3 opções)
-│   ├── option1_ceiling_analysis.png
-│   ├── option2_portability_heatmap.png
-│   ├── option3_unified_score_ranking.png
-│   └── production_decision_matrix.png
-│
-└── legacy/
-    ├── README.md
-    ├── floss_vs_kswin.md (relatório antigo, v1)
-    └── floss_vs_kswin_*.png (visualizações antigas)
+└── cross_dataset/  (visualizações PNG cross-dataset)
+    ├── option1_ceiling_analysis.png
+    ├── option2_portability_heatmap.png
+    ├── option3_unified_score_ranking.png
+    └── production_decision_matrix.png
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+comparisons/  (LOCAL CANÔNICO PARA PUBLICAÇÃO)
+├── afib_paroxysmal/
+│   ├── comparative_report.md
+│   ├── detector_rankings.csv
+│   ├── detector_summary.csv
+│   ├── constraint_tradeoffs.csv
+│   └── robustness.csv
+├── malignantventricular/ (mesma estrutura)
+└── vtachyarrhythmias/ (mesma estrutura)
 ```
 
 ---
 
-## 🔄 Roadmap de Visualizações
+## 🔄 Estado de Geração
 
-### Fase 1 ✅ (Concluída - 2025-12-15)
-- [x] Reorganizar estrutura de pastas
-- [x] Criar layout hierárquico (by_dataset + cross_dataset)
-- [x] Preservar ficheiros antigos em legacy/
-- [x] Documentação de navegação
-
-### Fase 2 🔜 (Próxima)
-- [ ] Gerar visualizações `by_dataset/*/visualizations/`
-  - [ ] Script: `src/visualize_comparison_by_dataset.py`
-  - [ ] Gera: radar, scatter, heatmap, tradeoffs (6 detectores)
-
-- [ ] Gerar visualizações `cross_dataset/`
-  - [ ] Script: `src/visualize_cross_dataset_summary.py`
-  - [ ] Gera: ceiling ranking, portability matrix, unified score, decision matrix
-
-- [ ] Criar `generate_comparison_reports.py` (wrapper)
-  - [ ] Chama ambos scripts
-  - [ ] Organiza saídas automaticamente
-  - [ ] Atualiza READMEs
-
-### Fase 3 🔜 (Validação)
-- [ ] Executar scripts e validar saídas
-- [ ] Verificar dimensões, cores, legibilidade dos gráficos
-- [ ] Cleanup e versionamento Git
+- Visualizações by-dataset: concluídas em `results/comparisons/by_dataset/*/visualizations/`.
+- Visualizações cross-dataset: concluídas em `results/comparisons/cross_dataset/`.
+- Relatórios canônicos para decisão/publicação: `comparisons/<dataset>/`.
 
 ---
 
@@ -162,7 +143,7 @@ comparisons/
 Para atualizar todas as comparações de uma vez:
 
 ```bash
-# Estrutura já existe; aguardando scripts Python da Fase 2
+# Atualiza visualizações históricas em results/comparisons/
 python -m src.generate_comparison_reports \
     --datasets afib_paroxysmal malignantventricular vtachyarrhythmias \
     --output-base results/comparisons
@@ -198,11 +179,11 @@ python -m src.visualize_cross_dataset_summary \
 
 ## 📌 Notas Importantes
 
-1. **Ficheiros PNG em `by_dataset/*/visualizations/` ainda estão a ser gerados** (Fase 2)
-   - Por enquanto, usar relatórios `.md` e CSVs para análise
+1. `results/comparisons/` é histórico e visual.
+  - Para rankings e números finais de publicação, usar `comparisons/<dataset>/`.
 
-2. **Legacy folder** contém comparações antigas (FLOSS vs KSWIN, v1)
-   - Preservadas para histórico; não são atualizadas
+2. Os artefatos legados FLOSS vs KSWIN foram movidos para `tmp/results_comparisons_legacy/`.
+  - Ficam fora do versionamento por serem somente histórico local.
 
 3. **Opções 1, 2, 3** são complementares, não excludentes
    - Opção 1: foco em performance máxima
@@ -210,12 +191,4 @@ python -m src.visualize_cross_dataset_summary \
    - Opção 3: foco em robustez global
    - Juntas: perspetiva holística
 
-4. **READMEs por dataset** serão criados na Fase 1.3 com:
-   - Resumo executivo (top detector por métrica)
-   - Recomendações de uso
-   - Links para visualizações
-   - Detalhes de trade-offs
-
----
-
-**Próximo Passo**: Fase 1.3 - Criar READMEs estruturais para `by_dataset/` e `cross_dataset/`
+4. O arquivo `option123_summary.png` é mantido em `results/cross_dataset_analysis/`.

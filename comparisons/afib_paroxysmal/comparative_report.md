@@ -1,6 +1,6 @@
 # Comparative Analysis: Change Point Detectors
 
-**Date**: 2025-11-13
+**Date**: 2025-12-22
 **Detectors**: adwin, page_hinkley, kswin, hddm_a, hddm_w, floss
 
 ---
