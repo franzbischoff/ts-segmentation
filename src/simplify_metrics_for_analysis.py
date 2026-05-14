@@ -15,10 +15,14 @@ from pathlib import Path
 def identify_parameter_columns(df):
     """
     Automatically identify parameter columns from the dataframe.
+
+    `two_side_option` must be treated as a real HDDM parameter; otherwise
+    one-sided and two-sided runs collapse into the same aggregated model.
     """
     known_params = [
         'delta', 'lambda_', 'alpha', 'ma_window', 'min_gap_samples',
-        'drift_confidence', 'warning_confidence', 'ks_alpha', 'window_size',
+        'drift_confidence', 'warning_confidence', 'two_side_option',
+        'ks_alpha', 'window_size',
         'stat_size', 'lambda_option', 'regime_threshold', 'regime_landmark'
     ]
     param_cols = [col for col in df.columns if col in known_params]

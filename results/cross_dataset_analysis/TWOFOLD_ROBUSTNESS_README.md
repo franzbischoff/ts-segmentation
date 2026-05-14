@@ -35,19 +35,19 @@ Ranked by **average generalization gap** across all datasets (lower = better):
 
 | Rank | Detector | Avg Cross-Fold F3 | Avg Gap | Robustness |
 |------|----------|-------------------|---------|-----------|
-| 1️⃣ | **FLOSS** | 0.4285 | **0.0211** | ✅ Excellent |
-| 2️⃣ | HDDM_W | 0.1527 | **0.0212** | ✅ Excellent |
-| 3️⃣ | ADWIN | 0.2879 | 0.0424 | ✅ Excellent |
-| 4️⃣ | KSWIN | 0.3176 | 0.0442 | ✅ Excellent |
-| 5️⃣ | HDDM_A | 0.2997 | 0.0460 | ✅ Excellent |
-| 6️⃣ | Page-Hinkley | 0.3132 | 0.0516 | ⚠️  Good |
+| 1️⃣ | **FLOSS** | 0.4306 | **0.0214** | ✅ Excellent |
+| 2️⃣ | HDDM_W | 0.1534 | **0.0215** | ✅ Excellent |
+| 3️⃣ | ADWIN | 0.2890 | 0.0432 | ✅ Excellent |
+| 4️⃣ | KSWIN | 0.3203 | 0.0448 | ✅ Excellent |
+| 5️⃣ | HDDM_A | 0.3022 | 0.0472 | ✅ Excellent |
+| 6️⃣ | Page-Hinkley | 0.3152 | 0.0527 | ⚠️  Good |
 
 ### Interpretation
 
-- **FLOSS**: Exceptional robustness (gap of 0.0211 = 2.1% performance drop when generalizing)
+- **FLOSS**: Exceptional two-fold robustness (average absolute F3 gap of 0.0214)
 - **HDDM_W**: Excellent numerical robustness but lower absolute performance
 - **ADWIN**: Strong generalization with consistent performance across folds
-- **Page-Hinkley**: Slight generalization challenge (5.2% average gap)
+- **Page-Hinkley**: Slight generalization challenge (average absolute F3 gap of 0.0527)
 
 ---
 
@@ -57,14 +57,14 @@ Ranked by **average generalization gap** across all datasets (lower = better):
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected |
 |------|----------|---------------|---------------|-----|----------|
-| 🥇 | FLOSS | 0.4768 | 0.4770 | **0.0002** | fold_b |
-| 🥈 | KSWIN | 0.4305 | 0.3929 | 0.0376 | fold_b |
-| 🥉 | ADWIN | 0.4221 | 0.3768 | 0.0453 | fold_b |
-| 4️⃣ | Page-Hinkley | 0.4103 | 0.3654 | 0.0449 | fold_b |
-| 5️⃣ | HDDM_W | 0.3772 | 0.3282 | 0.0490 | fold_b |
-| 6️⃣ | HDDM_A | 0.3725 | 0.3451 | 0.0274 | fold_b |
+| 🥇 | FLOSS | 0.4790 | 0.4794 | **0.0004** | fold_b |
+| 🥈 | KSWIN | 0.4326 | 0.3942 | 0.0384 | fold_b |
+| 🥉 | ADWIN | 0.4231 | 0.3774 | 0.0457 | fold_b |
+| 4️⃣ | Page-Hinkley | 0.4107 | 0.3656 | 0.0451 | fold_b |
+| 5️⃣ | HDDM_W | 0.3790 | 0.3294 | 0.0496 | fold_b |
+| 6️⃣ | HDDM_A | 0.3742 | 0.3464 | 0.0278 | fold_b |
 
-**Insight**: All detectors show excellent generalization on this dataset. FLOSS maintains near-identical performance (0.02% gap). Fold B hyperparameters are universally better.
+**Insight**: All detectors show excellent generalization on this dataset. FLOSS maintains near-identical performance (absolute gap 0.0004). Fold B hyperparameters are better in this two-fold run.
 
 ---
 
@@ -72,14 +72,14 @@ Ranked by **average generalization gap** across all datasets (lower = better):
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected |
 |------|----------|---------------|---------------|-----|----------|
-| 🥇 | KSWIN | 0.3080 | 0.2266 | 0.0814 | fold_a |
-| 🥈 | HDDM_A | 0.3019 | 0.2129 | 0.0890 | fold_a |
-| 🥉 | FLOSS | 0.2788 | 0.3234 | **0.0446** | fold_b |
-| 4️⃣ | Page-Hinkley | 0.2737 | 0.2177 | 0.0560 | fold_a |
-| 5️⃣ | ADWIN | 0.2435 | 0.2389 | **0.0046** | fold_a |
-| 6️⃣ | HDDM_W | 0.0617 | 0.0503 | 0.0114 | fold_b |
+| 🥇 | KSWIN | 0.3115 | 0.2278 | 0.0837 | fold_a |
+| 🥈 | HDDM_A | 0.3052 | 0.2143 | 0.0909 | fold_a |
+| 🥉 | FLOSS | 0.2810 | 0.3253 | **0.0443** | fold_b |
+| 4️⃣ | Page-Hinkley | 0.2775 | 0.2189 | 0.0586 | fold_a |
+| 5️⃣ | ADWIN | 0.2451 | 0.2392 | **0.0059** | fold_a |
+| 6️⃣ | HDDM_W | 0.0618 | 0.0503 | 0.0115 | fold_b |
 
-**Insight**: Smaller dataset reveals detector sensitivity. ADWIN shows exceptional robustness (0.46% gap), but KSWIN achieves higher absolute performance. FLOSS's generalization gap here is larger due to fold imbalance (smaller dataset).
+**Insight**: Smaller dataset reveals detector sensitivity. ADWIN shows exceptional two-fold robustness (absolute gap 0.0059), but KSWIN achieves higher absolute performance. FLOSS's generalization gap here is larger due to fold imbalance (smaller dataset).
 
 ---
 
@@ -87,52 +87,52 @@ Ranked by **average generalization gap** across all datasets (lower = better):
 
 | Rank | Detector | Cross-Fold F3 | Intra-Fold F3 | Gap | Selected |
 |------|----------|---------------|---------------|-----|----------|
-| 🥇 | FLOSS | 0.5299 | 0.5483 | **0.0184** | fold_a |
-| 🥈 | Page-Hinkley | 0.2557 | 0.2019 | 0.0538 | fold_b |
-| 🥉 | HDDM_A | 0.2248 | 0.2032 | 0.0216 | fold_b |
-| 4️⃣ | KSWIN | 0.2142 | 0.2278 | 0.0136 | fold_b |
-| 5️⃣ | ADWIN | 0.1980 | 0.2753 | 0.0773 | fold_a |
-| 6️⃣ | HDDM_W | 0.0193 | 0.0161 | 0.0032 | fold_b |
+| 🥇 | FLOSS | 0.5317 | 0.5513 | **0.0196** | fold_a |
+| 🥈 | Page-Hinkley | 0.2573 | 0.2028 | 0.0545 | fold_b |
+| 🥉 | HDDM_A | 0.2271 | 0.2041 | 0.0230 | fold_b |
+| 4️⃣ | KSWIN | 0.2168 | 0.2290 | 0.0122 | fold_b |
+| 5️⃣ | ADWIN | 0.1989 | 0.2769 | 0.0780 | fold_a |
+| 6️⃣ | HDDM_W | 0.0194 | 0.0161 | 0.0033 | fold_b |
 
-**Insight**: FLOSS dominates with highest cross-fold F3 and excellent generalization. ADWIN shows degradation (7.73% gap), suggesting hyperparameter fit to Fold A structure.
+**Insight**: FLOSS dominates with highest cross-fold F3 and excellent generalization. ADWIN shows degradation (absolute gap 0.0780), suggesting hyperparameter fit to Fold A structure.
 
 ---
 
 ## Detector-Specific Robustness Profiles
 
 ### 🔴 FLOSS
-- **Overall Ranking**: 1st (avg gap: 0.0211)
+- **Overall Ranking**: 1st (avg gap: 0.0214)
 - **Strengths**: Consistently robust across all datasets, exceptional generalization
-- **Best On**: afib_paroxysmal (0.0002 gap), vtachyarrhythmias (0.0184 gap)
-- **Recommendation**: Safe choice for new ECG data; hyperparameters transfer well
+- **Best On**: afib_paroxysmal (0.0004 gap), vtachyarrhythmias (0.0196 gap)
+- **Recommendation**: Strong choice in two-fold robustness; for cross-dataset parameter transfer, use the Option 2 portability analysis.
 
 ### 🟢 KSWIN
-- **Overall Ranking**: 4th (avg gap: 0.0442)
+- **Overall Ranking**: 4th (avg gap: 0.0448)
 - **Strengths**: Good balance between robustness and performance
-- **Challenge**: Larger gap on malignantventricular (0.0814)
+- **Challenge**: Larger gap on malignantventricular (0.0837)
 - **Recommendation**: Reliable for large datasets; may need re-tuning on smaller ones
 
 ### 🔵 ADWIN
-- **Overall Ranking**: 3rd (avg gap: 0.0424)
-- **Strengths**: Exceptional on small datasets (malignantventricular: 0.0046 gap)
-- **Challenge**: Generalization issues on very small datasets (vtachyarrhythmias: 0.0773)
+- **Overall Ranking**: 3rd (avg gap: 0.0432)
+- **Strengths**: Exceptional on small datasets (malignantventricular: 0.0059 gap)
+- **Challenge**: Generalization issues on very small datasets (vtachyarrhythmias: 0.0780)
 - **Recommendation**: Best for malignantventricular-like scenarios
 
 ### 🟡 Page-Hinkley
-- **Overall Ranking**: 6th (avg gap: 0.0516)
+- **Overall Ranking**: 6th (avg gap: 0.0527)
 - **Strengths**: Stable on medium-sized datasets
 - **Challenge**: Highest average gap suggests parameter sensitivity
 - **Recommendation**: Requires careful tuning; less portable across datasets
 
 ### 🟣 HDDM_A
-- **Overall Ranking**: 5th (avg gap: 0.0460)
+- **Overall Ranking**: 5th (avg gap: 0.0472)
 - **Strengths**: Competitive performance on afib_paroxysmal and malignantventricular
 - **Challenge**: Moderate generalization gaps
 - **Recommendation**: Decent secondary option
 
 ### ⚫ HDDM_W
-- **Overall Ranking**: 2nd (avg gap: 0.0212)
-- **Strengths**: Numerically robust (smallest gap)
+- **Overall Ranking**: 2nd (avg gap: 0.0215)
+- **Strengths**: Numerically robust (near-smallest average gap)
 - **Challenge**: Low absolute performance across datasets
 - **Recommendation**: For robustness-critical applications despite lower F3
 
@@ -152,8 +152,8 @@ results/cross_dataset_analysis/
 
 ```csv
 detector,selected_fold,intra_fold_f3,cross_fold_f3,generalization_gap
-floss,fold_b,0.4770,0.4768,0.0002
-kswin,fold_b,0.3929,0.4305,0.0376
+floss,fold_b,0.4794,0.4790,0.0004
+kswin,fold_b,0.3942,0.4326,0.0384
 ```
 
 ---
@@ -162,10 +162,10 @@ kswin,fold_b,0.3929,0.4305,0.0376
 
 ### For Highest Performance
 **Use FLOSS** with hyperparameters from the recommended fold (indicated in CSV).
-- Cross-fold F3: 0.4285 (avg)
-- Generalization gap: 0.0211 (excellent)
+- Cross-fold F3: 0.4306 (avg)
+- Generalization gap: 0.0214 (excellent)
 
-### For Robust Generalization to New Data
+### For Robust Two-Fold Generalization
 **Rank Order**: FLOSS → HDDM_W → ADWIN → KSWIN → HDDM_A → Page-Hinkley
 
 ### For Unknown Dataset Size
@@ -173,10 +173,11 @@ kswin,fold_b,0.3929,0.4305,0.0376
 2. If expected **~20-50 records**: Use ADWIN or KSWIN
 3. If robustness is critical: Use FLOSS (despite lower absolute F3 on some datasets)
 
-### For Hyperparameter Portability
-- ✅ **FLOSS**: Safe to use fold A or fold B hyperparameters on new data
-- ✅ **HDDM_W**: Excellent generalization numerically
-- ⚠️ **Page-Hinkley**: Avoid carrying hyperparameters; retune per dataset
+### For Cross-Dataset Hyperparameter Portability
+- Use the Option 2 portability report (`parameter_portability_option2.md`) as the source of truth.
+- **ADWIN** leads cross-dataset portability (95.07% average transferability).
+- **FLOSS** leads ceiling/two-fold performance, but cross-dataset portability is moderate (75.83%).
+- **Page-Hinkley** has limited portability in the current artefacts (54.32%, with 4 available transfers).
 
 ---
 
@@ -196,11 +197,11 @@ kswin,fold_b,0.3929,0.4305,0.0376
 This is **normal and expected** in streaming detection:
 - Hyperparameters optimized on Fold A reflect its data characteristics
 - Applying same parameters to unseen Fold B tests true generalization
-- FLOSS's minimal gaps prove its hyperparameters are universally effective
+- FLOSS's minimal gaps show strong stability in the evaluated two-fold splits
 
 ---
 
-**Generated**: 2025-12-14
+**Generated**: 2026-05-12
+**Reviewed**: 2026-05-14
 **Analysis Seed**: 42
 **Primary Metric**: f3_weighted
-

@@ -29,8 +29,8 @@ Disponíveis em `visualizations/` com análise de sensibilidade paramétrica
 ## 🔍 Análise Detalhada
 
 Para análise quantitativa, consultar:
-- [`comparisons/malignantventricular/comparative_report.md`](../../../../comparisons/malignantventricular/comparative_report.md)
-- [`comparisons/malignantventricular/detector_rankings.csv`](../../../../comparisons/malignantventricular/detector_rankings.csv)
+- [`comparisons/malignantventricular/comparative_report.md`](../../../comparisons/malignantventricular/comparative_report.md)
+- [`comparisons/malignantventricular/detector_rankings.csv`](../../../comparisons/malignantventricular/detector_rankings.csv)
 
 ---
 

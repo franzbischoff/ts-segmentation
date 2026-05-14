@@ -25,6 +25,12 @@ Cada pasta results/<dataset>/<detector>/ contem tipicamente:
 - visualizations/
 - README.md
 
+Observacao sobre snapshots Markdown:
+
+- Ficheiros como `final_report_with_nab_<timestamp>.md` e `final_report_with_nab_twofold_seed42_<timestamp>.md` sao snapshots auxiliares gerados para preservar uma execucao especifica.
+- Esses snapshots **nao** substituem os artefatos canonicos do diretorio.
+- Para referencia atual do detector/dataset, use prioritariamente `README.md`, `final_report_with_nab.json`, `metrics_comprehensive_with_nab.csv` e, quando aplicavel, os CSVs/relatorios em `comparisons/<dataset>/`.
+
 ## Fluxo de Geracao
 
 ### Predicoes
@@ -32,9 +38,11 @@ Cada pasta results/<dataset>/<detector>/ contem tipicamente:
 ```bash
 python -m src.generate_predictions \
   --detector <detector> \
-  --data data/<dataset>_*.csv \
+  --data data/<dataset>_full.csv \
   --output results/<dataset>/<detector>/predictions_intermediate.csv
 ```
+
+Este comando aplica-se aos detectores Python (`adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w`). FLOSS é gerado externamente pela integração R/`false.alarm` e depois avaliado pela mesma pipeline Python.
 
 ### Avaliacao
 
@@ -89,9 +97,12 @@ A pasta `results/comparisons/` contem visualizacoes comparativas legadas (ex: fl
 ## Fluxo de Geração Completo
 
 ### Modo 1: Geração Inicial (Do Zero)
+
+Para detectores Python:
+
 ```bash
 # 1. Gerar predições
-python -m src.generate_predictions --detector <detector> --data data/<dataset>_*.csv --output results/<dataset>/<detector>/predictions_intermediate.csv
+python -m src.generate_predictions --detector <detector> --data data/<dataset>_full.csv --output results/<dataset>/<detector>/predictions_intermediate.csv
 
 # 2. Avaliar métricas
 python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/predictions_intermediate.csv --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --report-output results/<dataset>/<detector>/final_report_with_nab.json
@@ -100,10 +111,14 @@ python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/pr
 python -m src.visualize_results --metrics results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --output-dir results/<dataset>/<detector>/visualizations
 ```
 
+Para FLOSS, gerar primeiro `predictions_intermediate.csv` pela integração R/`false.alarm`; depois executar as etapas de avaliação e visualização Python.
+
 ### Modo 2: Incrementar Predições (Append Mode)
+Aplicável aos detectores Python gerados por `src.generate_predictions`.
+
 ```bash
 # Útil para grid search em paralelo ou incremental
-python -m src.generate_predictions --detector <detector> --data data/<dataset>_*.csv --output results/<dataset>/<detector>/predictions_intermediate.csv --append --n-jobs -1
+python -m src.generate_predictions --detector <detector> --data data/<dataset>_full.csv --output results/<dataset>/<detector>/predictions_intermediate.csv --append --n-jobs -1
 
 # Depois, reavalie métricas (mesmo comando da Etapa 2)
 python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/predictions_intermediate.csv --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --report-output results/<dataset>/<detector>/final_report_with_nab.json

@@ -29,8 +29,8 @@ Disponíveis em `visualizations/` com análise de sensibilidade paramétrica
 ## 🔍 Análise Detalhada
 
 Para análise quantitativa, consultar:
-- [`comparisons/vtachyarrhythmias/comparative_report.md`](../../../../comparisons/vtachyarrhythmias/comparative_report.md)
-- [`comparisons/vtachyarrhythmias/detector_rankings.csv`](../../../../comparisons/vtachyarrhythmias/detector_rankings.csv)
+- [`comparisons/vtachyarrhythmias/comparative_report.md`](../../../comparisons/vtachyarrhythmias/comparative_report.md)
+- [`comparisons/vtachyarrhythmias/detector_rankings.csv`](../../../comparisons/vtachyarrhythmias/detector_rankings.csv)
 
 ---
 

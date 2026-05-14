@@ -9,7 +9,6 @@ Este diretório contém os resultados da análise do detector FLOSS (Fast Lowcos
 ### Predições e Métricas
 - **`predictions_intermediate.csv`** - Predições brutas para todas combinações de parâmetros
 - **`metrics_comprehensive_with_nab.csv`** - Métricas detalhadas (F1/F3, NAB, temporais)
-- **`metrics_comprehensive_with_nab.jsonl`** - Formato alternativo JSONL
 - **`final_report_with_nab.json`** - Relatório consolidado com melhores configurações
 - **`final_report_with_nab_twofold_seed42.json`** - Análise two-fold cross-validation
 
@@ -25,14 +24,14 @@ Este diretório contém os resultados da análise do detector FLOSS (Fast Lowcos
 ## 🔍 Análise Detalhada
 
 Para análise quantitativa detalhada e rankings comparativos, consultar os ficheiros canônicos:
-- [`comparisons/malignantventricular/comparative_report.md`](../../../../comparisons/malignantventricular/comparative_report.md)
-- [`comparisons/malignantventricular/detector_rankings.csv`](../../../../comparisons/malignantventricular/detector_rankings.csv)
+- [`comparisons/malignantventricular/comparative_report.md`](../../../comparisons/malignantventricular/comparative_report.md)
+- [`comparisons/malignantventricular/detector_rankings.csv`](../../../comparisons/malignantventricular/detector_rankings.csv)
 
 ## 📚 Ver Também
 
-- **Resultados AFib Paroxysmal (referência)**: [`../afib_paroxysmal/floss/README.md`](../afib_paroxysmal/floss/README.md)
+- **Resultados AFib Paroxysmal (referência)**: [`../../afib_paroxysmal/floss/README.md`](../../afib_paroxysmal/floss/README.md)
 - **Análise Cross-Dataset**: [`../../cross_dataset_analysis/floss/`](../../cross_dataset_analysis/floss/)
-- **Documentação de FLOSS**: [README principal — Sobre FLOSS](../../../../README.md#sobre-floss)
+- **Documentação de FLOSS**: [README principal — Sobre FLOSS](../../../README.md#sobre-floss)
 
 ---
 

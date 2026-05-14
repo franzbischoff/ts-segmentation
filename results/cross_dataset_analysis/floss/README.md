@@ -1,4 +1,6 @@
-# Análise Cross-Dataset: FLOSS (2025-11-25)
+# Análise Cross-Dataset: FLOSS (atualizado 2026-05-14)
+
+> Nota de escopo: esta é uma análise macro/micro por detector. Para rankings finais de publicação e comparação robusta entre detectores, usar os artefatos Option 1/2/3 em `results/cross_dataset_analysis/`.
 
 **Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`
 **Critério padrão**: True Macro-Average com cobertura em todos os datasets.
@@ -12,7 +14,7 @@ window_size:         125
 regime_threshold:    0.55
 regime_landmark:     5.0
 min_gap_samples:     1000
-F3-weighted macro-average: 0.3958 ± 0.0972
+F3-weighted macro-average: 0.3982 ± 0.0981
 ```
 
 - **Status**: continua líder isolado, agora com configurações que comprovadamente funcionam nos três datasets.
@@ -22,11 +24,11 @@ F3-weighted macro-average: 0.3958 ± 0.0972
 
 | Rank | window | thresh | landmark | gap | Score | Std |
 |------|--------|--------|----------|-----|-------|-----|
-| 1 | 125 | 0.55 | 5.0 | 1000 | **0.3958** | 0.0972 |
-| 2 | 125 | 0.60 | 5.0 | 1000 | 0.3938 | 0.0940 |
-| 3 | 125 | 0.55 | 5.0 | 500 | 0.3936 | 0.0911 |
-| 4 | 125 | 0.50 | 4.5 | 1000 | 0.3930 | 0.1125 |
-| 5 | 125 | 0.55 | 4.5 | 1000 | 0.3909 | 0.0978 |
+| 1 | 125 | 0.55 | 5.0 | 1000 | **0.3982** | 0.0981 |
+| 2 | 125 | 0.60 | 5.0 | 1000 | 0.3961 | 0.0948 |
+| 3 | 125 | 0.55 | 5.0 | 500 | 0.3959 | 0.0921 |
+| 4 | 125 | 0.50 | 4.5 | 1000 | 0.3949 | 0.1136 |
+| 5 | 125 | 0.55 | 4.5 | 1000 | 0.3930 | 0.0987 |
 
 **Insights**:
 - `window_size=125` domina o top-5 (≈0.5 s @ 250 Hz).
@@ -38,14 +40,14 @@ F3-weighted macro-average: 0.3958 ± 0.0972
 ## 📉 File-Weighted (Micro) — Referência histórica
 
 - Melhor combinação micro permanece `window=75`, `threshold=0.7`, `landmark=4.0`, `gap=1000` → **0.4491 ± 0.2244**
-- Diferença macro × micro: -12%. O file-weighted ainda mostra o teto máximo quando o dataset `afib_paroxysmal` domina (80% dos ficheiros).
+- Diferença macro × micro: -11%. O file-weighted ainda mostra o teto máximo quando o dataset `afib_paroxysmal` domina (80% dos ficheiros).
 
 ---
 
 ## 🔧 Resumo Técnico
 
 1. **Cobertura total**: 25.920 combinações aparecem nos 3 datasets (nenhuma filtrada).
-2. **Estabilidade**: std médio das top configs caiu para ≈0.097 — muito melhor do que 0.22 observado quando olhávamos apenas para afib.
+2. **Estabilidade**: std médio das top configs fica em ≈0.10 — muito melhor do que 0.228 observado quando olhamos apenas para o melhor F3* em afib.
 3. **Min gap**: 1000 continua ótimo; aumentar para 2000 não trouxe ganhos relevantes no macro ranking.
 4. **Window maior**: janelas ≥125 oferecem resiliência aos artefatos ventriculares mantendo recall alto em afib.
 

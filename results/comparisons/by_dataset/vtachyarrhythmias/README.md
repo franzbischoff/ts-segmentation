@@ -39,15 +39,15 @@ Para análise quantitativa, consultar **aqui**:
 ## 📈 Análise Detalhada
 
 Para informações detalhadas, ver:
-- **Relatório Completo**: [`./comparative_report.md`](./comparative_report.md)
-- **Rankings**: [`./detector_rankings.csv`](./detector_rankings.csv)
+- **Relatório Completo**: [`comparisons/vtachyarrhythmias/comparative_report.md`](../../../../comparisons/vtachyarrhythmias/comparative_report.md)
+- **Rankings**: [`comparisons/vtachyarrhythmias/detector_rankings.csv`](../../../../comparisons/vtachyarrhythmias/detector_rankings.csv)
 - **Comparação Cross-Dataset**: [`../cross_dataset/`](../cross_dataset/)
 
 ---
 
 ## 🎯 Recomendações
 
-Vendo números atualizados em `comparative_report.md` + `detector_summary.csv`
+Ver números atualizados em `comparisons/vtachyarrhythmias/comparative_report.md` + `comparisons/vtachyarrhythmias/detector_summary.csv`
 
 ---
 

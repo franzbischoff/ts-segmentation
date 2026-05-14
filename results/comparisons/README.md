@@ -6,7 +6,7 @@
 >
 > **Para replicar estas visualizações**, ver: [Geração de Relatórios](#-geração-de-relatórios)
 
-**Última Atualização**: 2025-12-15
+**Última Atualização**: 2026-05-14
 **Status**: Arquivo visual de apoio (não canônico; use `comparisons/<dataset>/` para métricas/rankings)
 
 ---
@@ -39,19 +39,19 @@ Análises robustez e portabilidade de detectores **através de múltiplos datase
 - Pergunta: "Qual é a melhor performance que cada detector consegue atingir (quando tunado)?
 - Métrica: F3-weighted máximo por dataset (macro-average)
 - Ficheiro: `option1_ceiling_analysis.png`
-- Ranking: FLOSS (0.4285) > KSWIN (0.3176) > Page-Hinkley (0.3132)
+- Ranking: FLOSS (0.4306) > KSWIN (0.3203) > Page-Hinkley (0.3152)
 
 #### **Opção 2: Parameter Portability** 🚀
 - Pergunta: "Consigo usar hiperparâmetros de um dataset noutro sem re-tuning?"
 - Métrica: Transferability ratio (params origem → alvo)
 - Ficheiro: `option2_portability_heatmap.png`
-- Ranking: ADWIN (94.90%) > KSWIN (87.84%) > FLOSS (75.85%)
+- Ranking: ADWIN (95.07%) > KSWIN (87.75%) > FLOSS (75.83%)
 
 #### **Opção 3: Unified Robustness Score** ⚖️
 - Pergunta: "Qual detector é globalmente robusto (combinando ceiling + portabilidade)?"
-- Fórmula: `0.6×(1-ceiling_gap) + 0.4×(1-transfer_variance)`
+- Fórmula: `0.6×(1 - 2-fold gap) + 0.4×(1 - transfer_variance)`
 - Ficheiro: `option3_unified_score_ranking.png`
-- Ranking: FLOSS (0.9763) > ADWIN (0.9713) > KSWIN (0.9690)
+- Ranking: FLOSS (0.9761) > ADWIN (0.9710) > KSWIN (0.9690)
 
 #### **Production Decision Matrix** 🎓
 - Ficheiro: `production_decision_matrix.png`
@@ -66,31 +66,31 @@ Análises robustez e portabilidade de detectores **através de múltiplos datase
 
 | Perspetiva | Foco | Top Detector | Score | Use Case |
 |-----------|------|---|---|---|
-| **Opção 1** | 🎯 Máxima performance | FLOSS | F3=0.4285 | Research, max performance |
-| **Opção 2** | 🚀 Portabilidade | ADWIN | 94.90% | Production ready, sem labels |
-| **Opção 3** | ⚖️ Robustez unificada | FLOSS | 0.9763 | Escolha holística |
+| **Opção 1** | 🎯 Máxima performance | FLOSS | F3=0.4306 | Research, max performance |
+| **Opção 2** | 🚀 Portabilidade | ADWIN | 95.07% | Production ready, sem labels |
+| **Opção 3** | ⚖️ Robustez unificada | FLOSS | 0.9761 | Escolha holística |
 
 ---
 
 ## 🔍 Como Usar Esta Estrutura
 
 ### Cenário 1: "Qual detector é melhor para dataset X?"
-1. Ir a `by_dataset/<dataset>/`
-2. Ler `comparative_report.md`
-3. Ver gráficos em `visualizations/` (especialmente `heatmap_metrics_comparison.png`)
+1. Ler `comparisons/<dataset>/comparative_report.md`
+2. Consultar `comparisons/<dataset>/detector_rankings.csv` e `detector_summary.csv`
+3. Usar `results/comparisons/by_dataset/<dataset>/visualizations/` apenas como apoio visual histórico
 
 ### Cenário 2: "Qual detector escolho para produção?"
 1. Ir a `cross_dataset/`
 2. Ler `production_decision_matrix.png`
 3. Se tiver labels → usar Opção 1 (FLOSS)
 4. Se SEM labels → usar Opção 2 (ADWIN)
-5. Se quiser balanced → usar Opção 3 (KSWIN)
+5. Se quiser balanced → considerar KSWIN como sweet spot e validar contra Opção 3
 
 ### Cenário 3: "Como transferir hiperparâmetros entre datasets?"
 1. Ir a `cross_dataset/`
 2. Ver `option2_portability_heatmap.png`
-3. ADWIN: 95% chance de sucesso (melhor choice)
-4. FLOSS: 76% chance (precisa validação)
+3. ADWIN: ~95% chance de retenção média (melhor choice)
+4. FLOSS: ~76% de retenção média (precisa validação)
 
 ---
 
@@ -171,8 +171,8 @@ python -m src.visualize_cross_dataset_summary \
 ## 📚 Referências Relacionadas
 
 - **Análises Detalhadas por Detector**: [`results/cross_dataset_analysis/`](../cross_dataset_analysis/)
-- **Resultados por Dataset**: [`results/<detector>/`](../)
-- **Documentação de Métricas**: [`docs/evaluation_metrics_v1.md`](../../docs/evaluation_metrics_v1.md)
+- **Resultados por Dataset**: [`results/<dataset>/<detector>/`](../)
+- **Documentação de Métricas**: [`docs/evaluation_metrics.md`](../../docs/evaluation_metrics.md)
 - **Guia de Visualizações**: [`docs/visualizations_guide.md`](../../docs/visualizations_guide.md)
 
 ---

@@ -1,9 +1,9 @@
 # Cross-Dataset Analysis: 3 Opções de Avaliação
 
-**Last Updated:** 2025-12-15 16:56:17 (✅ SUCCESS)
+**Last Updated:** 2026-05-14
 
 
-**Última Atualização**: 2026-05-12
+**Última Atualização**: 2026-05-14
 **Status**: Visualizações concluídas; usar `comparisons/<dataset>/` para rankings canônicos.
 
 ---
@@ -30,16 +30,16 @@ Avaliar **robustez** de detectores através de múltiplos datasets, respondendo 
 
 **Ranking**:
 ```
-1. FLOSS       F3 = 0.4285 ± 0.13 (CV=31%)
-2. KSWIN       F3 = 0.3176 ± 0.10 (CV=31%)
-3. Page-Hinkley F3 = 0.3132 ± 0.07 (CV=22%)
-4. HDDM_A      F3 = 0.2997 ± 0.15 (CV=50%)
-5. ADWIN       F3 = 0.2879 ± 0.09 (CV=31%)
-6. HDDM_W      F3 = 0.1527 ± 0.13 (CV=85%)
+1. FLOSS        F3 = 0.4306 ± 0.13 (CV=30.7%)
+2. KSWIN        F3 = 0.3203 ± 0.11 (CV=33.8%)
+3. Page-Hinkley F3 = 0.3152 ± 0.08 (CV=26.5%)
+4. HDDM_A       F3 = 0.3022 ± 0.07 (CV=24.4%)
+5. ADWIN        F3 = 0.2890 ± 0.12 (CV=41.0%)
+6. HDDM_W       F3 = 0.1534 ± 0.20 (CV=128.1%)
 ```
 
 **Interpretação**:
-- FLOSS é 48% melhor que ADWIN quando tunado
+- FLOSS é ~49.0% melhor que ADWIN quando tunado
 - Mas requer tuning específico por dataset
 - Não é portável (vê Opção 2)
 
@@ -61,16 +61,16 @@ Avaliar **robustez** de detectores através de múltiplos datasets, respondendo 
 ratio = (F3_transferred / F3_local_best) × 100%
 ```
 - Testa: melhores params de dataset A → dataset B
-- 36 transfers testadas (6 detectores × 3 sources × 2 targets)
+- 34 transfers testadas (5 detectores × 6 transfers + Page-Hinkley com 4 transfers disponíveis)
 
 **Ranking**:
 ```
-1. ADWIN       Transferability = 94.90% (melhor generalização)
-2. KSWIN       Transferability = 87.84%
-3. FLOSS       Transferability = 75.85% ← PERDE 24% ao transferir!
-4. HDDM_A      Transferability = 65.17%
-5. Page-Hinkley Transferability = 54.31%
-6. HDDM_W      Transferability = 45.64%
+1. ADWIN        Transferability = 95.07% (melhor generalização)
+2. KSWIN        Transferability = 87.75%
+3. FLOSS        Transferability = 75.83% ← perde ~24.17% ao transferir
+4. HDDM_A       Transferability = 64.99%
+5. Page-Hinkley Transferability = 54.32%
+6. HDDM_W       Transferability = 45.76%
 ```
 
 **Interpretação**:
@@ -93,20 +93,20 @@ ratio = (F3_transferred / F3_local_best) × 100%
 
 **Fórmula**:
 ```
-Score = 0.6×(1 - avg_ceiling_gap) + 0.4×(1 - transfer_variance)
+Score = 0.6×(1 - 2-fold gap) + 0.4×(1 - transfer_variance)
          └─ Performance ─┘              └─ Portabilidade ─┘
 ```
-- Pesa 60% ceiling (performance máxima)
-- Pesa 40% portabilidade (generalização)
+- Pesa 60% consistência intra-dataset medida pelo gap two-fold
+- Pesa 40% estabilidade da portabilidade entre datasets
 
 **Ranking**:
 ```
-1. FLOSS       Score = 0.9763 (melhor globalmente)
-2. ADWIN       Score = 0.9713 (segundo lugar)
+1. FLOSS       Score = 0.9761 (melhor globalmente)
+2. ADWIN       Score = 0.9710 (segundo lugar)
 3. KSWIN       Score = 0.9690 (sweet spot)
-4. HDDM_A      Score = 0.9509
-5. HDDM_W      Score = 0.9426
-6. Page-Hinkley Score = 0.9049
+4. HDDM_A      Score = 0.9507
+5. HDDM_W      Score = 0.9425
+6. Page-Hinkley Score = 0.9047
 ```
 
 **Interpretação**:
@@ -133,34 +133,28 @@ NOVO DATASET?
 ├─ COM LABELS para tuning?
 │  │
 │  └─ SIM: Usar FLOSS
-│     └─ F3 esperado: 0.42-0.43 (máximo)
+│     └─ F3 esperado: 0.43 (ceiling atual)
 │     └─ Esforço: Grid search (~horas)
 │
 └─ SEM LABELS (produção imediata)?
    │
-   ├─ Precisa máximo recall? (clínica)
-   │  └─ KSWIN + ma=50, min_gap=1000
-   │     └─ Recall=99%, mas FP/min=9.4
-   │
-   ├─ Precisa mínimos alarmes? (alertas)
-   │  └─ ADWIN + params default
-   │     └─ Recall=60%, FP/min=3.1, portabilidade=95%
+   ├─ Precisa máxima portabilidade?
+   │  └─ ADWIN
+   │     └─ Transferability média: 95.07%
    │
    └─ Balanced (melhor aposta geral)?
-      └─ KSWIN + ma=50, min_gap=1000
-         └─ Recall=99%, F3=0.24, portabilidade=88%
+      └─ KSWIN
+         └─ Ceiling=0.3203, transferability=87.75%
 ```
 
 ### Tabela Comparativa
 
 | Cenário | Detector | Razão | Performance | Transferability |
 |---------|----------|-------|---|---|
-| **Max Performance** | FLOSS | F3=0.43 | 🥇 0.4285 | 75.85% |
-| **No Tuning** | ADWIN | 95% portabilidade | 0.2879 | 🥇 94.90% |
-| **Balanced** | KSWIN | Sweet spot | 0.3176 | 87.84% |
-| **Max Recall** | KSWIN | 99.44% detecção | 0.2435 | 87.84% |
-| **Min FP** | FLOSS | 2.32 FP/min | 0.3397 | 75.85% |
-| **Holistic** | FLOSS | Score=0.9763 | 0.4285 | 75.85% |
+| **Max Performance** | FLOSS | Maior ceiling atual | 🥇 0.4306 | 75.83% |
+| **No Tuning** | ADWIN | Maior portabilidade média | 0.2890 | 🥇 95.07% |
+| **Balanced** | KSWIN | Sweet spot | 0.3203 | 87.75% |
+| **Holistic** | FLOSS | Score unificado mais alto | 0.4306 | 75.83% |
 
 ---
 
@@ -228,7 +222,7 @@ Nota: o resumo conjunto (`option123_summary.png`) não é salvo nesta pasta.
 
 - **Relatórios Detalhados**: [`../../cross_dataset_analysis/`](../../cross_dataset_analysis/)
 - **Por Dataset**: [`../by_dataset/`](../by_dataset/)
-- **Documentação de Métricas**: [`../../../docs/evaluation_metrics_v1.md`](../../../docs/evaluation_metrics_v1.md)
+- **Documentação de Métricas**: [`../../../docs/evaluation_metrics.md`](../../../docs/evaluation_metrics.md)
 - **Guia Principal**: [`../README.md`](../README.md)
 
 ---
@@ -236,12 +230,12 @@ Nota: o resumo conjunto (`option123_summary.png`) não é salvo nesta pasta.
 ## 📝 Notas
 
 1. **As 3 opções não são excludentes** - complementam-se para visão holística
-2. **Opção 2 (ADWIN 95%) é superior para produção sem tuning**
-3. **Opção 1 (FLOSS 0.43) representa máximo potencial se tiver labels**
+2. **Opção 2 (ADWIN 95.07%) é superior para produção sem tuning**
+3. **Opção 1 (FLOSS 0.4306) representa máximo potencial se tiver labels**
 4. **Opção 3 (FLOSS score=0.97) é "sabedoria convencional" se não souber qual escolher**
 5. Este diretório contém os PNGs históricos gerados para suporte visual.
 
 ---
 
-**Última Atualização**: 2026-05-12
+**Última Atualização**: 2026-05-14
 **Status**: ✅ Visualizações presentes; ✅ documentação ajustada para consistência

@@ -1,6 +1,6 @@
 # Especificação do Formato CSV `predictions_intermediate.csv`
 
-Este documento descreve o formato exato do ficheiro CSV `predictions_intermediate.csv` usado na pipeline (gerado pelos scripts `generate_*.sh` para detectores Python e, no caso de FLOSS, por integração externa em R).
+Este documento descreve o formato exato do ficheiro CSV `predictions_intermediate.csv` usado na pipeline (gerado por `src.generate_predictions`, frequentemente via scripts `scripts/generate_*.sh`, e, no caso de FLOSS, por integração externa em R).
 
 ## Estrutura Geral
 
@@ -444,67 +444,10 @@ gt_times <- convert_indices_to_times(gt_indices)
 
 ## Formato Agregado: `models_aggregated.csv`
 
-Este ficheiro é a saída da agregação de métricas por **combinação única de parâmetros** (modelo), útil para análise SHAP e interpretabilidade.
-
-**Geração**:
-```bash
-python -m src.simplify_metrics_for_analysis \
-  --input results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv \
-  --output results/<dataset>/<detector>/models_aggregated.csv \
-  --aggregation mean
-```
-
-### Estrutura
-
-**Formato**: 1 linha por combinação única de parâmetros (modelo)
-
-**Colunas**:
-1. `model_id` — Identificador único (model_1, model_2, ...)
-2-N. **Parâmetros** (variam por detector):
-   - ADWIN: `delta`, `ma_window`, `min_gap_samples`
-   - Page-Hinkley: `lambda_`, `delta`, `alpha`, `ma_window`, `min_gap_samples`
-   - KSWIN: `alpha`, `window_size`, `stat_size`, `ma_window`, `min_gap_samples`
-   - HDDM_A: `drift_confidence`, `warning_confidence`, `two_side_option`, `ma_window`, `min_gap_samples`
-   - HDDM_W: (idem HDDM_A) + `lambda_option`
-   - FLOSS: `window_size`, `regime_threshold`, `regime_landmark`, `min_gap_samples`
-
-N+1. `n_records` — Quantos ficheiros foram agregados neste modelo
-
-N+2 até final. **Campos agregados do modelo** (média/mediana entre ficheiros):
-  - Metadados/contagens agregadas: `duration_samples`, `n_ground_truth`, `n_detections`
-  - Métricas principais: `f1_classic`, `f1_weighted`, `f3_classic`, `f3_weighted`
-  - Métricas temporais: `recall_4s`, `recall_10s`, `precision_4s`, `precision_10s`
-  - Latência e custo: `edd_median_s`, `edd_p95_s`, `fp_per_min`
-  - NAB: `nab_score_standard`, `nab_score_low_fp`, `nab_score_low_fn`
-  - Contagens de matching agregadas: `tp`, `fp`, `fn`, `tp_weight_sum`
-
-### Exemplo
-
-```csv
-model_id,delta,ma_window,min_gap_samples,n_records,duration_samples,n_ground_truth,n_detections,f1_classic,f1_weighted,f3_classic,f3_weighted,recall_4s,recall_10s,precision_4s,precision_10s,edd_median_s,edd_p95_s,fp_per_min,nab_score_standard,nab_score_low_fp,nab_score_low_fn,tp,fp,fn,tp_weight_sum
-model_1,0.005,10,1000,229,182345.7,1.0,68.2,0.165,0.089,0.321,0.168,0.602,0.723,0.087,0.125,2.134,5.982,5.234,-0.182,-0.240,-0.101,0.72,67.48,0.28,0.663
-model_2,0.005,10,2000,229,182345.7,1.0,51.6,0.152,0.082,0.304,0.160,0.571,0.689,0.082,0.119,2.456,6.341,3.421,-0.201,-0.253,-0.121,0.69,50.91,0.31,0.634
-...
-```
-
-### Diferenças vs `predictions_intermediate.csv`
-
-| Aspeto | predictions_intermediate.csv | models_aggregated.csv |
-|--------|------------------------------|----------------------|
-| **Granularidade** | 1 linha por ficheiro | 1 linha por modelo |
-| **Tamanho** | 5.9M linhas (FLOSS afib) | 25,920 linhas (FLOSS afib) |
-| **Formato de Dados** | Detecções + Ground truth | Métricas e contagens agregadas por modelo |
-| **Uso** | Avaliar predictions | Análise SHAP, importância de parâmetros |
-
-### Valores NaN
-
-Certos modelos podem ter `NaN` em métricas específicas quando a condição não foi atendida:
-- `edd_median_s` = NaN se nenhuma detecção correta foi feita (FN=total)
-- `edd_p95_s` = NaN idem
-
-**Decisão**: Manter NaN (indicam falha de detecção, informação valiosa para SHAP)
-
----
+O formato agregado é documentado em detalhe na seção
+`Especificação do Formato CSV models_aggregated.csv`, mais abaixo neste documento.
+Esta seção evita duplicar a especificação para manter uma única fonte textual
+sobre colunas, exemplos, NaN e contagens por detector.
 
 ## Notas Importantes para o Agente R
 
@@ -569,8 +512,8 @@ Este documento descreve o formato do ficheiro CSV gerado por `src/simplify_metri
 `models_aggregated.csv` é criado **a partir de** `metrics_comprehensive_with_nab.csv` e é utilizado para:
 
 - **Análise de importância de parâmetros** (ex: SHAP em R)
-- **Redução dimensionais** de dados (em vez de métricas por ficheiro, ter por modelo)
-- **Validações de robustez** macro (agregação cross-dataset)
+- **Redução dimensional** dos dados (em vez de métricas por ficheiro, ter por modelo)
+- **Preparação de dados compactos** para análises externas de interpretabilidade ou ML
 
 **Diferença fundamental**:
 - `predictions_intermediate.csv`: 1 linha = 1 ficheiro ECG × 1 combinação de parâmetros
@@ -600,38 +543,47 @@ python -m src.simplify_metrics_for_analysis \
 
 ## Formato das Colunas
 
-### Estrutura Geral (15-20 colunas, por detector)
+### Estrutura Geral (varia por detector)
 
 ```
 model_id, [parâmetros específicos do detector...], n_records, [métricas agregadas...]
 ```
 
+No output padrão atual, o ficheiro tem 20 ou 21 campos agregados após
+`n_records` (dependendo da presença de `duration_samples`). O número total de
+colunas varia conforme a quantidade de parâmetros do detector (ex.: 26 colunas
+para ADWIN, 29 para HDDM_W, sem `--add-stats`).
+
 ### Exemplo: ADWIN com 594 modelos
+
+Este exemplo usa os artefatos atuais de `results/afib_paroxysmal/adwin/models_aggregated.csv`.
 
 **Primeiras 6 colunas (ID + parâmetros):**
 
 ```
 model_id,delta,ma_window,min_gap_samples,n_records
-model_1,0.005,10,1000,229
-model_2,0.005,10,2000,229
-model_3,0.005,10,3000,229
+model_1,0.005,10,500,229
+model_2,0.005,10,1000,229
+model_3,0.005,10,2000,229
 ...
 model_594,0.1,300,5000,229
 ```
 
-**Colunas de métricas agregadas (20 métricas):**
+**Campos agregados no output atual padrão:**
 
 ```
-f1_classic_mean, f1_weighted_mean, f3_classic_mean, f3_weighted_mean,
-recall_4s_mean, recall_10s_mean, precision_4s_mean, precision_10s_mean,
-edd_median_s_mean, edd_p95_s_mean, fp_per_min_mean,
-nab_score_standard_mean, nab_score_low_fp_mean, nab_score_low_fn_mean
+duration_samples, n_ground_truth, n_detections,
+f1_classic, f1_weighted, f3_classic, f3_weighted,
+recall_4s, recall_10s, precision_4s, precision_10s,
+edd_median_s, edd_p95_s, fp_per_min,
+nab_score_standard, nab_score_low_fp, nab_score_low_fn,
+tp, fp, fn, tp_weight_sum
 ```
 
 **Linha de exemplo:**
 
 ```
-model_1,0.005,10,1000,229,0.3994,0.1603,0.4188,0.1689,0.7863,0.9777,0.0714,0.1020,2.64,3.12,10.00,-4.282,-3.894,-3.384
+model_1,0.005,10,500,229,180554.47598253275,5.681222707423581,92.51965065502183,0.16524574545244128,0.14841669896430548,0.37059070765798363,0.3306217873592183,0.6325181083722055,0.820378217196224,0.07680042382111923,0.11413107599537244,2.767150684931506,4.5335616438356166,9.140104174388261,-6.726536383913302,-13.941920122556695,-5.3939536848972836,4.331877729257642,83.97379912663756,1.3493449781659388,3.7723114992721984
 ```
 
 ### Descrição Detalhada das Colunas
@@ -669,7 +621,24 @@ model_1,0.005,10,1000,229,0.3994,0.1603,0.4188,0.1689,0.7863,0.9777,0.0714,0.102
 | `ma_window` | integer | Janela de média móvel |
 | `min_gap_samples` | integer | Mínimo de amostras entre deteções |
 
-**HDDM_A / HDDM_W**: (ver `predictions_csv_format_specification.md` acima)
+**HDDM_A**:
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `drift_confidence` | float | Nível de confiança para drift |
+| `warning_confidence` | float | Nível de confiança para aviso |
+| `two_side_option` | boolean | Monitorização bilateral (`True`) ou unilateral (`False`) |
+| `ma_window` | integer | Janela de média móvel |
+| `min_gap_samples` | integer | Mínimo de amostras entre deteções |
+
+**HDDM_W**:
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `drift_confidence` | float | Nível de confiança para drift |
+| `warning_confidence` | float | Nível de confiança para aviso |
+| `lambda_option` | float | Peso da média móvel exponencial |
+| `two_side_option` | boolean | Monitorização bilateral (`True`) ou unilateral (`False`) |
+| `ma_window` | integer | Janela de média móvel |
+| `min_gap_samples` | integer | Mínimo de amostras entre deteções |
 
 #### 3. Coluna de Contagem
 
@@ -679,33 +648,52 @@ model_1,0.005,10,1000,229,0.3994,0.1603,0.4188,0.1689,0.7863,0.9777,0.0714,0.102
 
 **Nota**: `n_records` é constante para um dataset mas varia entre datasets (afib=229, malignant=22, vtachy=34)
 
-#### 4. Colunas de Métricas Agregadas (20 no total)
+#### 4. Campos Agregados no Output Atual
+
+No output padrão atual de `src/simplify_metrics_for_analysis.py`, os nomes das colunas agregadas **não** recebem o sufixo `_mean` quando a agregação escolhida é `mean`. O script preserva os nomes originais das colunas e aplica a agregação diretamente ao agrupamento.
+
+Além das métricas propriamente ditas, o CSV agregado também inclui alguns metadados/contagens agregadas.
+
+**Metadados e contagens agregadas**:
+| Coluna | Descrição |
+|--------|-----------|
+| `duration_samples` | Média/mediana da duração do sinal em amostras, quando disponível |
+| `n_ground_truth` | Média/mediana de eventos reais por registo |
+| `n_detections` | Média/mediana de deteções por registo |
 
 **F-Scores**:
 | Coluna | Descrição | Alcance | Agregação |
 |--------|-----------|---------|-----------|
-| `f1_classic_mean` | F1 clássico agregado | [0, 1] | Média ou Mediana |
-| `f1_weighted_mean` | F1 ponderado por latência | [0, 1] | Média ou Mediana |
-| `f3_classic_mean` | F3 clássico agregado | [0, 1] | Média ou Mediana |
-| `f3_weighted_mean` | F3 ponderado por latência (PRIMÁRIA) | [0, 1] | Média ou Mediana |
+| `f1_classic` | F1 clássico agregado | [0, 1] | Média ou Mediana |
+| `f1_weighted` | F1 ponderado por latência | [0, 1] | Média ou Mediana |
+| `f3_classic` | F3 clássico agregado | [0, 1] | Média ou Mediana |
+| `f3_weighted` | F3 ponderado por latência (PRIMÁRIA) | [0, 1] | Média ou Mediana |
 
 **Métricas Temporais**:
 | Coluna | Descrição | Alcance | Agregação |
 |--------|-----------|---------|-----------|
-| `recall_4s_mean` | Recall dentro de 4s | [0, 1] | Média ou Mediana |
-| `recall_10s_mean` | Recall dentro de 10s | [0, 1] | Média ou Mediana |
-| `precision_4s_mean` | Precision dentro de 4s | [0, 1] | Média ou Mediana |
-| `precision_10s_mean` | Precision dentro de 10s | [0, 1] | Média ou Mediana |
-| `edd_median_s_mean` | Latência mediana (segundos) | [0, ∞) | Média ou Mediana |
-| `edd_p95_s_mean` | Latência p95 (segundos) | [0, ∞) | Média ou Mediana |
-| `fp_per_min_mean` | Falsos positivos por minuto | [0, ∞) | Média ou Mediana |
+| `recall_4s` | Recall dentro de 4s | [0, 1] | Média ou Mediana |
+| `recall_10s` | Recall dentro de 10s | [0, 1] | Média ou Mediana |
+| `precision_4s` | Precision dentro de 4s | [0, 1] | Média ou Mediana |
+| `precision_10s` | Precision dentro de 10s | [0, 1] | Média ou Mediana |
+| `edd_median_s` | Latência mediana (segundos) | [0, ∞) | Média ou Mediana |
+| `edd_p95_s` | Latência p95 (segundos) | [0, ∞) | Média ou Mediana |
+| `fp_per_min` | Falsos positivos por minuto | [0, ∞) | Média ou Mediana |
 
 **NAB Scores**:
 | Coluna | Descrição | Alcance | Agregação |
 |--------|-----------|---------|-----------|
-| `nab_score_standard_mean` | NAB Standard agregado | (-∞, +∞) | Média ou Mediana |
-| `nab_score_low_fp_mean` | NAB Low FP agregado | (-∞, +∞) | Média ou Mediana |
-| `nab_score_low_fn_mean` | NAB Low FN agregado | (-∞, +∞) | Média ou Mediana |
+| `nab_score_standard` | NAB Standard agregado | (-∞, +∞) | Média ou Mediana |
+| `nab_score_low_fp` | NAB Low FP agregado | (-∞, +∞) | Média ou Mediana |
+| `nab_score_low_fn` | NAB Low FN agregado | (-∞, +∞) | Média ou Mediana |
+
+**Contagens de matching agregadas**:
+| Coluna | Descrição |
+|--------|-----------|
+| `tp` | Média/mediana de true positives |
+| `fp` | Média/mediana de false positives |
+| `fn` | Média/mediana de false negatives |
+| `tp_weight_sum` | Soma ponderada agregada dos TP por latência |
 
 ### Tratamento de Valores Faltantes
 
@@ -714,7 +702,7 @@ model_1,0.005,10,1000,229,0.3994,0.1603,0.4188,0.1689,0.7863,0.9777,0.0714,0.102
   - Causa: modelo não teve nenhum TP em alguns ficheiros
   - Significado: modelo falhou em detectar eventos
 - **Decisão**: Manter `NaN` (indica informação crítica: falha de detecção)
-- **Agregação**: Média/mediana com `NaN` propaga `NaN` (pandas padrão)
+- **Agregação**: `pandas` ignora `NaN` em `mean` e `median`; o agregado só permanece `NaN` quando todos os valores do grupo são `NaN` para essa coluna
 
 **Exemplo**:
 - FLOSS malignantventricular: ~3,000 modelos (em 25,920 total) têm `NaN` em `edd_median_s`
@@ -726,11 +714,11 @@ model_1,0.005,10,1000,229,0.3994,0.1603,0.4188,0.1689,0.7863,0.9777,0.0714,0.102
 |--------|------------------------------|----------------------|
 | **1 linha representa** | 1 ficheiro × 1 parâmetro | 1 combinação de parâmetros (média sobre todos os ficheiros) |
 | **Número de linhas** | #ficheiros × #modelos | #modelos |
-| **Exemplo ADWIN/afib** | 229 ficheiros × 594 modelos = 135,726 linhas | 594 linhas |
+| **Exemplo ADWIN/afib** | 229 ficheiros × 594 modelos = 136,026 linhas | 594 linhas |
 | **Exemplo FLOSS/afib** | 229 ficheiros × 25,920 modelos = 5,935,680 linhas | 25,920 linhas |
 | **Contém GT original?** | Sim (gt_indices, gt_times) | Não |
 | **Contém detecções?** | Sim (det_indices, det_times) | Não (apenas métricas agregadas) |
-| **Colunas de métricas** | Não | Sim (20 métricas) |
+| **Colunas de métricas** | Não | Sim (20-21 campos agregados no output padrão) |
 | **Uso típico** | Validação manual, debugging | Análise de importância (SHAP), ranking de modelos |
 | **Tamanho do ficheiro** | Grande (~100-1000 MB) | Pequeno (~1-10 MB) |
 | **Tempo de cálculo** | Rápido (~5-10 min por detector) | Rápido (~30 seg por detector) |
@@ -762,14 +750,16 @@ models <- read_csv("results/afib_paroxysmal/adwin/models_aggregated.csv")
 
 # Verificar estrutura
 head(models)
-dim(models)  # 594 modelos × 8 colunas
+dim(models)  # Ex.: ADWIN/afib = 594 modelos × 26 colunas
 
 # Colunas:
 # model_id, delta, ma_window, min_gap_samples, n_records,
-# f1_classic_mean, f1_weighted_mean, f3_classic_mean, f3_weighted_mean,
-# recall_4s_mean, recall_10s_mean, precision_4s_mean, precision_10s_mean,
-# edd_median_s_mean, edd_p95_s_mean, fp_per_min_mean,
-# nab_score_standard_mean, nab_score_low_fp_mean, nab_score_low_fn_mean
+# duration_samples, n_ground_truth, n_detections,
+# f1_classic, f1_weighted, f3_classic, f3_weighted,
+# recall_4s, recall_10s, precision_4s, precision_10s,
+# edd_median_s, edd_p95_s, fp_per_min,
+# nab_score_standard, nab_score_low_fp, nab_score_low_fn,
+# tp, fp, fn, tp_weight_sum
 ```
 
 ### Ranking de modelos
@@ -777,8 +767,8 @@ dim(models)  # 594 modelos × 8 colunas
 ```r
 # Top 10 modelos por F3-weighted
 top_models <- models %>%
-  slice_max(f3_weighted_mean, n = 10) %>%
-  select(model_id, delta, ma_window, min_gap_samples, f3_weighted_mean)
+  slice_max(f3_weighted, n = 10) %>%
+  select(model_id, delta, ma_window, min_gap_samples, f3_weighted)
 
 print(top_models)
 ```
@@ -790,7 +780,7 @@ print(top_models)
 models_for_shap <- models %>%
   select(
     delta, ma_window, min_gap_samples,  # Features
-    f3_weighted_mean                     # Target
+    f3_weighted                          # Target
   ) %>%
   na.omit()  # Remover NaN se houver
 
@@ -803,7 +793,7 @@ models_for_shap <- models %>%
 ```r
 # Modelos com NaN em EDD → falharam em detectar
 problematic_models <- models %>%
-  filter(is.na(edd_median_s_mean)) %>%
+  filter(is.na(edd_median_s)) %>%
   nrow()
 
 cat(sprintf(
@@ -816,9 +806,12 @@ cat(sprintf(
 
 1. **Agregação é média por padrão** — Use `--aggregation median` se preferir robustez a outliers
 
-2. **NaN propagação** — Se modelo teve `NaN` em qualquer ficheiro, métrica agregada será `NaN`
+2. **NaN na agregação** — `mean`/`median` ignoram `NaN`; a métrica agregada só será `NaN` quando todos os valores do grupo forem `NaN`
 
 3. **n_records é informativo** — Diferente entre datasets (229 vs 22 vs 34), útil para ponderação
+
+  Para HDDM_A/HDDM_W, `n_records` deve continuar igual ao número de ficheiros do dataset
+  porque `two_side_option` é parte da combinação do modelo e não é agregado por média.
 
 4. **Ordem de parâmetros** — Mesma ordem que em `predictions_intermediate.csv`
 
@@ -855,14 +848,16 @@ cat(sprintf(
 
 ## Resumo por Detector
 
+Os valores abaixo refletem os artefatos atuais de `afib_paroxysmal` em `results/<dataset>/<detector>/`.
+
 | Detector | Nº Modelos (afib) | Parâmetros | Linhas em predictions | Linhas em models_aggregated |
 |----------|-------------------|------------|----------------------|----------------------------|
 | ADWIN | 594 | 3 | 136,026 | 594 |
 | Page-Hinkley | 600 | 5 | 137,400 | 600 |
 | KSWIN | 1,280 | 5 | 293,120 | 1,280 |
-| HDDM_A | 320 | 3 | 73,280 | 320 |
-| HDDM_W | 1,280 | 4 | 293,120 | 1,280 |
-| FLOSS | 25,920 | 6 | 5,935,680 | 25,920 |
-| **TOTAL** | **29,994** | **—** | **6,868,606** | **29,994** |
+| HDDM_A | 640 | 5 | 146,560 | 640 |
+| HDDM_W | 2,560 | 6 | 586,240 | 2,560 |
+| FLOSS | 25,920 | 4 | 5,935,680 | 25,920 |
+| **TOTAL** | **31,594** | **—** | **7,235,026** | **31,594** |
 
 **Redução de tamanho**: ~230× menos linhas, ~100× menos espaço em disco

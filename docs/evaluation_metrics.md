@@ -45,7 +45,12 @@ Uma detecção é TP quando **simultaneamente**:
 Uma detecção é FP quando:
 
 - Não encontra evento real elegível para matching na janela; **OU**
-- É uma detecção extra que não é aproveitada pelo matching (regra: máximo 1 TP por evento)
+- Sobra sem associação depois do matching cronológico e da deduplicação operacional.
+
+**Nota de implementação**: a pipeline usa `count_extra_within_rho_as_fp=False` em
+`latency_weighted_f1()`. Assim, detecções adicionais dentro da janela de ignorar
+criada após um TP são suprimidas e **não** contam como FP; detecções fora dessas
+janelas continuam a contar como FP.
 
 ### False Negative (FN)
 
@@ -314,12 +319,17 @@ Além das métricas por-sinal, a pipeline avalia **robustez global** combinando 
 
 ### Opção 1: Performance Ceiling (Melhor Performance Local)
 
-**Pergunta**: "Qual é o melhor performance possível de cada detector quando otimizado por dataset?"
+**Pergunta**: "Qual é a melhor performance possível de cada detector quando otimizado por dataset?"
 
 **Método**:
 - Para cada detector×dataset, seleciona a melhor configuração (cross-fold F3)
 - Agrega usando macro-average (média simples entre datasets)
 - Calcula estatísticas de dispersão (CV, min, max)
+
+**Como o cross-fold F3 é calculado**:
+- Para cada dataset, a avaliação two-fold separa os registos em duas partições.
+- Em cada direção, os parâmetros são selecionados no fold de treino pelo F3-weighted e avaliados no fold complementar.
+- O cross-fold F3 reportado para uma configuração/detector é a média dos F3-weighted obtidos nas avaliações fora do fold usado para seleção, reduzindo o viés de escolher e medir no mesmo subconjunto.
 
 **Artefatos**: `cross_dataset_generalization_option1.{csv,md}`
 
@@ -343,10 +353,10 @@ Além das métricas por-sinal, a pipeline avalia **robustez global** combinando 
 **Artefatos**: `parameter_portability_option2.{csv,md}`
 
 **Interpretação**:
-- **>95% retention**: Parâmetros completamente portáveis (ex: ADWIN 94.90%)
+- **>95% retention**: Parâmetros completamente portáveis (ex: ADWIN 95.07% nos artefatos atuais)
 - **85-95% retention**: Razoável (pequeno re-tuning recomendado)
-- **75-85% retention**: Significativo drop (tuning obrigatório)
-- **<75% retention**: Não usar sem re-tuning (ex: FLOSS -24%)
+- **75-85% retention**: Significativo drop; tuning obrigatório (ex: FLOSS 75.83% de transferability média nos artefatos atuais)
+- **<75% retention**: Não usar sem re-tuning
 
 ### Opção 3: Unified Robustness Score (Combinado)
 
@@ -360,7 +370,7 @@ $$\text{Score} = 0.6 \times (1 - \text{intra_dataset_gap}) + 0.4 \times (1 - \te
 
 **Artefatos**: `unified_robustness_option3.{csv,md}`
 
-**Interpretação**: Detectors com score >0.97 são robustos em ambas dimensões (ex: FLOSS, ADWIN, KSWIN)
+**Interpretação**: Detectores com score >0.97 aparecem como robustos em ambas dimensões nos artefatos atuais (ex: FLOSS, ADWIN)
 
 ---
 
@@ -506,7 +516,7 @@ results/cross_dataset_analysis/
 
 3. **Agregação de métricas**
    - Média ou mediana sobre registos? **Média** é o padrão
-   - Desvio padrão é mantido para análise de variabilidade
+   - Quando disponível nos relatórios agregados, o desvio padrão é usado para análise de variabilidade
 
 ### Evitar Confusão com Terminologia
 

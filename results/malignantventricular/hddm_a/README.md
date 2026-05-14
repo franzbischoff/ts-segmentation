@@ -6,13 +6,14 @@ Este diretório contém os resultados da análise do detector **HDDM-A** aplicad
 
 ## 📊 Detector: HDDM-A
 
-**Algoritmo**: HDDM-A (Hoeffding's Adaptive Tree Drift Detection Method - Adelson)
+**Algoritmo**: HDDM-A (Hoeffding Drift Detection Method - A-test)
 **Biblioteca**: scikit-multiflow
-**Princípio**: Detecta mudanças de conceito monitorando estatísticas de árvores de Hoeffding adaptativas
+**Princípio**: Detecta mudanças em streams usando limites de Hoeffding sobre estatísticas incrementais
 
 **Parâmetros principais**:
-- `delta`: Nível de confiança para detecção
-- `lambda_`: Taxa de aprendizagem
+- `drift_confidence`: Nível de confiança para detecção de drift
+- `warning_confidence`: Nível de confiança para aviso
+- `two_side_option`: Teste unilateral ou bilateral
 - `ma_window`: Janela de média móvel (filtro da pipeline)
 - `min_gap_samples`: Espaçamento mínimo entre detecções (filtro de pós-processamento)
 
@@ -29,8 +30,8 @@ Disponíveis em `visualizations/` com análise de sensibilidade paramétrica
 ## 🔍 Análise Detalhada
 
 Para análise quantitativa, consultar:
-- [`comparisons/malignantventricular/comparative_report.md`](../../../../comparisons/malignantventricular/comparative_report.md)
-- [`comparisons/malignantventricular/detector_rankings.csv`](../../../../comparisons/malignantventricular/detector_rankings.csv)
+- [`comparisons/malignantventricular/comparative_report.md`](../../../comparisons/malignantventricular/comparative_report.md)
+- [`comparisons/malignantventricular/detector_rankings.csv`](../../../comparisons/malignantventricular/detector_rankings.csv)
 
 ---
 

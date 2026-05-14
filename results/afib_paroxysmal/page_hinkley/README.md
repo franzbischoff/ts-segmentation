@@ -20,14 +20,14 @@ Esta pasta contém os resultados da avaliação do detector **Page-Hinkley** no 
 ### 1. Gerar Predições
 ```bash
 python -m src.generate_predictions \
-    --data data/afib_paroxysmal_tidy.csv \
+    --data data/afib_paroxysmal_full.csv \
     --detector page_hinkley \
     --output results/afib_paroxysmal/page_hinkley/predictions_intermediate.csv \
-    --param lambda_=10 lambda_=20 lambda_=30 lambda_=40 lambda_=50 \
-    --param delta=0.005 delta=0.01 delta=0.02 delta=0.03 \
-    --param alpha=0.9999 alpha=0.999 alpha=0.99 \
-    --ma-window 10 30 50 100 200 300 500 \
-    --min-gap 500 1000 1500 2000 2500 3000 4000 5000 7500 10000
+    --lambda 1 10 30 50 80 \
+    --ph-delta 0.001 0.005 0.01 0.02 0.04 \
+    --alpha 0.9999 0.99 \
+    --ma-window 10 50 200 \
+    --min-gap 500 1000 2000 4000
 ```
 
 ### 2. Avaliar Métricas
@@ -45,17 +45,17 @@ python -m src.visualize_results \
     --output-dir results/afib_paroxysmal/page_hinkley/visualizations
 ```
 
-## Grid Search Sugerido
+## Grid Search Executado
 
 ```python
-LAMBDA_VALUES = [10, 20, 30, 40, 50]           # Magnitude de mudança
-DELTA_VALUES = [0.005, 0.01, 0.02, 0.03]       # Tolerância
-ALPHA_VALUES = [0.9999, 0.999, 0.99]           # Forgetting factor
-MA_WINDOW_VALUES = [10, 30, 50, 100, 200, 300, 500]
-MIN_GAP_VALUES = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000]
+LAMBDA_VALUES = [1, 10, 30, 50, 80]            # Magnitude de mudança
+DELTA_VALUES = [0.001, 0.005, 0.01, 0.02, 0.04] # Tolerância
+ALPHA_VALUES = [0.9999, 0.99]                  # Forgetting factor
+MA_WINDOW_VALUES = [10, 50, 200]
+MIN_GAP_VALUES = [500, 1000, 2000, 4000]
 ```
 
-**Total**: 5 × 4 × 3 × 7 × 10 = 4,200 combinações
+**Total**: 5 × 5 × 2 × 3 × 4 = 600 combinações
 
 > Nota: O valor `MIN_GAP_VALUES` corresponde ao parâmetro `min_gap_samples`, que é
 > aplicado como filtro de pós-processamento pela pipeline (`src/streaming_detector.py`)

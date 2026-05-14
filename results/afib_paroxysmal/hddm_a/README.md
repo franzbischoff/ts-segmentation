@@ -2,17 +2,18 @@
 
 **Status**: ✅ COMPLETO (Novembro 2025)
 
-Este diretório contém os resultados da análise do detector **HDDM-A** (Hoeffding's Adaptive Tree Drift Detection Method - Adelson) aplicado ao dataset de fibrilação atrial paroxística.
+Este diretório contém os resultados da análise do detector **HDDM-A** (Hoeffding Drift Detection Method - A-test) aplicado ao dataset de fibrilação atrial paroxística.
 
 ## 📊 Detector: HDDM-A
 
-**Algoritmo**: HDDM-A (Hoeffding's Adaptive Tree Drift Detection Method - Adelson)
+**Algoritmo**: HDDM-A (Hoeffding Drift Detection Method - A-test)
 **Biblioteca**: scikit-multiflow
-**Princípio**: Detecta mudanças de conceito em streams monitorando estatísticas de árvores de Hoeffding adaptativas
+**Princípio**: Detecta mudanças em streams usando limites de Hoeffding sobre estatísticas incrementais
 
 **Parâmetros principais**:
-- `delta`: Nível de confiança para detecção (menor = mais sensível)
-- `lambda_`: Taxa de aprendizagem (forgetting factor)
+- `drift_confidence`: Nível de confiança para detecção de drift
+- `warning_confidence`: Nível de confiança para aviso
+- `two_side_option`: Teste unilateral ou bilateral
 - `ma_window`: Janela de média móvel para pré-processamento (filtro da pipeline)
 - `min_gap_samples`: Espaçamento mínimo entre detecções (filtro de pós-processamento)
 
@@ -25,10 +26,9 @@ Este diretório contém os resultados da análise do detector **HDDM-A** (Hoeffd
 ### Predições e Métricas
 - **`predictions_intermediate.csv`** - Predições brutas para todas combinações de parâmetros
 - **`metrics_comprehensive_with_nab.csv`** - Métricas detalhadas (F1/F3, NAB, temporais)
-- **`metrics_comprehensive_with_nab.jsonl`** - Formato alternativo JSONL
 - **`final_report_with_nab.json`** - Relatório consolidado com melhores configurações
 - **`final_report_with_nab_twofold_seed42.json`** - Análise two-fold cross-validation
-- **`metrics_aggregated.csv`** - Agregação de métricas por parâmetro
+- **`models_aggregated.csv`** - Métricas agregadas por combinação de parâmetros
 
 ### Visualizações (PNG)
 - `visualizations/pr_scatter_plots.png` - Gráficos de dispersão Precision-Recall
@@ -44,14 +44,14 @@ Este diretório contém os resultados da análise do detector **HDDM-A** (Hoeffd
 ## 🔍 Análise Detalhada
 
 Para análise quantitativa detalhada e rankings comparativos, consultar:
-- [`comparisons/afib_paroxysmal/comparative_report.md`](../../../../comparisons/afib_paroxysmal/comparative_report.md)
-- [`comparisons/afib_paroxysmal/detector_rankings.csv`](../../../../comparisons/afib_paroxysmal/detector_rankings.csv)
+- [`comparisons/afib_paroxysmal/comparative_report.md`](../../../comparisons/afib_paroxysmal/comparative_report.md)
+- [`comparisons/afib_paroxysmal/detector_rankings.csv`](../../../comparisons/afib_paroxysmal/detector_rankings.csv)
 
 ## 📚 Ver Também
 
-- **Comparação entre detectores**: [`comparisons/afib_paroxysmal/`](../../../../comparisons/afib_paroxysmal/)
+- **Comparação entre detectores**: [`comparisons/afib_paroxysmal/`](../../../comparisons/afib_paroxysmal/)
 - **Análise cross-dataset**: [`../../cross_dataset_analysis/hddm_a/`](../../cross_dataset_analysis/hddm_a/)
-- **Documentação de métricas**: [`docs/evaluation_metrics_v1.md`](../../../../docs/evaluation_metrics_v1.md)
+- **Documentação de métricas**: [`docs/evaluation_metrics.md`](../../../docs/evaluation_metrics.md)
 
 ---
 

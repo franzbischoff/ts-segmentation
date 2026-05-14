@@ -1,5 +1,35 @@
 # Projeto: Streaming ECG Regime Change Detection (Sessão de Trabalho - Memória Persistente)
 
+## RESUMO EXECUTIVO DA SESSÃO 15 — 2026-05-14 (Auditoria de Docs e Limpeza de Métricas Agregadas)
+
+### ✅ Trabalho de Hoje
+
+**Objetivo**: Confirmar congruência dos relatórios técnicos antes da publicação, corrigir informação obsoleta e limpar artefatos redundantes validados pelo utilizador.
+
+#### 1. Correções Documentais Aplicadas
+- `.github/copilot-instructions.md`: normalizado o input canônico para `data/<dataset>_full.csv` e clarificado que `metrics_aggregated.csv` deve existir apenas dentro de `visualizations/`.
+- `docs/predictions_csv_format_specification.md`: clarificado que `predictions_intermediate.csv` é gerado por `src.generate_predictions`, frequentemente via wrappers `scripts/generate_*.sh`.
+- `docs/predictions_csv_format_specification.md`: removida a formulação ambígua que sugeria `models_aggregated.csv` como fonte direta das validações macro de robustez; estes CSVs ficam documentados como dados compactos para SHAP/ML externo.
+- `docs/evaluation_metrics.md`: mantida a referência a cross-fold F3 e adicionada explicação operacional do cálculo two-fold.
+- `docs/evaluation_metrics.md`: ajustada a nota sobre desvio padrão para não implicar disponibilidade universal em todos os relatórios.
+
+#### 2. Limpeza de Artefatos
+- Removidos 18 ficheiros `results/<dataset>/<detector>/metrics_aggregated.csv` na raiz dos detectores.
+- Preservados 18 ficheiros `results/<dataset>/<detector>/visualizations/metrics_aggregated.csv`, que continuam a ser a saída auxiliar de `src.visualize_results`.
+- Mantidos os snapshots Markdown `final_report_with_nab_*.md`; não foram limpos nesta sessão.
+
+#### 3. Estado Atual Validado
+- Entradas operacionais documentadas usam `data/<dataset>_full.csv`.
+- `models_aggregated.csv` existem para 6 detectores × 3 datasets.
+- Contagens atuais de modelos por dataset:
+  - `afib_paroxysmal`: ADWIN 594, Page-Hinkley 600, KSWIN 1,280, HDDM_A 640, HDDM_W 2,560, FLOSS 25,920.
+  - `malignantventricular`: ADWIN 495, Page-Hinkley 384, KSWIN 1,280, HDDM_A 640, HDDM_W 2,560, FLOSS 25,920.
+  - `vtachyarrhythmias`: ADWIN 495, Page-Hinkley 384, KSWIN 1,280, HDDM_A 640, HDDM_W 2,560, FLOSS 25,920.
+
+**Última Atualização**: 2026-05-14 (Sessão 15 - docs e memória atualizadas; limpeza de `metrics_aggregated.csv` redundantes concluída)
+
+---
+
 ## RESUMO EXECUTIVO DA SESSÃO 14 — 2026-05-12 (Limpeza Final de Documentação)
 
 ### ✅ Trabalho de Hoje
@@ -11,7 +41,7 @@
 - Mantidos os `*.json` de relatórios, sumários e execuções two-fold, por não serem duplicados directos
 
 #### 2. Correções de Documentação
-- `results/README.md`: corrigido o padrão de entrada de `data/<dataset>_*.csv` e normalizados os nomes reais dos ficheiros de análise cross-dataset
+- `results/README.md`: corrigido o padrão de entrada para `data/<dataset>_full.csv` e normalizados os nomes reais dos ficheiros de análise cross-dataset
 - `docs/visualizations_guide.md`: actualizado para 9 PNGs na Camada 1 e para os nomes reais das saídas da Camada 2
 - `results/afib_paroxysmal/adwin/README.md`: corrigido `afib_regimes` para `afib_paroxysmal`
 - `.github/copilot-instructions.md`: corrigido o caminho de `docs/evaluation_metrics.md`
@@ -174,8 +204,8 @@ python -m src.simplify_metrics_for_analysis \
 | **adwin** | 594 modelos (229 rec/modelo) | 495 modelos (22 rec) | 495 modelos (34 rec) |
 | **page_hinkley** | 600 modelos (229 rec) | 384 modelos (22 rec) | 384 modelos (34 rec) |
 | **kswin** | 1,280 modelos (229 rec) | 1,280 modelos (22 rec) | 1,280 modelos (34 rec) |
-| **hddm_a** | 320 modelos (229 rec) | 320 modelos (22 rec) | 320 modelos (34 rec) |
-| **hddm_w** | 1,280 modelos (229 rec) | 1,280 modelos (22 rec) | 1,280 modelos (34 rec) |
+| **hddm_a** | 640 modelos (229 rec) | 640 modelos (22 rec) | 640 modelos (34 rec) |
+| **hddm_w** | 2,560 modelos (229 rec) | 2,560 modelos (22 rec) | 2,560 modelos (34 rec) |
 | **floss** | 25,920 modelos (229 rec) | 25,920 modelos (22 rec) | 25,920 modelos (34 rec) |
 
 **Estrutura dos CSV**:
@@ -192,28 +222,28 @@ python -m src.simplify_metrics_for_analysis \
 #### 5. Git: Adição Forçada ao Repositório
 
 **Problema**: `results/**/*.csv` está no `.gitignore`
-**Solução**: Adição forçada com `git add -f`
+**Solução**: Adição forçada com `git add -f` realizada na sessão original; estes ficheiros já foram commitados posteriormente.
 
-**Ficheiros staged (18)**:
+**Ficheiros versionados (18)**:
 ```bash
-A  results/afib_paroxysmal/adwin/models_aggregated.csv
-A  results/afib_paroxysmal/floss/models_aggregated.csv
-A  results/afib_paroxysmal/hddm_a/models_aggregated.csv
-A  results/afib_paroxysmal/hddm_w/models_aggregated.csv
-A  results/afib_paroxysmal/kswin/models_aggregated.csv
-A  results/afib_paroxysmal/page_hinkley/models_aggregated.csv
-A  results/malignantventricular/adwin/models_aggregated.csv
-A  results/malignantventricular/floss/models_aggregated.csv
-A  results/malignantventricular/hddm_a/models_aggregated.csv
-A  results/malignantventricular/hddm_w/models_aggregated.csv
-A  results/malignantventricular/kswin/models_aggregated.csv
-A  results/malignantventricular/page_hinkley/models_aggregated.csv
-A  results/vtachyarrhythmias/adwin/models_aggregated.csv
-A  results/vtachyarrhythmias/floss/models_aggregated.csv
-A  results/vtachyarrhythmias/hddm_a/models_aggregated.csv
-A  results/vtachyarrhythmias/hddm_w/models_aggregated.csv
-A  results/vtachyarrhythmias/kswin/models_aggregated.csv
-A  results/vtachyarrhythmias/page_hinkley/models_aggregated.csv
+results/afib_paroxysmal/adwin/models_aggregated.csv
+results/afib_paroxysmal/floss/models_aggregated.csv
+results/afib_paroxysmal/hddm_a/models_aggregated.csv
+results/afib_paroxysmal/hddm_w/models_aggregated.csv
+results/afib_paroxysmal/kswin/models_aggregated.csv
+results/afib_paroxysmal/page_hinkley/models_aggregated.csv
+results/malignantventricular/adwin/models_aggregated.csv
+results/malignantventricular/floss/models_aggregated.csv
+results/malignantventricular/hddm_a/models_aggregated.csv
+results/malignantventricular/hddm_w/models_aggregated.csv
+results/malignantventricular/kswin/models_aggregated.csv
+results/malignantventricular/page_hinkley/models_aggregated.csv
+results/vtachyarrhythmias/adwin/models_aggregated.csv
+results/vtachyarrhythmias/floss/models_aggregated.csv
+results/vtachyarrhythmias/hddm_a/models_aggregated.csv
+results/vtachyarrhythmias/hddm_w/models_aggregated.csv
+results/vtachyarrhythmias/kswin/models_aggregated.csv
+results/vtachyarrhythmias/page_hinkley/models_aggregated.csv
 ```
 
 **Mensagem de commit sugerida**:
@@ -245,9 +275,7 @@ Add aggregated model metrics for SHAP analysis
 
 **Ficheiros prontos para análise externa**:
 - ✅ 18 × `models_aggregated.csv` (6 detectores × 3 datasets)
-- ✅ Staged no git para commit
-
-**Próxima ação pendente**: Commit dos ficheiros `models_aggregated.csv`
+- ✅ Já commitados no histórico do repositório
 
 ### 🔜 Próximos Passos Sugeridos
 
@@ -354,7 +382,7 @@ Add aggregated model metrics for SHAP analysis
 
 ### 🔜 Próximos Passos Sugeridos
 
-#### Curto Prazo (Próxima Sessão)
+#### Curto Prazo (histórico; superado por sessões posteriores)
 1. **Análise de Resultados**: Revisar radars e identificar padrões
 2. **Decisão de Produção**: Escolher detector(es) baseado em visualizações
 3. **Validação Clínica**: Consultar especialistas sobre trade-offs
@@ -712,7 +740,7 @@ Com base em **F3-weighted** (métrica primária de otimização):
 
 **Nota**: FLOSS demonstra performance significativamente superior (2× melhor que segundo colocado)
 
-### 📊 Estado Atual do Projeto
+### 📊 Estado do Projeto na Sessão Original (histórico; superado)
 
 #### Detectores Completos (6/6) ✅
 1. **ADWIN** - 3 datasets completos ✅
@@ -806,10 +834,10 @@ Com base em **F3-weighted** (métrica primária de otimização):
 #### Detectores Completos
 1. **ADWIN** - 113,355 avaliações (495 configs × 229 ficheiros) ✅
 2. **FLOSS** - 989,280 avaliações (4,320 configs × 229 ficheiros) ✅
-3. **Page-Hinkley** - Scripts prontos, aguarda execução 🔄
-4. **KSWIN** - Scripts prontos, aguarda execução 🔄
-5. **HDDM_A** - Scripts prontos, aguarda execução 🔄
-6. **HDDM_W** - Scripts prontos, aguarda execução 🔄
+3. **Page-Hinkley** - Completo posteriormente nos 3 datasets ✅
+4. **KSWIN** - Completo posteriormente nos 3 datasets ✅
+5. **HDDM_A** - Completo posteriormente nos 3 datasets ✅
+6. **HDDM_W** - Completo posteriormente nos 3 datasets ✅
 
 #### Comparações Multi-Detector
 - **FLOSS vs KSWIN** - Completo ✅
@@ -1459,24 +1487,12 @@ Sistema completo de análise visual dos resultados de grid search.
 5. `3d_tradeoff.png` → Trade-offs multi-objetivo
 6. `parameter_sensitivity.png` → Entender impacto de parâmetros
 
-## 6. Próximos Passos Prioritários
+## 6. Próximos Passos Prioritários (histórico; superados)
 
 ### Alta Prioridade
-1. **Implementar Page-Hinkley**
-   - Gerar predições com grid search sugerido
-   - Avaliar métricas completas
-   - Criar visualizações
-   - Documentar resultados em `results/page_hinkley/README.md`
-
-2. **Implementar DDM**
-   - Adaptar para sinais contínuos (usar derivada ou z-score)
-   - Seguir pipeline padronizado
-   - Comparar com ADWIN
-
-3. **Comparação Multi-Detector**
-   - Executar `src/compare_detectors.py` após ter ≥2 detectores
-   - Gerar relatório comparativo
-   - Identificar detector superior por métrica
+1. **Page-Hinkley**: implementado e avaliado posteriormente nos 3 datasets.
+2. **DDM/EDDM**: removidos definitivamente do pipeline por inadequação a séries temporais contínuas.
+3. **Comparação Multi-Detector**: implementada posteriormente em `comparisons/<dataset>/`.
 
 ### Média Prioridade
 4. **Análise de Ensemble**
@@ -1491,9 +1507,8 @@ Sistema completo de análise visual dos resultados de grid search.
 
 ### Baixa Prioridade
 6. **Outros Detectores**
-   - EDDM (Early DDM)
-   - HDDM (Hoeffding's Bound)
-   - KSWIN (Kolmogorov-Smirnov)
+   - DDM/EDDM: removidos do pipeline.
+   - HDDM_A/HDDM_W e KSWIN: implementados e avaliados posteriormente.
 
 7. **Otimizações**
    - Paralelização de generate_predictions
@@ -1601,7 +1616,7 @@ xdg-open results/adwin/visualizations/pareto_front.png
 
 **Fim da Memória Persistente**
 **Última Atualização**: 2025-11-13 (Reorganização completa, NAB implementado, visualizações criadas)
-**Próxima Sessão**: Implementar Page-Hinkley e DDM, gerar comparações
+**Próxima Sessão**: histórico superado; Page-Hinkley e comparações foram implementados posteriormente, DDM/EDDM foram removidos do pipeline.
 - **Resultados per-patient**:
   - data_101_7.par: F1=0.400 (delta=0.005, ma_window=125, min_gap=3000)
   - data_101_6.par: F1=0.250 (delta=0.080, ma_window=175, min_gap=3000)
@@ -1683,7 +1698,7 @@ Interpretação inicial:
 6. Tornar códigos de anotação configuráveis via CLI (`--label-codes 28 32 33`).
 7. Permitir manter registos sem eventos (`--keep-nochange`), útil para FP analysis.
 8. Opcional: aplicar derivada + normalização incremental (online z-score) antes de detectar.
-9. Implementar outros detectores (EDDM, HDDM_A, HDDM_W) se suportados pela versão do scikit-multiflow.
+9. Histórico superado: HDDM_A/HDDM_W foram implementados; EDDM foi removido do pipeline por inadequação a séries temporais contínuas.
 10. Métrica de distribuição de atrasos (histograma + percentis) além do delay médio.
 
 ### **Longo prazo**:
@@ -1764,7 +1779,7 @@ python -m src.streaming_detector \
 - ✅ Corrigido IndentationError em `src/streaming_detector.py` que impedia a geração de predições.
 - ✅ Atualizados os scripts `scripts/generate_*.sh`, `scripts/evaluate_*.sh` e `scripts/visualize_*.sh` para:
    - aceitar `--max-files` e outros argumentos pass-through para testes rápidos
-   - preferir `results/<dataset>` sem sufixos `_full`/_`tidy` (com fallback para compatibilidade)
+   - usar organização `results/<dataset>/<detector>/`; os dados de entrada canônicos são `data/<dataset>_full.csv`
 - ✅ Melhorias em `visualize_results.py` para lidar com NaN em EDD e incluir `regime_threshold`/`regime_landmark` em `parameter_sensitivity.png`.
 - ✅ Melhoria do `src/compare_detectors.py`:
    - `--dataset` argumento (default: `afib_paroxysmal`), saída organizada em `comparisons/<dataset>/`

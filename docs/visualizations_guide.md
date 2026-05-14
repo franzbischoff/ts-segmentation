@@ -9,7 +9,7 @@ A pipeline de análise compreende **3 camadas distintas**:
 ### Camada 1: Visualizações Por-Detector (Grid Search)
 **Script**: `src/visualize_results.py`
 **Entrada**: `results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv`
-**Saída**: 9 ficheiros PNG (PR scatter, Pareto front, 4 heatmaps, distribuições, 3D, sensibilidade)
+**Saída**: 9 ficheiros PNG (PR scatter, Pareto front, 4 heatmaps, distribuições, 3D, sensibilidade) e `metrics_aggregated.csv`
 **Uso**: Exploração rápida de performance local (1 detector × 1 dataset)
 
 ### Camada 2: Análise Cross-Dataset (Robustez)
@@ -60,12 +60,12 @@ python -m src.visualize_results \
 - **Painel Esquerdo**: Recall@4s vs Precision@4s (janela de 4 segundos)
 - **Painel Direito**: Recall@10s vs Precision@10s (janela de 10 segundos)
 - Cada ponto = uma combinação de parâmetros do detector
-- Cor do ponto = Score F3-weighted (escala viridis: roxo→verde→amarelo)
+- Cor do ponto = parâmetro de referência escolhido automaticamente (`min_gap_samples`, senão `ma_window`, senão `delta`; F3-weighted apenas como fallback)
 - Estrela vermelha = melhor configuração F3-weighted
 
 **Como interpretar**:
 - Ideal: canto superior direito (alta precision + alta recall)
-- Cores quentes (amarelo/verde) indicam melhores F3 scores
+- A escala de cores ajuda a identificar como o parâmetro colorido organiza regiões de maior ou menor desempenho
 - Comparar janelas 4s vs 10s mostra impacto de tolerância temporal
 - Clusters de pontos revelam regiões viáveis do espaço de parâmetros
 
@@ -106,7 +106,7 @@ Identificar conjunto de configurações ótimas para diferentes cenários clíni
 - `heatmap_recall-10s.png`
 - `heatmap_fp-per-min.png`
 
-**Descrição**: Mapas de calor 2D mostrando efeito de delta × ma_window.
+**Descrição**: Mapas de calor 2D mostrando o efeito de dois parâmetros variáveis sobre cada métrica.
 
 **Detalhes**:
 - **Linhas/Colunas**: Os dois parâmetros com maior variação no grid (auto-detectados por detector). Exemplos: `delta` × `ma_window` para ADWIN; `window_size` × `regime_threshold` para FLOSS; `alpha` × `window_size` para KSWIN.
@@ -170,7 +170,7 @@ Entender variabilidade e centralidade das métricas. Identificar se há configur
 - Ideal: alto X, baixo Y, baixo Z (canto frontal inferior direito)
 - Clusters 3D revelam configurações similares
 - Cores quentes em posições favoráveis = configurações excelentes
-- Visualização rotativa ajuda a identificar relações escondidas
+- A projeção 3D estática ajuda a inspecionar relações que não aparecem em trade-offs bidimensionais simples
 
 **Uso típico**:
 Análise exploratória avançada quando trade-offs binários não são suficientes. Identificar se existe "sweet spot" no espaço 3D.
@@ -183,12 +183,18 @@ Análise exploratória avançada quando trade-offs binários não são suficient
 **Descrição**: Gráficos de linha mostrando sensibilidade de métricas a parâmetros.
 
 **Detalhes**:
-- **Layout**: 2 linhas × N colunas (N = número de parâmetros do detector)
-- **Linhas**: F3-weighted (cima) e Recall@10s (baixo)
+- **Layout**: Grelha dinâmica com até 2 linhas × 3 colunas, determinada pelo número de parâmetros detectados
+- **Casos típicos**:
+  - ADWIN: 1 linha × 3 colunas (3 parâmetros: `delta`, `ma_window`, `min_gap_samples`)
+  - Detectores com 4 a 6 parâmetros: 2 linhas × 3 colunas
+- **Preenchimento dos painéis**: Os subplots são preenchidos sequencialmente na ordem métrica × parâmetro. A implementação atual **não** reserva uma linha fixa por métrica.
 - **Colunas**: Um painel por parâmetro (auto-detectados). Exemplos: `delta`, `ma_window`, `min_gap_samples` para ADWIN; `window_size`, `regime_threshold`, `regime_landmark`, `min_gap_samples` para FLOSS.
 - **Linha**: Média da métrica para cada valor do parâmetro
 - **Área sombreada**: ± 1 desvio padrão
-- **Eixo X log-scale**: Para parâmetros que variam em ordens de magnitude
+- **Eixo X log-scale**: Aplicado a `ma_window` e `stat_size`; outros parâmetros usam escala linear
+
+**Nota de implementação atual**:
+- Quando o número de combinações métrica × parâmetro excede o número de painéis disponíveis, os últimos painéis não são desenhados. Exemplo: para 4 parâmetros, a grelha 2 × 3 acomoda 6 painéis, então a primeira métrica ocupa 4 painéis e a segunda ocupa apenas os 2 restantes.
 
 **Como interpretar**:
 - **Inclinação acentuada**: Parâmetro tem forte impacto (crítico para tuning)
@@ -239,9 +245,7 @@ Entender mecanismo de cada parâmetro. Priorizar tuning dos parâmetros com maio
 - Invertido para FP/min (vermelho = alto FP = mau)
 
 **Scatter Plots**:
-- Viridis (roxo→azul→verde→amarelo): Score F3
-  - Roxo/azul: Scores baixos
-  - Verde/amarelo: Scores altos
+- Viridis (roxo→azul→verde→amarelo): parâmetro selecionado automaticamente; quando nenhum parâmetro de cor está disponível, F3-weighted é usado como fallback
 
 **Box Plots**:
 - Azul: FP/min
@@ -289,9 +293,8 @@ plt.savefig(output_path, dpi=600, bbox_inches='tight')
 - numpy >= 1.23
 
 **Recursos**:
-- ~500 MB RAM (para 113k avaliações)
-- ~30 segundos de processamento
-- ~4.5 MB de imagens PNG (300 DPI)
+- Uso de RAM e tempo de processamento variam com o número de combinações de parâmetros e registos avaliados.
+- Detectores pequenos geram poucos MB de PNGs; grids grandes como FLOSS podem gerar dezenas de MB, especialmente porque `metrics_aggregated.csv` também é salvo na pasta de visualizações.
 
 **Formatos de Saída**:
 - PNG (default, 300 DPI)

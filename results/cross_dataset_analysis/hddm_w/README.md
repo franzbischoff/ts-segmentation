@@ -1,4 +1,6 @@
-# Análise Cross-Dataset: HDDM_W (2025-11-25)
+# Análise Cross-Dataset: HDDM_W (atualizado 2026-05-14)
+
+> Nota de escopo: esta é uma análise macro/micro por detector. Para rankings finais de publicação e comparação robusta entre detectores, usar os artefatos Option 1/2/3 em `results/cross_dataset_analysis/`.
 
 **Datasets**: `afib_paroxysmal`, `malignantventricular`, `vtachyarrhythmias`  
 **Critério**: True Macro-Average (igual peso por dataset) filtrando apenas combinações presentes nos três cenários.
@@ -14,7 +16,7 @@ lambda_option:       0.01
 two_side_option:     False   # (True e False empatam)
 ma_window:           1
 min_gap_samples:     1000
-F3-weighted macro-average: 0.1252 ± 0.1552
+F3-weighted macro-average: 0.1262 ± 0.1568
 ```
 
 - **Posição**: último lugar entre os 6 detectores testados.
@@ -26,11 +28,11 @@ Todos os cinco primeiros empataram exatamente no score e no desvio padrão; vari
 
 | Rank | drift | warn | λ | two_side | ma | gap | Score | Std |
 |------|-------|------|----|-----------|----|-----|-------|-----|
-| 1 | 0.005 | 0.001 | 0.01 | False | 1 | 1000 | **0.1252** | 0.1552 |
-| 2 | 0.005 | 0.005 | 0.01 | True | 1 | 1000 | 0.1252 | 0.1552 |
-| 3 | 0.005 | 0.001 | 0.01 | True | 1 | 1000 | 0.1252 | 0.1552 |
-| 4 | 0.005 | 0.050 | 0.01 | True | 1 | 1000 | 0.1252 | 0.1552 |
-| 5 | 0.005 | 0.010 | 0.01 | False | 1 | 1000 | 0.1252 | 0.1552 |
+| 1 | 0.005 | 0.001 | 0.01 | False | 1 | 1000 | **0.1262** | 0.1568 |
+| 2 | 0.005 | 0.005 | 0.01 | True | 1 | 1000 | 0.1262 | 0.1568 |
+| 3 | 0.005 | 0.001 | 0.01 | True | 1 | 1000 | 0.1262 | 0.1568 |
+| 4 | 0.005 | 0.050 | 0.01 | True | 1 | 1000 | 0.1262 | 0.1568 |
+| 5 | 0.005 | 0.010 | 0.01 | False | 1 | 1000 | 0.1262 | 0.1568 |
 
 **Conclusão**: assim como no HDDM_A, `warning_confidence` e `two_side_option` têm impacto mínimo. Porém, aqui nem `lambda` diferente melhora o cenário.
 
@@ -39,14 +41,14 @@ Todos os cinco primeiros empataram exatamente no score e no desvio padrão; vari
 ## 📉 File-Weighted (Micro) — Apenas histórico
 
 - Melhor combinação micro (sem mudança): `drift=0.005`, `warning=0.001`, `lambda=0.2`, `two_side=True`, `ma=1`, `gap=1000` → **0.2843 ± 0.2567**
-- Diferença macro × micro: -56% (0.1252 vs 0.2843). O score file-weighted era inflado por afib_paroxysmal e mascarava o baixo desempenho nos datasets ventriculares.
+- Diferença macro × micro: -56% (0.1262 vs 0.2843). O score file-weighted era inflado por afib_paroxysmal e mascarava o baixo desempenho nos datasets ventriculares.
 
 ---
 
 ## 🔧 Insights e Recomendações
 
-1. **Performance baixa**: 0.1252 é menos da metade do score do HDDM_A (0.2584) e 3× inferior ao FLOSS (0.3958).
-2. **Alta variância**: std ≈ 0.155 — o maior entre todos os detectores; imprevisível em dados novos.
+1. **Performance baixa**: 0.1262 é menos da metade do score do HDDM_A (0.2611) e ~3× inferior ao FLOSS (0.3982).
+2. **Alta variância**: std ≈ 0.157 — o maior entre todos os detectores; imprevisível em dados novos.
 3. **Parâmetros com pouco efeito**: `warning_confidence`, `two_side_option` e até `lambda` mostraram empate numérico no topo.
 4. **Recomendação prática**: **substituir HDDM_W por HDDM_A** em qualquer pipeline cross-dataset. O irmão “Average” é 2× melhor em score e ainda mais robusto.
 

@@ -1,13 +1,14 @@
 Este repositório mantém um baseline de deteção de mudanças de regime em sinais de ECG streaming (250 Hz). A pipeline cobre preprocessamento (`ecg_preprocess.py`), geração de predições, avaliação temporal (F3-weighted/NAB) e visualizações estruturadas. **DDM/EDDM permanecem excluídos** (inadequados para séries temporais contínuas). Manter execução estritamente streaming (sem lookahead), dependências pinadas, modularidade e verificações rápidas antes de ampliar escopo.
 
 ## Estado Atual
-- **Datasets completos**: `afib_paroxysmal` (229 ficheiros), `malignantventricular` (22) e `vtachyarrhythmias` (34). Cada dataset possui outputs para **6 detectores** (`adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w`, `floss`) em `results/<dataset>/<detector>/` (CSV de predições, métricas, relatórios JSON, sumários e `visualizations/` com 9 PNGs).
+- **Datasets completos**: `afib_paroxysmal` (229 ficheiros), `malignantventricular` (22) e `vtachyarrhythmias` (34). Cada dataset possui outputs para **6 detectores** (`adwin`, `page_hinkley`, `kswin`, `hddm_a`, `hddm_w`, `floss`) em `results/<dataset>/<detector>/` (predições, métricas completas, relatórios JSON, `models_aggregated.csv` e `visualizations/` com 9 PNGs + `metrics_aggregated.csv`). Os `metrics_aggregated.csv` da raiz dos detectores foram removidos por redundância; manter apenas os que vivem dentro de `visualizations/`.
 - **Comparações**: arquivos legados vivem em `results/comparisons/` (ex.: `floss_vs_kswin.*`), mas a ferramenta atual escreve em `comparisons/<dataset>/` (`comparative_report.md`, `detector_rankings.csv`, `detector_summary.csv`, `constraint_tradeoffs.csv`, `robustness.csv`). Use `python -m src.compare_detectors --dataset <dataset> --detectors ...` para atualizar esses artefactos.
 - **Macro/micro averages**: `python -m src.cross_dataset_analysis --detector <detector> --output results/cross_dataset_analysis/<detector>/` calcula rankings robustos e README específicos (um por detector).
 - **Scripts auxiliares**: `scripts/generate_*.sh`, `scripts/evaluate_*.sh` e `scripts/visualize_*.sh` já aceitam `--max-files/--max-samples` e encaminham argumentos adicionais.
+- **Dados de entrada canônicos**: usar `data/<dataset>_full.csv` nos comandos operacionais documentados.
 
 ## Pipeline Padronizado
-1. **Predições** – `python -m src.generate_predictions --detector <nome> --data data/<dataset>_*.csv --output results/<dataset>/<detector>/predictions_intermediate.csv [--append ... --n-jobs -1]`
+1. **Predições** – `python -m src.generate_predictions --detector <nome> --data data/<dataset>_full.csv --output results/<dataset>/<detector>/predictions_intermediate.csv [--append ... --n-jobs -1]`
 2. **Avaliação** – `python -m src.evaluate_predictions --predictions results/<dataset>/<detector>/predictions_intermediate.csv --metrics-output results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --report-output results/<dataset>/<detector>/final_report_with_nab.json`
 3. **Visualizações** – `python -m src.visualize_results --metrics results/<dataset>/<detector>/metrics_comprehensive_with_nab.csv --output-dir results/<dataset>/<detector>/visualizations`
 4. **Comparação** – `python -m src.compare_detectors --dataset <dataset> --detectors adwin page_hinkley kswin hddm_a hddm_w floss --output comparisons/<dataset>/comparative_report.md --csv-output comparisons/<dataset>/detector_rankings.csv`
@@ -19,7 +20,7 @@ Notas:
 ## Documentação Essencial
 - `README.md` (raiz): visão geral da pipeline e comandos principais.
 - `results/<dataset>/<detector>/README.md`: resultados e melhores configurações por dataset/detector; preferir estes ficheiros em vez do README genérico.
-- `docs/evaluation_metrics.md`, `docs/visualizations_guide.md`, `docs/predictions_csv_format_specification.md`: métricas, interpretação das figuras e formato de CSVs.
+- `docs/evaluation_metrics.md`, `docs/visualizations_guide.md`, `docs/predictions_csv_format_specification.md`: métricas, interpretação das figuras e formato de CSVs (`predictions_intermediate.csv` e `models_aggregated.csv`).
 - `results/cross_dataset_analysis/README.md` + READMEs específicos (um por detector) descrevem macro/micro averages e regras de robustez.
 
 ## Diretrizes Fixas
